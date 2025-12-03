@@ -211,26 +211,38 @@ else:
 
     with tab3:
         col5, col6 = st.columns(2)
+        
+        # 5. 카테고리 계층 (트리맵)
         with col5:
-            st.subheader("🔲 카테고리 계층 (트리맵)")
+            st.subheader("🔲 카테고리 계층 분석 (트리맵)")
             if not final_df.empty:
                 fig_tree = px.treemap(
                     final_df, 
                     path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
-                    values='sale_price', 
-                    title="카테고리 > 브랜드 비중"
+                    values='sale_price',
+                    color='large_category', 
+                    color_discrete_sequence=px.colors.qualitative.Pastel, 
+                    title="대분류 > 중분류 > 브랜드 비중"
                 )
                 st.plotly_chart(fig_tree, use_container_width=True)
+            else:
+                st.info("표시할 데이터가 없습니다.")
+
+        # 6. 카테고리 세부 (썬버스트)
         with col6:
-            st.subheader("☀️ 세부 비중 (썬버스트)")
+            st.subheader("☀️ 카테고리 세부 비중 (썬버스트)")
             if not final_df.empty:
                 fig_sun = px.sunburst(
                     final_df,
                     path=['large_category', 'medium_category', 'small_category'],
                     values='sale_price',
-                    title="카테고리 세부 비중"
+                    color='large_category',
+                    color_discrete_sequence=px.colors.qualitative.Pastel, 
+                    title="대분류 > 중분류 > 소분류 비중"
                 )
                 st.plotly_chart(fig_sun, use_container_width=True)
+            else:
+                st.info("표시할 데이터가 없습니다.")
 
     # ==========================================================================
     # [5] 상세 데이터 테이블
@@ -244,5 +256,6 @@ else:
             use_container_width=True,
             hide_index=True
         )
+
 
 

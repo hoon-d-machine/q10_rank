@@ -87,12 +87,25 @@ else:
 
     # --- 사이드바: 다운로드 ---
     st.sidebar.markdown("---")
-    csv_data = convert_df(final_df)
+    st.sidebar.subheader("📥 데이터 다운로드")
+
+    # 버튼 1: 현재 보고 있는(필터된) 데이터
+    csv_filtered = convert_df(final_df)
     st.sidebar.download_button(
-        "📥 현재 데이터 엑셀 다운로드",
-        csv_data,
-        f"Qoo10_{sel_event}_{sel_cat}.csv",
-        "text/csv"
+        label="🔍 현재 필터된 데이터 받기",
+        data=csv_filtered,
+        file_name=f"Qoo10_{sel_event}_{sel_cat}_Filtered.csv",
+        mime="text/csv"
+    )
+
+    # 버튼 2: 전체 원본 데이터 (필터 무시)
+    st.sidebar.write("") # 약간의 여백
+    csv_full = convert_df(df) # 로드한 전체 원본(df)
+    st.sidebar.download_button(
+        label="💾 전체 원본 데이터 받기 (All)",
+        data=csv_full,
+        file_name=f"Qoo10_Full_Raw_Data.csv",
+        mime="text/csv"
     )
 
     # ==========================================================================

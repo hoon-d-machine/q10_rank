@@ -26,12 +26,15 @@ def convert_df(df):
     return df.to_csv(index=False).encode('utf-8-sig')
 
 # ==============================================================================
-# [2] 데이터 로드 (캐시 시간 단축: 10분 -> 1분)
+# [2] 데이터 로드 (캐시 시간 1분)
 # ==============================================================================
-# [수정] ttl=60으로 줄여서 새 데이터가 금방 반영되게 함
 @st.cache_data(ttl=60) 
 def load_data():
-    response = supabase.table("qoo10_rankings").select("*").execute()
+    response = supabase.table("qoo10_rankings") \
+        .select("*") \
+        .order("collected_at", desc=True) \
+        .limit(1000000) \
+        .execute()
     df = pd.DataFrame(response.data)
     
     if not df.empty:
@@ -225,3 +228,4 @@ else:
             use_container_width=True,
             hide_index=True
         )
+

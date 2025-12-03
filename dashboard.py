@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from supabase import create_client
+from datetime import datetime, timedelta
 
 # ==============================================================================
 # [1] 기본 설정 및 연결
@@ -26,7 +27,7 @@ def convert_df(df):
     return df.to_csv(index=False).encode('utf-8-sig')
 
 # ==============================================================================
-# [2] 데이터 로드 (캐시 시간 1분)
+# [2] 데이터 로드
 # ==============================================================================
 @st.cache_data(ttl=60) 
 def load_data():
@@ -40,15 +41,9 @@ def load_data():
             .order("collected_at", desc=True) \
             .range(start, start + batch_size - 1) \
             .execute()
-    
-        if not response.data:
-            break
-            
+        if not response.data: break
         all_data.extend(response.data)
-
-        if len(response.data) < batch_size:
-            break
-            
+        if len(response.data) < batch_size: break
         start += batch_size
         
     df = pd.DataFrame(all_data)
@@ -57,11 +52,11 @@ def load_data():
         # 시간 변환
         df['collected_at'] = pd.to_datetime(df['collected_at'])
         df['collected_at'] = df['collected_at'] + pd.Timedelta(hours=9)
-        
-        # 그래프용 시간 포맷
+        # 차트 표기용
         df['display_time'] = df['collected_at'].dt.strftime('%m/%d %H시')
+        # 날짜 필터링용 (시간 제외)
+        df['date_only'] = df['collected_at'].dt.date
         
-        # 결측치 처리
         cols = ['large_category', 'medium_category', 'small_category', 'brand']
         df[cols] = df[cols].fillna("기타")
         
@@ -72,20 +67,22 @@ def load_data():
 # ==============================================================================
 st.title("📊 Qoo10 메가와리 랭킹 인사이트")
 
-# 새로고침 버튼 (캐시 강제 초기화용)
 if st.button("🔄 데이터 즉시 새로고침"):
     st.cache_data.clear()
     st.rerun()
 
-with st.spinner('데이터를 분석 중입니다...'):
+with st.spinner('데이터 분석 중...'):
     df = load_data()
 
 if df.empty:
     st.warning("데이터가 없습니다. 수집기를 먼저 실행해주세요.")
 else:
-    # --- 사이드바: 필터 ---
-    st.sidebar.header("🔍 필터 옵션")
+    # --------------------------------------------------------------------------
+    # [사이드바] 필터 옵션
+    # --------------------------------------------------------------------------
+    st.sidebar.header("🔍 기본 필터")
     
+    # 1. 행사 및 랭킹 기준
     events = sorted(df['event_sid'].unique(), reverse=True)
     sel_event = st.sidebar.selectbox("행사(SID)", events)
     df = df[df['event_sid'] == sel_event]
@@ -98,165 +95,175 @@ else:
     sel_cat = st.sidebar.selectbox("타겟(연령/카테고리)", cats)
     df = df[df['category'] == sel_cat]
     
+    # 2. 기간 선택 (달력)
+    st.sidebar.divider()
+    st.sidebar.subheader("📅 기간 설정")
+    
+    min_date = df['date_only'].min()
+    max_date = df['date_only'].max()
+    
+    date_range = st.sidebar.date_input(
+        "조회 기간 선택",
+        value=(min_date, max_date), # 기본값: 전체 기간
+        min_value=min_date,
+        max_value=max_date
+    )
+    
+    # 기간 필터링 적용
+    if len(date_range) == 2:
+        start_date, end_date = date_range
+        df = df[
+            (df['date_only'] >= start_date) & 
+            (df['date_only'] <= end_date)
+        ]
+    
+    # 3. 상위 N개 보기 (드롭다운)
+    st.sidebar.divider()
+    st.sidebar.subheader("📊 시각화 옵션")
+    
+    top_n_options = [5, 10, 15, 20, 30, 50, "전체"]
+    top_n = st.sidebar.selectbox("상위 N개 항목만 보기", top_n_options, index=1) # 기본값: 10개
+    
+    # 4. 브랜드 필터
     all_brands = sorted(df['brand'].unique())
-    sel_brands = st.sidebar.multiselect("브랜드 선택", all_brands)
+    sel_brands = st.sidebar.multiselect("브랜드 직접 선택 (옵션)", all_brands)
     
     if sel_brands:
         final_df = df[df['brand'].isin(sel_brands)]
     else:
         final_df = df
 
-    # --- 사이드바: 다운로드 ---
+    # --- 다운로드 버튼 ---
     st.sidebar.markdown("---")
-    csv_filtered = convert_df(final_df)
-    st.sidebar.download_button("🔍 필터된 데이터 받기", csv_filtered, f"Filtered_{sel_event}.csv", "text/csv")
-    
-    st.sidebar.write("")
-    csv_full = convert_df(df)
-    st.sidebar.download_button("💾 전체 원본 받기", csv_full, f"Raw_{sel_event}.csv", "text/csv")
+    st.sidebar.download_button("🔍 현재 데이터 받기", convert_df(final_df), "filtered_data.csv", "text/csv")
 
     # ==========================================================================
-    # [4] 시각화 (X축 display_time 적용)
+    # [4] 시각화
     # ==========================================================================
     
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("데이터 수집 건수", f"{len(final_df):,}건")
-    m2.metric("분석 브랜드 수", f"{final_df['brand'].nunique()}개")
-    m3.metric("평균 판매가", f"¥{int(final_df['sale_price'].mean()):,}")
-    m4.metric("평균 리뷰 수", f"{int(final_df['review_count'].mean()):,}개")
-
     st.divider()
+    
+    # [함수] Top N 필터링 로직 (그래프마다 적용)
+    def filter_top_n(dataframe, group_col, n_limit):
+        if n_limit == "전체":
+            return dataframe
+        
+        # '최고 순위(min rank)'가 가장 높은(숫자가 작은) 순서대로 N개 추출
+        top_items = dataframe.groupby(group_col)['rank'].min().sort_values().head(n_limit).index
+        return dataframe[dataframe[group_col].isin(top_items)]
 
     tab1, tab2, tab3 = st.tabs(["📈 순위 트렌드", "💰 가격/리뷰 분석", "🔲 카테고리 점유율"])
 
+    # --- TAB 1: 순위 트렌드 ---
     with tab1:
         col1, col2 = st.columns(2)
         
-        # 1. 브랜드별 최고 순위 (X축 수정됨)
+        # 1. 브랜드별
         with col1:
-            st.subheader("🏆 브랜드별 최고 순위 (Top Rank)")
-            
+            st.subheader(f"🏢 브랜드 Top {top_n} 순위")
             if not final_df.empty:
-                # [중요] display_time도 그룹핑에 포함해야 그래프에 나옵니다.
-                brand_trend = final_df.groupby(['collected_at', 'display_time', 'brand'])['rank'].min().reset_index()
+                # Top N 필터 적용
+                chart_df = filter_top_n(final_df, 'brand', top_n)
                 
-                # 순서 보장을 위해 collected_at 기준 정렬
+                # 시각화 데이터 집계
+                brand_trend = chart_df.groupby(['collected_at', 'display_time', 'brand'])['rank'].min().reset_index()
                 brand_trend = brand_trend.sort_values('collected_at')
                 
-                # 범례 정렬 (1위 많이 한 순서)
-                sorted_brands = brand_trend.groupby('brand')['rank'].min().sort_values(ascending=True).index.tolist()
+                # 범례 정렬
+                sorted_brands = brand_trend.groupby('brand')['rank'].min().sort_values().index.tolist()
                 
-                fig_brand = px.line(
-                    brand_trend, 
-                    x='display_time', # [수정] 여기가 display_time이어야 함
-                    y='rank', 
-                    color='brand',
-                    markers=True, 
-                    title="브랜드별 최고 순위 (낮을수록 좋음)",
+                fig = px.line(
+                    brand_trend, x='display_time', y='rank', color='brand',
+                    markers=True, title="브랜드별 최고 순위 흐름",
                     category_orders={"brand": sorted_brands}
                 )
-                fig_brand.update_yaxes(autorange="reversed", title="순위 (Top Rank)")
-                fig_brand.update_xaxes(title="수집 시간")
-                st.plotly_chart(fig_brand, use_container_width=True)
+                fig.update_yaxes(autorange="reversed")
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("데이터가 없습니다.")
 
-        # 2. 상품별 순위 (X축 수정됨)
+        # 2. 상품별
         with col2:
-            st.subheader("📦 상품별 순위 변동")
+            st.subheader(f"📦 상품 Top {top_n} 순위")
             if not final_df.empty:
-                # 상품도 시간순 정렬 필수
-                prod_trend = final_df.sort_values('collected_at')
-                sorted_goods = prod_trend.groupby('goods_name')['rank'].min().sort_values(ascending=True).index.tolist()
+                # Top N 필터 적용
+                chart_df = filter_top_n(final_df, 'goods_name', top_n)
+                chart_df = chart_df.sort_values('collected_at')
                 
-                fig_prod = px.line(
-                    prod_trend, 
-                    x="display_time", # [수정] display_time 사용
-                    y="rank", 
-                    color="goods_name",
-                    hover_data=["brand", "sale_price", "large_category"],
-                    markers=True, title="개별 상품 순위",
+                sorted_goods = chart_df.groupby('goods_name')['rank'].min().sort_values().index.tolist()
+                
+                fig = px.line(
+                    chart_df, x="display_time", y="rank", color="goods_name",
+                    hover_data=["brand", "sale_price"],
+                    markers=True, title="개별 상품 순위 흐름",
                     category_orders={"goods_name": sorted_goods}
                 )
-                fig_prod.update_yaxes(autorange="reversed", title="순위")
-                fig_prod.update_xaxes(title="수집 시간")
-                fig_prod.update_layout(showlegend=False)
-                st.plotly_chart(fig_prod, use_container_width=True)
+                fig.update_yaxes(autorange="reversed")
+                # Top N개일 때는 범례를 보여주고, '전체'일 때만 숨김
+                fig.update_layout(showlegend=(top_n != "전체")) 
+                st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("데이터가 없습니다.")
 
-    # (TAB 2, TAB 3는 시간축을 안 쓰므로 기존 유지)
+    # --- TAB 2: 가격/리뷰 ---
     with tab2:
         col3, col4 = st.columns(2)
+        
         with col3:
-            st.subheader("🔵 가격 vs 리뷰수 vs 랭킹")
+            st.subheader("🔵 가격 vs 리뷰 (Top 상품)")
             if not final_df.empty:
-                fig_scat = px.scatter(
-                    final_df, x="sale_price", y="rank", 
+                # 너무 많으면 느리므로 Top N 필터 적용
+                chart_df = filter_top_n(final_df, 'goods_name', top_n)
+                
+                fig = px.scatter(
+                    chart_df, x="sale_price", y="rank", 
                     size="review_count", color="large_category",
                     hover_data=["goods_name", "brand"],
-                    title="X:가격 / Y:순위 / 크기:리뷰수"
+                    title=f"가격 분포와 순위 (상위 {top_n}개)"
                 )
-                fig_scat.update_yaxes(autorange="reversed")
-                st.plotly_chart(fig_scat, use_container_width=True)
+                fig.update_yaxes(autorange="reversed")
+                st.plotly_chart(fig, use_container_width=True)
+
         with col4:
-            st.subheader("💰 중분류별 가격대")
+            st.subheader("💰 카테고리별 가격대")
             if not final_df.empty:
-                fig_box = px.box(
+                fig = px.box(
                     final_df, x="medium_category", y="sale_price", 
                     color="medium_category", points="all",
-                    title="가격 범위 (Box Plot)"
+                    title="중분류별 가격 범위"
                 )
-                st.plotly_chart(fig_box, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True)
 
+    # --- TAB 3: 카테고리 ---
     with tab3:
         col5, col6 = st.columns(2)
-        
-        # 5. 카테고리 계층 (트리맵)
+        # 트리맵/썬버스트는 전체 구조를 보는 게 좋아서 Top N 미적용 (필요시 적용 가능)
         with col5:
-            st.subheader("🔲 카테고리 계층 분석 (트리맵)")
+            st.subheader("🔲 카테고리 점유율")
             if not final_df.empty:
-                fig_tree = px.treemap(
+                fig = px.treemap(
                     final_df, 
                     path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
-                    values='sale_price',
-                    color='medium_category', 
-                    color_discrete_sequence=px.colors.qualitative.Pastel, 
-                    title="대분류 > 중분류 > 브랜드 비중"
+                    values='sale_price', color='large_category',
+                    color_discrete_sequence=px.colors.qualitative.Pastel
                 )
-                st.plotly_chart(fig_tree, use_container_width=True)
-            else:
-                st.info("표시할 데이터가 없습니다.")
-
-        # 6. 카테고리 세부 (썬버스트)
+                st.plotly_chart(fig, use_container_width=True)
         with col6:
-            st.subheader("☀️ 카테고리 세부 비중 (썬버스트)")
+            st.subheader("☀️ 세부 계층 구조")
             if not final_df.empty:
-                fig_sun = px.sunburst(
+                fig = px.sunburst(
                     final_df,
                     path=['large_category', 'medium_category', 'small_category'],
-                    values='sale_price',
-                    color='medium_category',
-                    color_discrete_sequence=px.colors.qualitative.Pastel, 
-                    title="대분류 > 중분류 > 소분류 비중"
+                    values='sale_price', color='large_category',
+                    color_discrete_sequence=px.colors.qualitative.Pastel
                 )
-                st.plotly_chart(fig_sun, use_container_width=True)
-            else:
-                st.info("표시할 데이터가 없습니다.")
+                st.plotly_chart(fig, use_container_width=True)
 
-    # ==========================================================================
-    # [5] 상세 데이터 테이블
-    # ==========================================================================
+    # --- 상세 테이블 ---
     st.divider()
-    with st.expander("📋 상세 데이터 원본 보기", expanded=False):
-        # 테이블에서도 예쁜 시간(display_time)이 맨 앞에 오도록 정리
+    with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count', 'large_category']
         st.dataframe(
-            final_df.sort_values(by=['collected_at', 'rank'], ascending=[False, True])[view_cols],
-            use_container_width=True,
-            hide_index=True
+            final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
+            use_container_width=True, hide_index=True
         )
-
-
-
-

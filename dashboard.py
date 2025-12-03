@@ -132,9 +132,9 @@ else:
         
         # 1. 브랜드별 평균 순위 변화 (신규 추가)
         with col1:
-            st.subheader("🏢 브랜드별 평균 순위 추이")
+            st.subheader("🏢 브랜드별 최고 순위 추이")
             # 브랜드별, 시간별 평균 순위 계산
-            brand_trend = final_df.groupby(['collected_at', 'brand'])['rank'].mean().reset_index()
+            brand_trend = final_df.groupby(['collected_at', 'brand'])['rank'].min().reset_index()
             
             fig_brand = px.line(
                 brand_trend, x='collected_at', y='rank', color='brand',

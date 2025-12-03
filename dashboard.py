@@ -49,6 +49,9 @@ def load_data():
     df = pd.DataFrame(all_data)
     
     if not df.empty:
+        df['rank'] = pd.to_numeric(df['rank'], errors='coerce')
+        df['sale_price'] = pd.to_numeric(df['sale_price'], errors='coerce')
+        df['review_count'] = pd.to_numeric(df['review_count'], errors='coerce')
         # 시간 변환
         df['collected_at'] = pd.to_datetime(df['collected_at'])
         df['collected_at'] = df['collected_at'] + pd.Timedelta(hours=9)
@@ -135,7 +138,12 @@ else:
 
     # --- 다운로드 버튼 ---
     st.sidebar.markdown("---")
-    st.sidebar.download_button("🔍 현재 데이터 받기", convert_df(final_df), "filtered_data.csv", "text/csv")
+    csv_filtered = convert_df(final_df)
+    st.sidebar.download_button("🔍 필터된 데이터 받기", csv_filtered, f"Filtered_{sel_event}.csv", "text/csv")
+    
+    st.sidebar.write("")
+    csv_full = convert_df(df)
+    st.sidebar.download_button("💾 전체 원본 받기", csv_full, f"Raw_{sel_event}.csv", "text/csv")
 
     # ==========================================================================
     # [4] 시각화
@@ -147,9 +155,8 @@ else:
     def filter_top_n(dataframe, group_col, n_limit):
         if n_limit == "전체":
             return dataframe
-        
-        # '최고 순위(min rank)'가 가장 높은(숫자가 작은) 순서대로 N개 추출
-        top_items = dataframe.groupby(group_col)['rank'].min().sort_values().head(n_limit).index
+        # 1위를 한 번이라도 해본 상품, 혹은 최고 순위가 높은 순서대로 추출
+        top_items = dataframe.groupby(group_col)['rank'].min().sort_values().head(n_limit).index.tolist()
         return dataframe[dataframe[group_col].isin(top_items)]
 
     tab1, tab2, tab3 = st.tabs(["📈 순위 트렌드", "💰 가격/리뷰 분석", "🔲 카테고리 점유율"])
@@ -178,6 +185,7 @@ else:
                     category_orders={"brand": sorted_brands}
                 )
                 fig.update_yaxes(autorange="reversed")
+                fig.update_traces(connectgaps=True)
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("데이터가 없습니다.")
@@ -199,6 +207,7 @@ else:
                     category_orders={"goods_name": sorted_goods}
                 )
                 fig.update_yaxes(autorange="reversed")
+                fig.update_traces(connectgaps=True)
                 # Top N개일 때는 범례를 보여주고, '전체'일 때만 숨김
                 fig.update_layout(showlegend=(top_n != "전체")) 
                 st.plotly_chart(fig, use_container_width=True)
@@ -267,3 +276,4 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+

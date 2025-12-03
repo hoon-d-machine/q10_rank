@@ -30,19 +30,35 @@ def convert_df(df):
 # ==============================================================================
 @st.cache_data(ttl=60) 
 def load_data():
-    response = supabase.table("qoo10_rankings") \
-        .select("*") \
-        .order("collected_at", desc=True) \
-        .limit(1000000) \
-        .execute()
-    df = pd.DataFrame(response.data)
+    all_data = []
+    start = 0
+    batch_size = 1000
+    
+    while True:
+        response = supabase.table("qoo10_rankings") \
+            .select("*") \
+            .order("collected_at", desc=True) \
+            .range(start, start + batch_size - 1) \
+            .execute()
+    
+        if not response.data:
+            break
+            
+        all_data.extend(response.data)
+
+        if len(response.data) < batch_size:
+            break
+            
+        start += batch_size
+        
+    df = pd.DataFrame(all_data)
     
     if not df.empty:
         # 시간 변환
         df['collected_at'] = pd.to_datetime(df['collected_at'])
         df['collected_at'] = df['collected_at'] + pd.Timedelta(hours=9)
         
-        # [수정] 그래프 X축용 예쁜 시간 포맷 (예: 11/28 14시)
+        # 그래프용 시간 포맷
         df['display_time'] = df['collected_at'].dt.strftime('%m/%d %H시')
         
         # 결측치 처리
@@ -228,4 +244,5 @@ else:
             use_container_width=True,
             hide_index=True
         )
+
 

@@ -20,16 +20,24 @@ def init_connection():
 
 supabase = init_connection()
 
-# [3] 데이터 로드
+# [3] 데이터 로드 (수정됨: 시간 포맷팅 추가)
 @st.cache_data(ttl=600)
 def load_data():
+    # DB에서 데이터 가져오기
     response = supabase.table("qoo10_rankings").select("*").execute()
     df = pd.DataFrame(response.data)
     
     if not df.empty:
+        # 1. 날짜형식 변환
         df['collected_at'] = pd.to_datetime(df['collected_at'])
-        # 한국 시간 보정 (UTC+9)
+        
+        # 2. 한국 시간 보정 (UTC+9)
         df['collected_at'] = df['collected_at'] + pd.Timedelta(hours=9)
+        
+        # 3. [NEW] 보여주기용 시간 컬럼 생성 (예: 2025-03-01 14시)
+        # 분/초를 떼어내고 '시'를 붙입니다.
+        df['display_time'] = df['collected_at'].dt.strftime('%Y-%m-%d %H시')
+        
     return df
 
 # [4] 메인 화면
@@ -44,24 +52,24 @@ else:
     # --- 사이드바 필터 ---
     st.sidebar.header("🔍 필터 옵션")
     
-    # 1. 행사 ID 선택
+    # 1. 행사 ID
     events = sorted(df['event_sid'].unique(), reverse=True)
     sel_event = st.sidebar.selectbox("행사(SID) 선택", events)
     df = df[df['event_sid'] == sel_event]
 
-    # 2. 랭킹 기준 (누적건수/금액)
+    # 2. 랭킹 기준
     r_types = df['rank_type'].unique()
     sel_type = st.sidebar.selectbox("랭킹 기준", r_types)
     df = df[df['rank_type'] == sel_type]
 
-    # 3. 조회 기준 (뷰티전체/연령별)
+    # 3. 조회 기준
     cats = df['category'].unique()
     sel_cat = st.sidebar.selectbox("조회 기준", cats)
     df = df[df['category'] == sel_cat]
     
     # 4. 브랜드 필터
     all_brands = df['brand'].unique()
-    sel_brands = st.sidebar.multiselect("브랜드 필터 (선택 시 해당 브랜드만 표시)", all_brands)
+    sel_brands = st.sidebar.multiselect("브랜드 필터", all_brands)
     
     if sel_brands:
         final_df = df[df['brand'].isin(sel_brands)]
@@ -75,29 +83,62 @@ else:
     if not final_df.empty:
         fig = px.line(
             final_df, 
-            x="collected_at", 
+            x="collected_at", # X축은 순서 보장을 위해 원본 시간 사용
             y="rank", 
             color="goods_name",
-            # [변경점] 툴팁 데이터 수정 (link, discount_rate 제거됨)
-            hover_data=["brand", "sale_price", "large_category"],
+            # [수정] 툴팁에 'display_time'을 보여줘서 깔끔하게 표시
+            hover_data={
+                "collected_at": False, # 원본 시간 숨김
+                "display_time": True,  # 포맷된 시간 표시
+                "brand": True, 
+                "sale_price": True, 
+                "large_category": True
+            },
             markers=True
         )
         fig.update_yaxes(autorange="reversed", title="순위 (1위가 상단)")
         fig.update_xaxes(title="수집 시간")
+        
+        # 툴팁 라벨 한글화
+        fig.update_traces(
+            hovertemplate="<br>".join([
+                "<b>%{text}</b>", # 상품명 (color로 지정된 것)
+                "시간: %{customdata[0]}",
+                "순위: %{y}위",
+                "브랜드: %{customdata[1]}",
+                "가격: %{customdata[2]:,}엔"
+            ])
+        )
         st.plotly_chart(fig, use_container_width=True)
         
         # --- 데이터 테이블 ---
         st.subheader("📋 상세 데이터")
         
-        # [변경점] 바뀐 컬럼명으로 테이블 구성
+        # [수정] 테이블에 'collected_at' 대신 'display_time' 표시
         display_cols = [
-            'collected_at', 'rank', 'brand', 'goods_name', 
+            'display_time', 'rank', 'brand', 'goods_name', 
             'sale_price', 'review_count', 
             'large_category', 'medium_category', 'small_category'
         ]
         
+        # 컬럼명 한글로 변경 (보기 좋게)
+        rename_dict = {
+            'display_time': '수집시간',
+            'rank': '순위',
+            'brand': '브랜드',
+            'goods_name': '상품명',
+            'sale_price': '판매가',
+            'review_count': '리뷰수',
+            'large_category': '대분류',
+            'medium_category': '중분류',
+            'small_category': '소분류'
+        }
+        
+        st_df = final_df.sort_values(by=['collected_at', 'rank'], ascending=[False, True])[display_cols]
+        st_df = st_df.rename(columns=rename_dict)
+        
         st.dataframe(
-            final_df.sort_values(by=['collected_at', 'rank'], ascending=[False, True])[display_cols],
+            st_df,
             use_container_width=True,
             hide_index=True
         )

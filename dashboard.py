@@ -102,7 +102,7 @@ else:
     st.sidebar.write("") # 약간의 여백
     csv_full = convert_df(df) # 로드한 전체 원본(df)
     st.sidebar.download_button(
-        label="💾 전체 원본 데이터 받기 (All)",
+        label="💾 전체 원본 데이터 받기",
         data=csv_full,
         file_name=f"Qoo10_Full_Raw_Data.csv",
         mime="text/csv"
@@ -138,7 +138,7 @@ else:
             
             fig_brand = px.line(
                 brand_trend, x='collected_at', y='rank', color='brand',
-                markers=True, title="브랜드 평균 순위 (낮을수록 좋음)"
+                markers=True, title="브랜드 최고 순위"
             )
             fig_brand.update_yaxes(autorange="reversed")
             st.plotly_chart(fig_brand, use_container_width=True)

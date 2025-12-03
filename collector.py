@@ -57,20 +57,39 @@ def run_collector():
     print(f"=== 수집 시작 (SID: {EVENT_SID}) ===")
     
     session = requests.Session()
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': f'https://www.qoo10.jp/gmkt.inc/Special/Special.aspx?sid={EVENT_SID}',
-        'Origin': 'https://www.qoo10.jp',
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-Requested-With': 'XMLHttpRequest'
-    }
-
-    # 세션 초기화
+    
+    headers_common = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3',
+            # 'Accept-Encoding': 'gzip, deflate, br, zstd',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Priority': 'u=0, i',
+        }
     try:
-        session.get(f'https://www.qoo10.jp/gmkt.inc/Special/Special.aspx?sid={EVENT_SID}', headers=headers)
+        url_init = 'https://www.qoo10.jp/gmkt.inc/Special/Special.aspx'
+        res = session.get(url_init, params={'sid': EVENT_SID}, headers=headers_common)
+        print(f"초기 접속 상태: {res.status_code}")
+        if "Queue-it" in res.text:
+            print("🚨 [비상] 대기열(Queue-it) 페이지가 떴습니다. GitHub IP가 차단되었거나 대기열이 있습니다.")
+            print(res.text[:500]) # 내용 일부 출력
+            return
     except Exception as e:
-        print(f"접속 실패: {e}")
         return
+    # 세션 초기화
+    headers_api = headers_common.copy()
+    headers_api.update({
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Origin': 'https://www.qoo10.jp',
+        'Referer': f'https://www.qoo10.jp/gmkt.inc/Special/Special.aspx?sid={EVENT_SID}',
+        'X-Requested-With': 'XMLHttpRequest'
+    })
 
     rank_types = {'Q': '누적건수', 'T': '누적금액'}
     target_ages = [0, 10, 20, 30, 40, 50]
@@ -87,7 +106,7 @@ def run_collector():
                 '___cache_expire___': str(int(time.time()*1000))
             }
             try:
-                res = session.post('https://www.qoo10.jp/gmkt.inc/swe_SpecialAjaxService.asmx/GetPromotionRankingData', headers=headers, json=payload)
+                res = session.post('https://www.qoo10.jp/gmkt.inc/swe_SpecialAjaxService.asmx/GetPromotionRankingData', headers=headers_api, json=payload)
                 if res.status_code == 200:
                     d = res.json()
                     root = None

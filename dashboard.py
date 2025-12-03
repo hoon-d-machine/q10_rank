@@ -220,7 +220,7 @@ else:
                     final_df, 
                     path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
                     values='sale_price',
-                    color='large_category', 
+                    color='medium_category', 
                     color_discrete_sequence=px.colors.qualitative.Pastel, 
                     title="대분류 > 중분류 > 브랜드 비중"
                 )
@@ -236,7 +236,7 @@ else:
                     final_df,
                     path=['large_category', 'medium_category', 'small_category'],
                     values='sale_price',
-                    color='large_category',
+                    color='medium_category',
                     color_discrete_sequence=px.colors.qualitative.Pastel, 
                     title="대분류 > 중분류 > 소분류 비중"
                 )
@@ -256,6 +256,7 @@ else:
             use_container_width=True,
             hide_index=True
         )
+
 
 
 

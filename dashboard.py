@@ -47,17 +47,19 @@ def load_data():
         start += batch_size
         
     df = pd.DataFrame(all_data)
-    
+    og_df = df.copy()
     if not df.empty:
+        # 숫자형 변환 (에러 방지)
         df['rank'] = pd.to_numeric(df['rank'], errors='coerce')
         df['sale_price'] = pd.to_numeric(df['sale_price'], errors='coerce')
         df['review_count'] = pd.to_numeric(df['review_count'], errors='coerce')
+        
         # 시간 변환
         df['collected_at'] = pd.to_datetime(df['collected_at'])
         df['collected_at'] = df['collected_at'] + pd.Timedelta(hours=9)
-        # 차트 표기용
+        
+        # [중요] display_time은 이제 '테이블 표시용'으로만 씁니다.
         df['display_time'] = df['collected_at'].dt.strftime('%m/%d %H시')
-        # 날짜 필터링용 (시간 제외)
         df['date_only'] = df['collected_at'].dt.date
         
         cols = ['large_category', 'medium_category', 'small_category', 'brand']
@@ -68,6 +70,28 @@ def load_data():
 # ==============================================================================
 # [3] 메인 화면 로직
 # ==============================================================================
+def trigger_github_action():
+    # Secrets에서 정보 가져오기
+    token = st.secrets["GITHUB_TOKEN"]
+    owner = st.secrets["GITHUB_OWNER"]
+    repo = st.secrets["GITHUB_REPO"]
+    workflow_file = "scrape.yml" # GitHub에 올린 yml 파일 이름
+    
+    url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_file}/dispatches"
+    
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    data = {"ref": "main"}
+    
+    response = requests.post(url, headers=headers, json=data)
+    
+    if response.status_code == 204:
+        st.sidebar.success("✅ 수집 명령을 보냈습니다! (약 3~5분 소요)")
+    else:
+        st.sidebar.error(f"❌ 실행 실패: {response.status_code} - {response.text}")
+        
 st.title("📊 Qoo10 메가와리 랭킹 인사이트")
 
 if st.button("🔄 데이터 즉시 새로고침"):
@@ -80,12 +104,9 @@ with st.spinner('데이터 분석 중...'):
 if df.empty:
     st.warning("데이터가 없습니다. 수집기를 먼저 실행해주세요.")
 else:
-    # --------------------------------------------------------------------------
-    # [사이드바] 필터 옵션
-    # --------------------------------------------------------------------------
+    # --- 사이드바 필터 ---
     st.sidebar.header("🔍 기본 필터")
     
-    # 1. 행사 및 랭킹 기준
     events = sorted(df['event_sid'].unique(), reverse=True)
     sel_event = st.sidebar.selectbox("행사(SID)", events)
     df = df[df['event_sid'] == sel_event]
@@ -98,36 +119,24 @@ else:
     sel_cat = st.sidebar.selectbox("타겟(연령/카테고리)", cats)
     df = df[df['category'] == sel_cat]
     
-    # 2. 기간 선택 (달력)
+    # 기간 설정
     st.sidebar.divider()
     st.sidebar.subheader("📅 기간 설정")
-    
     min_date = df['date_only'].min()
     max_date = df['date_only'].max()
+    date_range = st.sidebar.date_input("조회 기간", value=(min_date, max_date), min_value=min_date, max_value=max_date)
     
-    date_range = st.sidebar.date_input(
-        "조회 기간 선택",
-        value=(min_date, max_date), # 기본값: 전체 기간
-        min_value=min_date,
-        max_value=max_date
-    )
-    
-    # 기간 필터링 적용
     if len(date_range) == 2:
-        start_date, end_date = date_range
-        df = df[
-            (df['date_only'] >= start_date) & 
-            (df['date_only'] <= end_date)
-        ]
+        start_d, end_d = date_range
+        df = df[(df['date_only'] >= start_d) & (df['date_only'] <= end_d)]
     
-    # 3. 상위 N개 보기 (드롭다운)
+    # 상위 N개
     st.sidebar.divider()
     st.sidebar.subheader("📊 시각화 옵션")
-    
     top_n_options = [5, 10, 15, 20, 30, 50, "전체"]
-    top_n = st.sidebar.selectbox("상위 N개 항목만 보기", top_n_options, index=1) # 기본값: 10개
+    top_n = st.sidebar.selectbox("상위 N개 항목만 보기", top_n_options, index=1)
     
-    # 4. 브랜드 필터
+    # 브랜드
     all_brands = sorted(df['brand'].unique())
     sel_brands = st.sidebar.multiselect("브랜드 직접 선택 (옵션)", all_brands)
     
@@ -135,33 +144,29 @@ else:
         final_df = df[df['brand'].isin(sel_brands)]
     else:
         final_df = df
+        
+    if st.sidebar.button("🚀 데이터 수집 즉시 실행"):
+        trigger_github_action()
+        
+    st.sidebar.info("💡 버튼을 누르면 GitHub 서버가 깨어나서 수집을 시작합니다. 완료되어 DB에 들어오기까지 3~5분 정도 걸립니다.")
 
-    # --- 다운로드 버튼 ---
     st.sidebar.markdown("---")
-    csv_filtered = convert_df(final_df)
-    st.sidebar.download_button("🔍 필터된 데이터 받기", csv_filtered, f"Filtered_{sel_event}.csv", "text/csv")
-    
+    st.sidebar.download_button("🔍 현재 데이터 받기", convert_df(final_df), "filtered_data.csv", "text/csv")
     st.sidebar.write("")
-    csv_full = convert_df(df)
-    st.sidebar.download_button("💾 전체 원본 받기", csv_full, f"Raw_{sel_event}.csv", "text/csv")
+    st.sidebar.download_button("💾 전체 원본 받기", convert_df(og_df), f"Raw_{sel_event}.csv", "text/csv")
 
     # ==========================================================================
     # [4] 시각화
     # ==========================================================================
-    
     st.divider()
     
-    # [함수] Top N 필터링 로직 (그래프마다 적용)
     def filter_top_n(dataframe, group_col, n_limit):
-        if n_limit == "전체":
-            return dataframe
-        # 1위를 한 번이라도 해본 상품, 혹은 최고 순위가 높은 순서대로 추출
+        if n_limit == "전체": return dataframe
         top_items = dataframe.groupby(group_col)['rank'].min().sort_values().head(n_limit).index.tolist()
         return dataframe[dataframe[group_col].isin(top_items)]
 
     tab1, tab2, tab3 = st.tabs(["📈 순위 트렌드", "💰 가격/리뷰 분석", "🔲 카테고리 점유율"])
 
-    # --- TAB 1: 순위 트렌드 ---
     with tab1:
         col1, col2 = st.columns(2)
         
@@ -169,23 +174,24 @@ else:
         with col1:
             st.subheader(f"🏢 브랜드 Top {top_n} 순위")
             if not final_df.empty:
-                # Top N 필터 적용
                 chart_df = filter_top_n(final_df, 'brand', top_n)
+                # 데이터가 1개라도 점이 찍히도록 정렬
+                brand_trend = chart_df.groupby(['collected_at', 'brand'])['rank'].min().reset_index().sort_values('collected_at')
                 
-                # 시각화 데이터 집계
-                brand_trend = chart_df.groupby(['collected_at', 'display_time', 'brand'])['rank'].min().reset_index()
-                brand_trend = brand_trend.sort_values('collected_at')
-                
-                # 범례 정렬
                 sorted_brands = brand_trend.groupby('brand')['rank'].min().sort_values().index.tolist()
                 
                 fig = px.line(
-                    brand_trend, x='display_time', y='rank', color='brand',
+                    brand_trend, 
+                    x='collected_at', # [수정] X축을 날짜시간 객체로 변경 (끊김 방지)
+                    y='rank', color='brand',
                     markers=True, title="브랜드별 최고 순위 흐름",
-                    category_orders={"brand": sorted_brands}
+                    category_orders={"brand": sorted_brands},
+                    hover_data={"collected_at": "|%m/%d %H시"} # 툴팁 포맷 설정
                 )
                 fig.update_yaxes(autorange="reversed")
-                fig.update_traces(connectgaps=True)
+                # [핵심] X축 라벨 포맷팅 (날짜시간 객체를 예쁘게 보여줌)
+                fig.update_xaxes(tickformat="%m/%d %H시", title="수집 시간")
+                fig.update_traces(connectgaps=True) # 끊긴 선 잇기
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("데이터가 없습니다.")
@@ -194,45 +200,47 @@ else:
         with col2:
             st.subheader(f"📦 상품 Top {top_n} 순위")
             if not final_df.empty:
-                # Top N 필터 적용
                 chart_df = filter_top_n(final_df, 'goods_name', top_n)
                 chart_df = chart_df.sort_values('collected_at')
                 
                 sorted_goods = chart_df.groupby('goods_name')['rank'].min().sort_values().index.tolist()
                 
-                fig = px.line(
-                    chart_df, x="display_time", y="rank", color="goods_name",
-                    hover_data=["brand", "sale_price"],
-                    markers=True, title="개별 상품 순위 흐름",
-                    category_orders={"goods_name": sorted_goods}
-                )
-                fig.update_yaxes(autorange="reversed")
-                fig.update_traces(connectgaps=True)
-                # Top N개일 때는 범례를 보여주고, '전체'일 때만 숨김
-                fig.update_layout(showlegend=(top_n != "전체")) 
-                st.plotly_chart(fig, use_container_width=True)
+                if not chart_df.empty:
+                    fig = px.line(
+                        chart_df, 
+                        x="collected_at", # [수정] X축 날짜시간 객체 사용
+                        y="rank", color="goods_name",
+                        hover_data=["brand", "sale_price"],
+                        markers=True, title="개별 상품 순위 흐름",
+                        category_orders={"goods_name": sorted_goods}
+                    )
+                    fig.update_yaxes(autorange="reversed")
+                    fig.update_xaxes(tickformat="%m/%d %H시", title="수집 시간")
+                    fig.update_traces(connectgaps=True) 
+                    
+                    fig.update_layout(showlegend=(top_n != "전체"))
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("조건에 맞는 상품 데이터가 없습니다.")
             else:
                 st.info("데이터가 없습니다.")
 
-    # --- TAB 2: 가격/리뷰 ---
     with tab2:
         col3, col4 = st.columns(2)
-        
         with col3:
             st.subheader("🔵 가격 vs 리뷰 (Top 상품)")
             if not final_df.empty:
-                # 너무 많으면 느리므로 Top N 필터 적용
                 chart_df = filter_top_n(final_df, 'goods_name', top_n)
-                
-                fig = px.scatter(
-                    chart_df, x="sale_price", y="rank", 
-                    size="review_count", color="large_category",
-                    hover_data=["goods_name", "brand"],
-                    title=f"가격 분포와 순위 (상위 {top_n}개)"
-                )
-                fig.update_yaxes(autorange="reversed")
-                st.plotly_chart(fig, use_container_width=True)
-
+                if not chart_df.empty:
+                    fig = px.scatter(
+                        chart_df, x="sale_price", y="rank", 
+                        size="review_count", color="large_category",
+                        hover_data=["goods_name", "brand"],
+                        title=f"가격 분포와 순위 (상위 {top_n}개)"
+                    )
+                    fig.update_yaxes(autorange="reversed")
+                    st.plotly_chart(fig, use_container_width=True)
+                else: st.info("표시할 데이터가 부족합니다.")
         with col4:
             st.subheader("💰 카테고리별 가격대")
             if not final_df.empty:
@@ -243,10 +251,8 @@ else:
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-    # --- TAB 3: 카테고리 ---
     with tab3:
         col5, col6 = st.columns(2)
-        # 트리맵/썬버스트는 전체 구조를 보는 게 좋아서 Top N 미적용 (필요시 적용 가능)
         with col5:
             st.subheader("🔲 카테고리 점유율")
             if not final_df.empty:
@@ -268,7 +274,6 @@ else:
                 )
                 st.plotly_chart(fig, use_container_width=True)
 
-    # --- 상세 테이블 ---
     st.divider()
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count', 'large_category']
@@ -276,4 +281,3 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
-

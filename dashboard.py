@@ -173,23 +173,31 @@ else:
             st.subheader(f"🏢 브랜드 Top {top_n} 순위")
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'brand', top_n)
-                # 데이터가 1개라도 점이 찍히도록 정렬
-                brand_trend = chart_df.groupby(['collected_at', 'brand'])['rank'].min().reset_index().sort_values('collected_at')
+                brand_trend = chart_df.groupby(['collected_at', 'display_time', 'brand'])['rank'].min().reset_index().sort_values('collected_at')
                 
                 sorted_brands = brand_trend.groupby('brand')['rank'].min().sort_values().index.tolist()
                 
                 fig = px.line(
-                    brand_trend, 
-                    x='collected_at', # [수정] X축을 날짜시간 객체로 변경 (끊김 방지)
-                    y='rank', color='brand',
+                    brand_trend, x='collected_at', y='rank', color='brand',
                     markers=True, title="브랜드별 최고 순위 흐름",
                     category_orders={"brand": sorted_brands},
-                    hover_data={"collected_at": "|%m/%d %H시"} # 툴팁 포맷 설정
+                    hover_data={"collected_at": "|%m/%d %H시"}
                 )
-                fig.update_yaxes(autorange="reversed")
-                # [핵심] X축 라벨 포맷팅 (날짜시간 객체를 예쁘게 보여줌)
+                fig.update_yaxes(autorange="reversed", title="순위")
                 fig.update_xaxes(tickformat="%m/%d %H시", title="수집 시간")
-                fig.update_traces(connectgaps=True) # 끊긴 선 잇기
+                fig.update_traces(connectgaps=True)
+                
+                # [수정] 범례를 하단으로 이동
+                fig.update_layout(
+                    legend=dict(
+                        orientation="h",
+                        yanchor="top",
+                        y=-0.2,
+                        xanchor="center",
+                        x=0.5
+                    ),
+                    margin=dict(b=100)
+                )
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 st.info("데이터가 없습니다.")
@@ -201,22 +209,48 @@ else:
                 chart_df = filter_top_n(final_df, 'goods_name', top_n)
                 chart_df = chart_df.sort_values('collected_at')
                 
-                sorted_goods = chart_df.groupby('goods_name')['rank'].min().sort_values().index.tolist()
+                chart_df['short_name'] = chart_df['goods_name'].apply(
+                    lambda x: x[:20] + '...' if len(str(x)) > 20 else str(x)
+                )
+                
+                sorted_goods = chart_df.groupby('short_name')['rank'].min().sort_values().index.tolist()
                 
                 if not chart_df.empty:
                     fig = px.line(
                         chart_df, 
-                        x="collected_at", # [수정] X축 날짜시간 객체 사용
-                        y="rank", color="goods_name",
-                        hover_data=["brand", "sale_price"],
-                        markers=True, title="개별 상품 순위 흐름",
-                        category_orders={"goods_name": sorted_goods}
+                        x="collected_at", 
+                        y="rank", 
+                        color="short_name",
+                        hover_name="goods_name",
+                        hover_data={
+                            "brand": True, 
+                            "sale_price": True, 
+                            "short_name": False, # 툴팁에선 짧은 이름 숨김
+                            "collected_at": "|%m/%d %H시"
+                        },
+                        markers=True, 
+                        title="개별 상품 순위 흐름",
+                        category_orders={"short_name": sorted_goods}
                     )
-                    fig.update_yaxes(autorange="reversed")
+                    fig.update_yaxes(autorange="reversed", title="순위")
                     fig.update_xaxes(tickformat="%m/%d %H시", title="수집 시간")
-                    fig.update_traces(connectgaps=True) 
+                    fig.update_traces(connectgaps=True)
                     
-                    fig.update_layout(showlegend=(top_n != "전체"))
+                    if top_n != "전체":
+                        fig.update_layout(
+                            showlegend=True,
+                            legend=dict(
+                                orientation="h",
+                                yanchor="top",
+                                y=-0.3,
+                                xanchor="center",
+                                x=0.5
+                            ),
+                            margin=dict(b=150)
+                        )
+                    else:
+                        fig.update_layout(showlegend=False)
+
                     st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.info("조건에 맞는 상품 데이터가 없습니다.")
@@ -281,6 +315,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

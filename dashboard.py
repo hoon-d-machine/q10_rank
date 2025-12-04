@@ -145,7 +145,7 @@ else:
     if st.sidebar.button("🚀 데이터 수집 즉시 실행"):
         trigger_github_action()
 
-    if st.button("🔄 데이터 즉시 새로고침"):
+    if st.sidebar.button("🔄 데이터 즉시 새로고침"):
         st.cache_data.clear()
         st.rerun()
 
@@ -309,6 +309,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

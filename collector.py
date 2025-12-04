@@ -52,41 +52,47 @@ def preload_goods_info():
         
 def get_goods_detail(session, goodscode):
     """상세 페이지 정보 수집 (캐싱 적용)"""
-    if goodscode in goods_cache: return goods_cache[goodscode]
+    cached_data = goods_cache.get(goodscode, ("", [], 0)) # (브랜드, 카테고리, 리뷰수)
     
     url = 'https://www.qoo10.jp/gmkt.inc/goods/goods.aspx'
     headers_common = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3',
-            # 'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Sec-Fetch-User': '?1',
-            'Priority': 'u=0, i',
-        }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Connection': 'keep-alive'
+    }
     
-    brand, cats, review = "", [], 0
     try:
-        res = session.get(url, params={'goodscode': goodscode}, headers=headers_common, timeout=5)
+        # 타임아웃을 3초로 짧게 줘서 빠르게 시도
+        res = session.get(url, params={'goodscode': goodscode}, headers=headers_common, timeout=3)
+        
         if res.status_code == 200:
             soup = BeautifulSoup(res.text, 'html.parser')
+            
+            # 1. 브랜드 (없으면 캐시값 유지)
+            brand = cached_data[0]
             b_tag = soup.select_one('div.text_title > a.title_brand')
             if b_tag: brand = b_tag.get('title', '').strip()
-            cats = [t.get_text(strip=True) for t in soup.select('ul.category_depth_list li span')]
+            
+            # 2. 카테고리 (없으면 캐시값 유지)
+            cats = cached_data[1]
+            c_tags = soup.select('ul.category_depth_list li span')
+            if c_tags: cats = [t.get_text(strip=True) for t in c_tags]
+            
+            # 3. 리뷰 수
+            review = cached_data[2] # 기본은 캐시값
             r_tag = soup.select_one('.review_count span')
             if r_tag:
                 txt = r_tag.get_text(strip=True).replace(',', '').replace('(', '').replace(')', '')
                 if txt.isdigit(): review = int(txt)
-    except: pass
-    
-    data = (brand, cats, review)
-    goods_cache[goodscode] = data
-    return goodscode, data
+            
+            new_data = (brand, cats, review)
+            goods_cache[goodscode] = new_data
+            return goodscode, new_data
 
+    except Exception:
+        pass
+    return goodscode, cached_data
 def run_collector():
     print(f"=== 수집 시작 (SID: {EVENT_SID}) ===")
     preload_goods_info()
@@ -230,5 +236,6 @@ def run_collector():
 
 if __name__ == "__main__":
     run_collector()
+
 
 

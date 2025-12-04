@@ -6,6 +6,7 @@ from datetime import datetime
 from bs4 import BeautifulSoup
 from supabase import create_client
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import pandas as pd
 
 # --- [1] 설정 로드 (GitHub가 넣어줄 정보들) ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -236,6 +237,7 @@ def run_collector():
 
 if __name__ == "__main__":
     run_collector()
+
 
 
 

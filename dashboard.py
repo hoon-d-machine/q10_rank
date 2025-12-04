@@ -210,7 +210,6 @@ else:
                 def make_legend_label(row):
                     name = row['unified_name']
                     g_no = str(row['goods_no'])
-                    # [수정] 범례 이름 길이를 15자 -> 10자로 줄여서 공간 절약
                     short_name = name[:10] + '..' if len(name) > 10 else name
                     return f"{short_name} (#{g_no[-4:]})"
 
@@ -236,10 +235,11 @@ else:
                         height=600, 
                         showlegend=True,
                         legend=dict(
-                            orientation="h", yanchor="top", y=-0.25, xanchor="center", x=0.5,
-                            itemsizing='constant', itemwidth=30, font=dict(size=10) # 폰트 작게
-                        ),
-                        margin=dict(b=200, l=40, r=40, t=60) # 하단 여백 충분히 확보
+                            orientation="v",
+                            yanchor="top", y=1,
+                            xanchor="left", x=1.02,
+                            itemsizing='constant', font=dict(size=10)
+                        )
                     )
                     st.plotly_chart(fig, use_container_width=True)
                 else:
@@ -305,6 +305,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

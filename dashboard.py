@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 from supabase import create_client
 from datetime import datetime, timedelta
-
+import requests
 # ==============================================================================
 # [1] 기본 설정 및 연결
 # ==============================================================================
@@ -65,7 +65,7 @@ def load_data():
         cols = ['large_category', 'medium_category', 'small_category', 'brand']
         df[cols] = df[cols].fillna("기타")
         
-    return df
+    return df, og_df
 
 # ==============================================================================
 # [3] 메인 화면 로직
@@ -99,7 +99,7 @@ if st.button("🔄 데이터 즉시 새로고침"):
     st.rerun()
 
 with st.spinner('데이터 분석 중...'):
-    df = load_data()
+    df, og_df = load_data()
 
 if df.empty:
     st.warning("데이터가 없습니다. 수집기를 먼저 실행해주세요.")

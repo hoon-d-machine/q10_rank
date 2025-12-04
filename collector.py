@@ -19,7 +19,7 @@ goods_cache = {}
 def preload_goods_info():
     print("📥 Supabase에서 기존 상품 정보 로딩 중...")
     try:
-        df = []
+        all_data = []
         start = 0
         batch_size = 1000
         while True:
@@ -29,10 +29,10 @@ def preload_goods_info():
                 .range(start, start + batch_size - 1) \
                 .execute()
             if not response.data: break
-            df.extend(response.data)
+            all_data.extend(response.data)
             if len(response.data) < batch_size: break
             start += batch_size
-
+        df = pd.DataFrame(all_data)
         count = 0
         for item in df.data:
             g_no = item['goods_no']
@@ -236,6 +236,7 @@ def run_collector():
 
 if __name__ == "__main__":
     run_collector()
+
 
 
 

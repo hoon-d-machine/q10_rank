@@ -173,7 +173,6 @@ else:
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'brand', top_n)
                 brand_trend = chart_df.groupby(['collected_at', 'display_time', 'brand'])['rank'].min().reset_index().sort_values('collected_at')
-                
                 sorted_brands = brand_trend.groupby('brand')['rank'].min().sort_values().index.tolist()
                 
                 fig = px.line(
@@ -187,8 +186,12 @@ else:
                 fig.update_traces(connectgaps=True)
                 
                 fig.update_layout(
-                    height=500, legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
-                    margin=dict(b=100)
+                    height=600, 
+                    legend=dict(
+                        orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5,
+                        itemsizing='constant', itemwidth=30, font=dict(size=10)
+                    ),
+                    margin=dict(b=200, l=40, r=40, t=60) 
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
@@ -207,47 +210,37 @@ else:
                 def make_legend_label(row):
                     name = row['unified_name']
                     g_no = str(row['goods_no'])
-                    short_name = name[:15] + '...' if len(name) > 15 else name
+                    # [수정] 범례 이름 길이를 15자 -> 10자로 줄여서 공간 절약
+                    short_name = name[:10] + '..' if len(name) > 10 else name
                     return f"{short_name} (#{g_no[-4:]})"
 
                 chart_df['legend_label'] = chart_df.apply(make_legend_label, axis=1)
-                
-                # 정렬 기준 (순위 높은 순)
                 sorted_labels = chart_df.groupby('legend_label')['rank'].min().sort_values().index.tolist()
                 
                 if not chart_df.empty:
                     fig = px.line(
-                        chart_df, 
-                        x="collected_at", 
-                        y="rank", 
-                        color="legend_label",
+                        chart_df, x="collected_at", y="rank", color="legend_label",
                         hover_name="unified_name",
                         hover_data={
-                            "brand": True, 
-                            "sale_price": True, 
-                            "legend_label": False,
-                            "collected_at": "|%m/%d %H시"
+                            "brand": True, "sale_price": True, 
+                            "legend_label": False, "collected_at": "|%m/%d %H시"
                         },
-                        markers=True, 
-                        title="개별 상품 순위 흐름",
+                        markers=True, title="개별 상품 순위 흐름",
                         category_orders={"legend_label": sorted_labels}
                     )
                     fig.update_yaxes(autorange="reversed", title="순위")
                     fig.update_xaxes(tickformat="%m/%d %H시", title="수집 시간")
                     fig.update_traces(connectgaps=True)
-                    layout_args = dict(
-                        height=500,
-                        margin=dict(b=150)
+                    
+                    fig.update_layout(
+                        height=600, 
+                        showlegend=True,
+                        legend=dict(
+                            orientation="h", yanchor="top", y=-0.25, xanchor="center", x=0.5,
+                            itemsizing='constant', itemwidth=30, font=dict(size=10) # 폰트 작게
+                        ),
+                        margin=dict(b=200, l=40, r=40, t=60) # 하단 여백 충분히 확보
                     )
-                    if top_n != "전체":
-                        fig.update_layout(
-                            height=500, showlegend=True,
-                            legend=dict(orientation="h", yanchor="top", y=-0.3, xanchor="center", x=0.5),
-                            margin=dict(b=150)
-                        )
-                    else:
-                        fig.update_layout(showlegend=False)
-
                     st.plotly_chart(fig, use_container_width=True)
                 else:
                     st.info("조건에 맞는 상품 데이터가 없습니다.")
@@ -312,6 +305,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

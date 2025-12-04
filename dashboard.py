@@ -147,8 +147,6 @@ else:
         
     if st.sidebar.button("🚀 데이터 수집 즉시 실행"):
         trigger_github_action()
-        
-    st.sidebar.info("💡 버튼을 누르면 GitHub 서버가 깨어나서 수집을 시작합니다. 완료되어 DB에 들어오기까지 3~5분 정도 걸립니다.")
 
     st.sidebar.markdown("---")
     st.sidebar.download_button("🔍 현재 데이터 받기", convert_df(final_df), "filtered_data.csv", "text/csv")

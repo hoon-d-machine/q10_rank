@@ -107,8 +107,10 @@ else:
     st.sidebar.header("🔍 기본 필터")
     
     events = sorted(df['event_sid'].unique(), reverse=True)
+    events.insert(0, "전체 (All Events)")
     sel_event = st.sidebar.selectbox("행사(SID)", events)
-    df = df[df['event_sid'] == sel_event]
+    if sel_event != "전체 (All Events)":
+        df = df[df['event_sid'] == sel_event]
 
     r_types = df['rank_type'].unique()
     sel_type = st.sidebar.selectbox("랭킹 기준", r_types)
@@ -148,9 +150,10 @@ else:
         trigger_github_action()
 
     st.sidebar.markdown("---")
+    file_label = sel_event if sel_event != "전체 (All Events)" else "All_Events"
     st.sidebar.download_button("🔍 현재 데이터 받기", convert_df(final_df), "filtered_data.csv", "text/csv")
     st.sidebar.write("")
-    st.sidebar.download_button("💾 전체 원본 받기", convert_df(og_df), f"Raw_{sel_event}.csv", "text/csv")
+    st.sidebar.download_button("💾 전체 원본 받기", convert_df(og_df), f"Raw_{file_label}.csv", "text/csv")
 
     # ==========================================================================
     # [4] 시각화
@@ -306,6 +309,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

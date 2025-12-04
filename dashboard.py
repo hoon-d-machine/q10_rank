@@ -229,11 +229,13 @@ else:
             st.subheader("🔵 가격 vs 리뷰 (Top 상품)")
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'goods_name', top_n)
+                chart_df = chart_df.sort_values('collected_at') \
+                                   .drop_duplicates(subset=['goods_no'], keep='last')
                 if not chart_df.empty:
                     fig = px.scatter(
                         chart_df, x="sale_price", y="rank", 
                         size="review_count", color="large_category",
-                        hover_data=["goods_name", "brand"],
+                        hover_data=["goods_name", "brand", "goods_no", "display_time"],
                         title=f"가격 분포와 순위 (상위 {top_n}개)"
                     )
                     fig.update_yaxes(autorange="reversed")
@@ -279,3 +281,4 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+

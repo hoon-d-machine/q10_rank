@@ -93,10 +93,6 @@ def trigger_github_action():
         
 st.title("📊 Qoo10 메가와리 랭킹 인사이트")
 
-if st.button("🔄 데이터 즉시 새로고침"):
-    st.cache_data.clear()
-    st.rerun()
-
 with st.spinner('데이터 분석 중...'):
     df, og_df = load_data()
 
@@ -148,6 +144,10 @@ else:
         
     if st.sidebar.button("🚀 데이터 수집 즉시 실행"):
         trigger_github_action()
+
+    if st.button("🔄 데이터 즉시 새로고침"):
+    st.cache_data.clear()
+    st.rerun()
 
     st.sidebar.markdown("---")
     file_label = sel_event if sel_event != "전체 (All Events)" else "All_Events"
@@ -309,6 +309,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

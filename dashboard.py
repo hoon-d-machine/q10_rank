@@ -259,7 +259,7 @@ else:
                 fig = px.treemap(
                     final_df, 
                     path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
-                    values='sale_price', color='large_category',
+                    values='sale_price', color='medium_category',
                     color_discrete_sequence=px.colors.qualitative.Pastel
                 )
                 st.plotly_chart(fig, use_container_width=True)
@@ -269,7 +269,7 @@ else:
                 fig = px.sunburst(
                     final_df,
                     path=['large_category', 'medium_category', 'small_category'],
-                    values='sale_price', color='large_category',
+                    values='sale_price', color='medium_category',
                     color_discrete_sequence=px.colors.qualitative.Pastel
                 )
                 st.plotly_chart(fig, use_container_width=True)
@@ -281,5 +281,6 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 

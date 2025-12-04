@@ -49,7 +49,7 @@ def load_data():
     df = pd.DataFrame(all_data)
     og_df = df.copy()
     if not df.empty:
-        # 숫자형 변환 (에러 방지)
+        # 숫자형 변환
         df['rank'] = pd.to_numeric(df['rank'], errors='coerce')
         df['sale_price'] = pd.to_numeric(df['sale_price'], errors='coerce')
         df['review_count'] = pd.to_numeric(df['review_count'], errors='coerce')
@@ -58,7 +58,6 @@ def load_data():
         df['collected_at'] = pd.to_datetime(df['collected_at'])
         df['collected_at'] = df['collected_at'] + pd.Timedelta(hours=9)
         
-        # [중요] display_time은 이제 '테이블 표시용'으로만 씁니다.
         df['display_time'] = df['collected_at'].dt.strftime('%m/%d %H시')
         df['date_only'] = df['collected_at'].dt.date
         
@@ -188,7 +187,7 @@ else:
                 fig.update_traces(connectgaps=True)
                 
                 fig.update_layout(
-                    legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
+                    height=500, legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
                     margin=dict(b=100)
                 )
                 st.plotly_chart(fig, use_container_width=True)
@@ -236,10 +235,13 @@ else:
                     fig.update_yaxes(autorange="reversed", title="순위")
                     fig.update_xaxes(tickformat="%m/%d %H시", title="수집 시간")
                     fig.update_traces(connectgaps=True)
-                    
+                    layout_args = dict(
+                        height=500,
+                        margin=dict(b=150)
+                    )
                     if top_n != "전체":
                         fig.update_layout(
-                            showlegend=True,
+                            height=500, showlegend=True,
                             legend=dict(orientation="h", yanchor="top", y=-0.3, xanchor="center", x=0.5),
                             margin=dict(b=150)
                         )
@@ -310,6 +312,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

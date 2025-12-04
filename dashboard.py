@@ -188,10 +188,11 @@ else:
                 fig.update_layout(
                     height=600, 
                     legend=dict(
-                        orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5,
-                        itemsizing='constant', itemwidth=30, font=dict(size=10)
-                    ),
-                    margin=dict(b=200, l=40, r=40, t=60) 
+                        orientation="v", 
+                        yanchor="top", y=1, 
+                        xanchor="left", x=1.02,
+                        itemsizing='constant', font=dict(size=10)
+                    )
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
@@ -305,6 +306,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

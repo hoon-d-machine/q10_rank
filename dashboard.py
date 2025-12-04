@@ -146,8 +146,8 @@ else:
         trigger_github_action()
 
     if st.button("🔄 데이터 즉시 새로고침"):
-    st.cache_data.clear()
-    st.rerun()
+        st.cache_data.clear()
+        st.rerun()
 
     st.sidebar.markdown("---")
     file_label = sel_event if sel_event != "전체 (All Events)" else "All_Events"
@@ -309,6 +309,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

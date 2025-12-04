@@ -234,7 +234,7 @@ else:
                 if not chart_df.empty:
                     fig = px.scatter(
                         chart_df, x="sale_price", y="rank", 
-                        size="review_count", color="large_category",
+                        size="review_count", color="medium_category",
                         hover_data=["goods_name", "brand", "goods_no", "display_time"],
                         title=f"가격 분포와 순위 (상위 {top_n}개)"
                     )
@@ -281,4 +281,5 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 

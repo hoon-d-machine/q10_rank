@@ -16,6 +16,40 @@ EVENT_SID = os.environ.get("EVENT_SID")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 goods_cache = {}
 
+def preload_goods_info():
+    print("📥 Supabase에서 기존 상품 정보 로딩 중...")
+    try:
+        df = []
+        start = 0
+        batch_size = 1000
+         while True:
+        response = supabase.table("qoo10_rankings") \
+            .select("*") \
+            .order("collected_at", desc=True) \
+            .range(start, start + batch_size - 1) \
+            .execute()
+        if not response.data: break
+        df.extend(response.data)
+        if len(response.data) < batch_size: break
+        start += batch_size
+
+        count = 0
+        for item in df.data:
+            g_no = item['goods_no']
+            # 캐시에 없는 경우에만 등록 (최신순 정렬했으므로 최신 정보가 들어감)
+            if g_no not in goods_cache:
+                cats = [
+                    item.get('large_category', ''),
+                    item.get('medium_category', ''),
+                    item.get('small_category', '')
+                ]
+                # 캐시 구조: (브랜드, [카테고리리스트], 리뷰수)
+                goods_cache[g_no] = (item['brand'], cats, item['review_count'])
+                count += 1
+        print(f"✅ 기존 상품 {count}개 정보를 캐시에 미리 등록했습니다.")
+    except Exception as e:
+        print(f"⚠️ 기존 데이터 로드 실패 (무시하고 진행): {e}")
+        
 def get_goods_detail(session, goodscode):
     """상세 페이지 정보 수집 (캐싱 적용)"""
     if goodscode in goods_cache: return goods_cache[goodscode]
@@ -55,7 +89,7 @@ def get_goods_detail(session, goodscode):
 
 def run_collector():
     print(f"=== 수집 시작 (SID: {EVENT_SID}) ===")
-    
+    preload_goods_info()
     session = requests.Session()
     
     headers_common = {
@@ -107,6 +141,7 @@ def run_collector():
             }
             try:
                 res = session.post('https://www.qoo10.jp/gmkt.inc/swe_SpecialAjaxService.asmx/GetPromotionRankingData', headers=headers_api, json=payload)
+                print(f"   👉 응답 내용(일부): {res.text[:500]}")
                 if res.status_code == 200:
                     d = res.json()
                     root = None
@@ -195,3 +230,4 @@ def run_collector():
 
 if __name__ == "__main__":
     run_collector()
+

@@ -74,7 +74,7 @@ def trigger_github_action():
     token = st.secrets["GITHUB_TOKEN"]
     owner = st.secrets["GITHUB_OWNER"]
     repo = st.secrets["GITHUB_REPO"]
-    workflow_file = "scrape.yml" # GitHub에 올린 yml 파일 이름
+    workflow_file = "main.yml" # GitHub에 올린 yml 파일 이름
     
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_file}/dispatches"
     
@@ -309,6 +309,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

@@ -116,6 +116,9 @@ def run_collector():
         url_init = 'https://www.qoo10.jp/gmkt.inc/Special/Special.aspx'
         res = session.get(url_init, params={'sid': EVENT_SID}, headers=headers_common)
         print(f"초기 접속 상태: {res.status_code}")
+        if "Special.aspx" not in res.url:
+            print("🛑 [알림] 현재 이벤트 기간이 아닙니다. (리다이렉트 발생) 수집을 중단합니다.")
+            return
         if "Queue-it" in res.text:
             print("🚨 [비상] 대기열(Queue-it) 페이지가 떴습니다. GitHub IP가 차단되었거나 대기열이 있습니다.")
             print(res.text[:500]) # 내용 일부 출력
@@ -237,6 +240,7 @@ def run_collector():
 
 if __name__ == "__main__":
     run_collector()
+
 
 
 

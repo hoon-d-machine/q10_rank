@@ -1,6 +1,8 @@
 import os, requests, base64, pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
+KST = timezone(timedelta(hours=9))
+today_str = datetime.now(KST).strftime('%Y-%m-%d')
 def send_with_resend():
     api_key = os.getenv("RESEND_API_KEY")
     receiver_email = os.getenv("RECEIVER_EMAIL")
@@ -24,8 +26,8 @@ def send_with_resend():
         json={
             "from": "onboarding@resend.dev",
             "to": [receiver_email],
-            "subject": f"🚀 Qoo10 누적 데이터 리포트 ({datetime.now().strftime('%Y-%m-%d')})",
-            "html": "<p>전체 누적 데이터 엑셀 파일입니다. (상품ID 제외)</p>",
+            "subject": f"🚀 Qoo10 누적 데이터 리포트 ({today_str})",
+            "html": "<p>{today_str} 기준 리포트입니다.</p>",
             "attachments": [{"content": file_content, "filename": output_file}]
         }
     )

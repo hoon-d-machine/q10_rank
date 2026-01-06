@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 import time
 
-HEADERS = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1''accept': 'application/json, text/plain, */*',
+HEADERS = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1','accept': 'application/json, text/plain, */*',
     'referer': 'https://m.qoo10.jp/',}
 
 def update_csv(df, file_name):

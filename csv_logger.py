@@ -54,7 +54,7 @@ def get_official_ranking(period):
     period_name = "주간" if period == 'W' else "월간"
     
     for name, code in categories.items():
-        payload = {'gdlcCd': code, 'period': period, 'pageNo': 1, 'pageSize': 100, 'showMegaoshi': 'Y', '___cache_expire___': str(int(time.time()*1000))}
+        payload = {'gdlcCd': code, 'gdmcCd': None, 'gdscCd': None, 'period': period, 'pageNo': 1, 'pageSize': 100, 'showMegaoshi': 'Y', '___cache_expire___': str(int(time.time()*1000))}
         res = requests.post(url, headers=HEADERS, json=payload)
         items = res.json().get('d', {}).get('goods', [])
         for item in items:
@@ -70,8 +70,12 @@ def get_official_ranking(period):
 
 if __name__ == "__main__":
     now = datetime.now()
+    print("🚀 전체 수집 시작...")
     update_csv(get_daily_bestsellers(), "bestseller_daily.csv")
     if now.weekday() == 0 or not os.path.exists("data/official_weekly.csv"):
+        print("2. 주간 랭킹 수집 중...")
         update_csv(get_official_ranking('W'), "official_weekly.csv")
     if now.day == 1 or not os.path.exists("data/official_monthly.csv"):
+        print("3. 월간 랭킹 수집 중...")
         update_csv(get_official_ranking('M'), "official_monthly.csv")
+        print("✨ 모든 수집 프로세스 완료")

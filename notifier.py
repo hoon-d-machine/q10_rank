@@ -3,7 +3,7 @@ from datetime import datetime
 
 def send_with_resend():
     api_key = os.getenv("RESEND_API_KEY")
-    receiver_email = "doyeon.kim@tirtir.co.kr" 
+    receiver_email = os.getenv("RECEIVER_EMAIL")
     output_file = "Qoo10_Full_Data_Report.xlsx"
     files = {"Daily_All": "data/bestseller_daily.csv", "Weekly_All": "data/official_weekly.csv", "Monthly_All": "data/official_monthly.csv"}
 

@@ -69,7 +69,8 @@ def get_official_ranking(period):
     return pd.DataFrame(all_data)
 
 if __name__ == "__main__":
-    now = datetime.now()
+    KST = timezone(timedelta(hours=9))
+    now = datetime.now(KST)
     print("🚀 전체 수집 시작...")
     update_csv(get_daily_bestsellers(), "bestseller_daily.csv")
     if now.weekday() == 0 or not os.path.exists("data/official_weekly.csv"):

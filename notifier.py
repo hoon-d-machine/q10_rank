@@ -27,7 +27,7 @@ def send_with_resend():
             "from": "onboarding@resend.dev",
             "to": [receiver_email],
             "subject": f"🚀 Qoo10 누적 데이터 리포트 ({today_str})",
-            "html": "<p>{today_str} 기준 리포트입니다.</p>",
+            "html": f"<p>{today_str} 기준 리포트입니다.</p>",
             "attachments": [{"content": file_content, "filename": output_file}]
         }
     )

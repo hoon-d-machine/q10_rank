@@ -1,0 +1,17 @@
+name: Weekly Email Report
+
+on:
+  repository_dispatch:
+    types: [weekly_trigger]
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: pip install pandas openpyxl requests
+      - name: Send Email via Resend
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: python notifier.py

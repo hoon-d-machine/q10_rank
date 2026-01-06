@@ -4,3 +4,4 @@ supabase
 streamlit
 plotly
 pandas
+openpyxl

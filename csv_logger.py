@@ -71,7 +71,7 @@ def get_official_ranking(period):
 if __name__ == "__main__":
     now = datetime.now()
     update_csv(get_daily_bestsellers(), "bestseller_daily.csv")
-    # if now.weekday() == 0 or not os.path.exists("data/official_weekly.csv"):
-    update_csv(get_official_ranking('W'), "official_weekly.csv")
-    # if now.day == 1 or not os.path.exists("data/official_monthly.csv"):
-    update_csv(get_official_ranking('M'), "official_monthly.csv")
+    if now.weekday() == 0 or not os.path.exists("data/official_weekly.csv"):
+        update_csv(get_official_ranking('W'), "official_weekly.csv")
+    if now.day == 1 or not os.path.exists("data/official_monthly.csv"):
+        update_csv(get_official_ranking('M'), "official_monthly.csv")

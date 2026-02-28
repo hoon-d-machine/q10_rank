@@ -104,7 +104,7 @@ else:
     
     events = sorted(df['event_sid'].unique(), reverse=True)
     events.insert(0, "전체 (All Events)")
-    sel_event = st.sidebar.selectbox("행사(SID)", events)
+    sel_event = st.sidebar.selectbox("행사(SID)", events, index=0)
     if sel_event != "전체 (All Events)":
         df = df[df['event_sid'] == sel_event]
 
@@ -309,6 +309,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

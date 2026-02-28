@@ -17,6 +17,8 @@ EVENT_SID = os.environ.get("EVENT_SID")
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 goods_cache = {}
 
+print(EVENT_SID)
+
 def preload_goods_info():
     print("📥 Supabase에서 기존 상품 정보 로딩 중...")
     try:
@@ -240,6 +242,7 @@ def run_collector():
 
 if __name__ == "__main__":
     run_collector()
+
 
 
 

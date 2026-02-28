@@ -18,7 +18,6 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 goods_cache = {}
 
 print(EVENT_SID)
-
 def preload_goods_info():
     print("📥 Supabase에서 기존 상품 정보 로딩 중...")
     try:
@@ -55,47 +54,48 @@ def preload_goods_info():
         
 def get_goods_detail(session, goodscode):
     """상세 페이지 정보 수집 (캐싱 적용)"""
-    cached_data = goods_cache.get(goodscode, ("", [], 0)) # (브랜드, 카테고리, 리뷰수)
+    cached_data = goods_cache.get(str(goodscode), ("", ["", "", "", ""], 0)) 
     
     url = 'https://www.qoo10.jp/gmkt.inc/goods/goods.aspx'
     headers_common = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:148.0) Gecko/20100101 Firefox/148.0',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Connection': 'keep-alive'
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
     }
     
     try:
-        # 타임아웃을 3초로 짧게 줘서 빠르게 시도
         res = session.get(url, params={'goodscode': goodscode}, headers=headers_common, timeout=3)
-        
         if res.status_code == 200:
             soup = BeautifulSoup(res.text, 'html.parser')
-            
-            # 1. 브랜드 (없으면 캐시값 유지)
+            # 1. 브랜드
             brand = cached_data[0]
-            b_tag = soup.select_one('div.text_title > a.title_brand')
-            if b_tag: brand = b_tag.get('title', '').strip()
-            
-            # 2. 카테고리 (없으면 캐시값 유지)
+            b_tag = soup.select_one('a.title_brand')
+            if b_tag: brand = b_tag.get('title') or b_tag.get_text(strip=True)
+            # 2. 카테고리
             cats = cached_data[1]
             c_tags = soup.select('ul.category_depth_list li span')
-            if c_tags: cats = [t.get_text(strip=True) for t in c_tags]
+            if c_tags: 
+                new_cats = [t.get_text(strip=True) for t in c_tags]
+                # 리스트 크기 맞춰주기
+                while len(new_cats) < 4: new_cats.append('')
+                cats = new_cats[:4]
             
             # 3. 리뷰 수
-            review = cached_data[2] # 기본은 캐시값
+            review = cached_data[2]
             r_tag = soup.select_one('.review_count span')
             if r_tag:
                 txt = r_tag.get_text(strip=True).replace(',', '').replace('(', '').replace(')', '')
                 if txt.isdigit(): review = int(txt)
             
             new_data = (brand, cats, review)
-            goods_cache[goodscode] = new_data
-            return goodscode, new_data
+            goods_cache[str(goodscode)] = new_data
+            return str(goodscode), new_data
 
-    except Exception:
+    except Exception as e:
         pass
-    return goodscode, cached_data
+    return str(goodscode), cached_data
 def run_collector():
     print(f"=== 수집 시작 (SID: {EVENT_SID}) ===")
     preload_goods_info()
@@ -160,12 +160,11 @@ def run_collector():
                     if 'd' in d:
                         root = json.loads(d['d']) if isinstance(d['d'], str) else d['d']
                     else: root = d
-                    
                     items = []
                     if root:
-                        if root.get('firstItem'): items.append(root['firstItem'])
-                        if root.get('items'): items.extend(root['items'])
-                    
+                        if root.get('firstItem'): items.append(root['firstItem']['goods'])
+                        if root.get('items'): 
+                            for i in root['items']: items.append(i['goods'])
                     if items:
                         print(f"[{r_name}-{s_name}] {len(items)}개 확인.")
                         
@@ -215,7 +214,7 @@ def run_collector():
                             })
             except Exception as e:
                 print(f"Error: {e}")
-
+        
         # 1. 뷰티
         fetch(2, 0, '카테고리(뷰티)', '뷰티전체')
         time.sleep(1)
@@ -242,6 +241,7 @@ def run_collector():
 
 if __name__ == "__main__":
     run_collector()
+
 
 
 

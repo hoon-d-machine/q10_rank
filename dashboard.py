@@ -209,13 +209,13 @@ else:
     f2_df = f1_df[f1_df['brand'].isin(st.session_state.selected_brands)] if st.session_state.selected_brands else f1_df
 
     # 3. 랭킹 기준 (디폴트: 누적건수)
-    r_types = sorted(f2_df['rank_type'].unique())
+    r_types = sorted(df['rank_type'].unique())
     d_idx_r = r_types.index('누적건수') if '누적건수' in r_types else 0
     sel_type = st.sidebar.selectbox("3. 랭킹 기준", r_types, index=d_idx_r)
     f3_df = f2_df[f2_df['rank_type'] == sel_type]
 
     # 4. 타겟 (디폴트: 뷰티전체)
-    cats = sorted(f3_df['category'].unique())
+    cats = sorted(df['category'].unique())
     d_idx_c = cats.index('뷰티전체') if '뷰티전체' in cats else 0
     sel_cat = st.sidebar.selectbox("4. 타겟(연령/카테고리)", cats, index=d_idx_c)
     f4_df = f3_df[f3_df['category'] == sel_cat]
@@ -400,6 +400,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

@@ -132,14 +132,21 @@ else:
             st.session_state.fav_map = load_favorites()
             st.rerun()
         st.divider()
-        for b, c in st.session_state.fav_map.items():
-            mc1, mc2, mc3 = st.columns([3, 1, 1])
-            mc1.write(f"{b}")
-            mc2.markdown(f'<div style="background-color:{c}; width:15px; height:15px; border-radius:3px; margin-top:5px;"></div>', unsafe_allow_html=True)
-            if mc3.button("🗑️", key=f"del_{b}"):
-                delete_favorite(b)
-                st.session_state.fav_map = load_favorites()
-                st.rerun()
+        st.markdown("**저장된 즐겨찾기 목록**")
+        if not st.session_state.fav_map:
+            st.caption("저장된 브랜드가 없습니다.")
+        else:
+            for b, c in st.session_state.fav_map.items():
+                mc1, mc2, mc3 = st.columns([3, 1, 1])
+                mc1.write(f"{b}")
+                mc2.markdown(f'<div style="background-color:{c}; width:15px; height:15px; border-radius:3px; margin-top:5px;"></div>', unsafe_allow_html=True)
+                
+                # 삭제 버튼 클릭 시 처리
+                if mc3.button("🗑️", key=f"del_{b}"):
+                    delete_favorite(b) # 서버에서 삭제 함수 호출
+                    st.session_state.fav_map = load_favorites() # 세션 갱신
+                    st.toast(f"{b} 삭제됨") # 알림
+                    st.rerun() # 화면 새로고침
 
     c_f1, c_f2 = st.sidebar.columns(2)
     if c_f1.button("✅ 즐겨찾기", use_container_width=True):
@@ -267,5 +274,6 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 

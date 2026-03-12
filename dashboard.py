@@ -88,36 +88,49 @@ def load_data():
 # ==============================================================================
 
 st.markdown("""
-        <style>
-        /* 구분선 여백 확보 */
-        hr {
-            margin: 1.5rem 0px !important;
-        }
-        
-        /* 목록 가독성을 위한 행 간격 및 정렬 */
-        .fav-item-text {
-            font-size: 0.85rem;
-            line-height: 2.2; /* 버튼과 수직 높이를 맞추기 위한 조정 */
-            display: inline-block;
-            vertical-align: middle;
-        }
-        
-        /* 버튼 컨테이너 정렬 */
-        div[data-testid="column"] {
-            display: flex;
-            align-items: center;
-        }
-        
-        /* 삭제 버튼 스타일링 */
-        div[data-testid="stButton"] button[key^="del_"] {
-            border: none !important;
-            background: transparent !important;
-            padding: 0 !important;
-            color: #ff4b4b !important;
-            box-shadow: none !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    <style>
+    /* 1. 구분선(hr) */
+    hr {
+        margin: 1rem 0px !important;
+    }
+    
+    /* 2. 저장된 목록의 텍스트 스타일: 크기를 줄이고 수직 중앙 정렬 */
+    .fav-item-text {
+        font-size: 0.8rem !important; /* 제안하신 대로 크기 축소 */
+        color: #31333F;
+        line-height: 1.2;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* 3. 컬럼 내부 요소들을 수직 중앙으로 정렬 */
+    div[data-testid="column"] {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    /* 4. 삭제 버튼 스타일: min-height 해제 및 크기 최적화 */
+    div[data-testid="stButton"] button[key^="del_"] {
+        min-height: 1.5rem !important; /* 기본 2.5rem에서 대폭 축소 */
+        height: 28px !important;
+        width: 28px !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        color: #ff4b4b !important;
+        font-size: 0.9rem !important;
+        line-height: 1 !important;
+    }
+    
+    /* 버튼 호버 효과 (선택사항) */
+    div[data-testid="stButton"] button[key^="del_"]:hover {
+        background-color: rgba(255, 75, 75, 0.1) !important;
+        border-radius: 4px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 def trigger_github_action():
     token = st.secrets["GITHUB_TOKEN"]
@@ -173,8 +186,6 @@ else:
             st.caption("저장된 브랜드가 없습니다.")
         else:
             for b, c in st.session_state.fav_map.items():
-                # 테이블 방식 (Columns)으로 복구
-                # [이름/점 | 버튼] 비율 조정
                 col_info, col_btn = st.columns([4, 1])
                 
                 with col_info:
@@ -313,6 +324,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

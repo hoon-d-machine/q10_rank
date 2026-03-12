@@ -93,50 +93,54 @@ st.markdown("""
     hr {
         margin: 0.7rem 0px !important;
     }
-    
-    <style>
-    /* 1. 즐겨찾기 목록 전체 행 높이 통일 (버튼 높이에 맞춤) */
-    [data-testid="stSidebar"] .fav-row {
-        height: 2.5rem;
+    /* 1. 즐겨찾기 행 컨테이너 정렬 */
+    .fav-row {
         display: flex;
-        align-items: center;
+        align-items: center; /* 수직 중앙 */
         justify-content: space-between;
-        margin-bottom: 4px;
+        height: 40px; /* Streamlit 기본 버튼 높이에 맞춤 */
+        width: 100%;
     }
 
-    /* 2. 텍스트 영역 수직 중앙 정렬 */
+    /* 2. 텍스트 영역 세밀한 조정 */
     .fav-info {
         display: flex;
         align-items: center;
-        font-size: 0.9rem !important;
-        gap: 8px;
+        line-height: 1.2; /* 텍스트 높이 최적화 */
+        margin-top: 2px; /* 눈대중으로 살짝 쳐진 느낌 교정 */
     }
 
-    /* 3. 삭제 버튼 박스 강제 정렬 */
-    .fav-btn-box {
+    /* 3. 버튼 래퍼 및 버튼 자체 정렬 강화 */
+    /* 버튼을 감싸는 div의 여백 제거 */
+    div.stElementContainer:has(button[key^="del_"]) {
         display: flex;
         align-items: center;
-        justify-content: flex-end;
-        width: 40px; /* 버튼 너비 고정 */
+        justify-content: center;
+        margin-bottom: 0 !important;
     }
 
-    /* 4. 삭제 버튼 내부 여백 및 크기 조정 */
+    /* 버튼 스타일 하드하게 고정 */
     div[data-testid="stButton"] button[key^="del_"] {
         width: 32px !important;
         height: 32px !important;
         min-height: 32px !important;
         padding: 0 !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border: 1px solid rgba(49, 51, 63, 0.2) !important;
+        border-radius: 4px !important;
+    }
+
+    /* 4. 버튼 내부 아이콘(마크다운) 정렬 */
+    div[data-testid="stButton"] button[key^="del_"] p {
+        margin: 0 !important;
+        padding: 0 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        border: 1px solid rgba(49, 51, 63, 0.1) !important; /* 살짝 테두리 추가로 정렬감 부여 */
-        background-color: white !important;
-    }
-
-    /* 버튼 내부 마크다운 여백 제거 (휴지통 아이콘 정렬) */
-    div[data-testid="stButton"] button[key^="del_"] div[data-testid="stMarkdownContainer"] p {
-        margin: 0 !important;
-        font-size: 1.1rem; /* 아이콘 크기 살짝 키움 */
+        font-size: 1.1rem !important;
         line-height: 1 !important;
     }
     </style>
@@ -334,6 +338,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

@@ -76,7 +76,7 @@ def load_data():
         df['review_count'] = pd.to_numeric(df['review_count'], errors='coerce')
         df['collected_at'] = pd.to_datetime(df['collected_at'])
         df['collected_at'] = df['collected_at'] + pd.Timedelta(hours=9)
-        df['display_time'] = df['collected_at'].dt.strftime('%m/%d %H시')
+        df['display_time'] = df['collected_at'].dt.strftime('%y-%m-%d')
         df['date_only'] = df['collected_at'].dt.date
         cols = ['large_category', 'medium_category', 'small_category', 'brand']
         df[cols] = df[cols].fillna("기타")
@@ -294,6 +294,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

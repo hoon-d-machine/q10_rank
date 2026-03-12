@@ -88,54 +88,51 @@ def load_data():
 # ==============================================================================
 
 st.markdown("""
-    <style>
-    /* 1. 사이드바 전체 압축 */
-    [data-testid="stSidebar"] {
-        font-size: 0.75rem !important;
-    }
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        gap: 0.1rem !important; /* 위젯 간 간격 최소화 */
-    }
-    
-    /* 2. 즐겨찾기 행 정렬 전용 스타일 */
-    .fav-item-container {
-        display: flex;
-        align-items: center;
-        height: 32px; /* 행 높이 고정 */
-        margin-bottom: 2px;
-        position: relative;
-    }
-    .fav-text {
-        flex: 1;
-        font-size: 0.75rem;
-        line-height: 32px; /* 텍스트 수직 중앙 */
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .fav-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        margin: 0 10px;
-    }
-    
-    /* 3. 삭제 버튼 투명화 및 위치 고정 */
-    .stButton.del-btn-inline {
-        margin-top: -32px; /* 위로 끌어올려 텍스트와 겹침 */
-        text-align: right;
-    }
-    .stButton.del-btn-inline > button {
-        background: transparent !important;
-        border: none !important;
-        padding: 0 !important;
-        width: 32px !important;
-        height: 32px !important;
-        color: #ff4b4b !important;
-        float: right;
-    }
-    </style>
-""", unsafe_allow_html=True)
+        <style>
+        /* 사이드바 기본 폰트 및 간격 */
+        [data-testid="stSidebar"] { font-size: 0.75rem !important; }
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.1rem !important; }
+        
+        /* 1. 드롭다운 하단 간격 추가 (저장 버튼과 분리) */
+        [data-testid="stExpander"] .stSelectbox { margin-bottom: 8px !important; }
+
+        /* 2. 구분선(hr) 여백 제거 및 커스텀 선 설정 */
+        [data-testid="stExpander"] hr {
+            margin: 5px 0px 10px 0px !important;
+            padding: 0 !important;
+        }
+
+        /* 즐겨찾기 목록 행 정렬 */
+        .fav-item-container {
+            display: flex;
+            align-items: center;
+            height: 32px;
+            margin-bottom: 2px;
+            position: relative;
+        }
+        .fav-text {
+            flex: 1;
+            font-size: 0.75rem;
+            line-height: 32px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .fav-dot { width: 10px; height: 10px; border-radius: 50%; margin: 0 10px; }
+        
+        /* 삭제 버튼 겹치기 정렬 */
+        .stButton.del-btn-inline { margin-top: -32px; text-align: right; }
+        .stButton.del-btn-inline > button {
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            width: 32px !important;
+            height: 32px !important;
+            color: #ff4b4b !important;
+            float: right;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
 def trigger_github_action():
     token = st.secrets["GITHUB_TOKEN"]
@@ -185,26 +182,28 @@ else:
             st.rerun()
 
         st.divider()
-        
+        st.markdown("**저장된 즐겨찾기 목록**")
         # 목록 UI 출력 로직
         if not st.session_state.fav_map:
             st.caption("저장된 브랜드가 없습니다.")
         else:
             for b, c in st.session_state.fav_map.items():
+                # 1. 텍스트와 색상 점 레이아웃
                 st.markdown(f"""
-                <div class="fav-item-container">
-                    <div class="fav-text">{b}</div>
-                    <div class="fav-dot" style="background-color: {c};"></div>
-                    <div style="width: 32px;"></div> </div>
-            """, unsafe_allow_html=True)
-            
-            # 2. 삭제 버튼 (위 레이아웃 위에 겹치게 배치)
-            st.markdown('<div class="del-btn-inline">', unsafe_allow_html=True)
-            if st.button("🗑️", key=f"del_{b}"):
-                delete_favorite(b)
-                st.session_state.fav_map = load_favorites()
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+                    <div class="fav-item-container">
+                        <div class="fav-text">{b}</div>
+                        <div class="fav-dot" style="background-color: {c};"></div>
+                        <div style="width: 32px;"></div>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                # 2. 삭제 버튼을 위 레이아웃에 오버레이
+                st.markdown('<div class="del-btn-inline">', unsafe_allow_html=True)
+                if st.button("🗑️", key=f"del_{b}"):
+                    delete_favorite(b)
+                    st.session_state.fav_map = load_favorites()
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
     # 3. 브랜드 선택 버튼
     c_f1, c_f2 = st.sidebar.columns(2)
@@ -334,6 +333,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

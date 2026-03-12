@@ -109,6 +109,30 @@ if df.empty:
     st.warning("데이터가 없습니다. 수집기를 먼저 실행해주세요.")
 else:
     # --- 사이드바 필터 (순서 및 디폴트 설정 적용) ---
+    st.markdown("""
+        <style>
+        /* 전체 사이드바 폰트 크기 축소 */
+        [data-testid="stSidebar"] {
+            font-size: 0.8rem;
+        }
+        /* 위젯 간의 간격(Gap) 축소 */
+        [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+            gap: 0.3rem;
+        }
+        /* 버튼 내부 여백 축소 */
+        div.stButton > button {
+            padding: 2px 10px;
+            font-size: 0.75rem;
+        }
+        /* 휴지통 버튼 전용 스타일: 배경 없애고 작게 */
+        .del-btn button {
+            background-color: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            color: #ff4b4b !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
     st.sidebar.header("🔍 데이터 필터")
 
     # 1. 행사 SID (디폴트: 전체)
@@ -281,6 +305,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

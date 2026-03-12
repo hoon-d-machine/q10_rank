@@ -291,8 +291,8 @@ else:
                     y_end = curr_min - 2
                 
                 # 3. 1~100 범위를 넘지 않도록 최종 제한
-                y_start = min(y_start, 100.5)
-                y_end = max(y_end, 0.5)
+                if y_start > 100: y_start = 100.5
+                if y_end < 1: y_end = 0.5
 
                 # 4. Y축 설정 (nticks가 핵심입니다)
                 fig.update_yaxes(
@@ -349,8 +349,8 @@ else:
                     y_end = curr_min - 2
                 
                 # 3. 1~100 범위를 넘지 않도록 최종 제한
-                y_start = min(y_start, 100.5)
-                y_end = max(y_end, 0.5)
+                if y_start > 100: y_start = 100.5
+                if y_end < 1: y_end = 0.5
 
                 # 4. Y축 설정 (nticks가 핵심입니다)
                 fig.update_yaxes(
@@ -397,6 +397,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

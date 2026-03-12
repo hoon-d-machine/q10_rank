@@ -2,26 +2,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from supabase import create_client
+from datetime import datetime, timedelta
 import requests
-
-# ==============================================================================
-# [0] 즐겨찾기 및 고정 색상 설정 (수정 가능)
-# ==============================================================================
-# 즐겨찾기 브랜드와 해당 브랜드에 부여할 고정 색상입니다.
-FAVORITE_BRANDS = {
-    "Anua": "#FF4B4B",     # 빨강
-    "VT": "#1f77b4",       # 파랑
-    "Innisfree": "#2ca02c", # 초록
-    "Laneige": "#9467bd"    # 보라
-}
-DEFAULT_COLOR = "#D3D3D3" # 즐겨찾기 외 브랜드 기본 색상 (필요시 사용)
-
 # ==============================================================================
 # [1] 기본 설정 및 연결
 # ==============================================================================
 st.set_page_config(page_title="Qoo10 메가와리 인사이트", layout="wide", page_icon="📊")
-
-# 세션 상태 초기화 (브랜드 선택 유지용)
+#브랜드 설정 유지
 if "selected_brands" not in st.session_state:
     st.session_state.selected_brands = []
 
@@ -38,8 +25,12 @@ def init_connection():
 
 supabase = init_connection()
 
+@st.cache_data
+def convert_df(df):
+    return df.to_csv(index=False).encode('utf-8-sig')
+
 # ==============================================================================
-# [2] 데이터 로드 및 전처리
+# [2] 데이터 로드
 # ==============================================================================
 @st.cache_data(ttl=60) 
 def load_data():
@@ -55,144 +46,279 @@ def load_data():
         start += batch_size
         
     df = pd.DataFrame(all_data)
+    og_df = df.copy()
     if not df.empty:
+        # 숫자형 변환
         df['rank'] = pd.to_numeric(df['rank'], errors='coerce')
         df['sale_price'] = pd.to_numeric(df['sale_price'], errors='coerce')
         df['review_count'] = pd.to_numeric(df['review_count'], errors='coerce')
-        df['collected_at'] = pd.to_datetime(df['collected_at']) + pd.Timedelta(hours=9)
+        
+        # 시간 변환
+        df['collected_at'] = pd.to_datetime(df['collected_at'])
+        df['collected_at'] = df['collected_at'] + pd.Timedelta(hours=9)
+        
         df['display_time'] = df['collected_at'].dt.strftime('%m/%d %H시')
         df['date_only'] = df['collected_at'].dt.date
+        
         cols = ['large_category', 'medium_category', 'small_category', 'brand']
         df[cols] = df[cols].fillna("기타")
-    return df
+        
+    return df, og_df
 
 # ==============================================================================
 # [3] 메인 화면 로직
 # ==============================================================================
+def trigger_github_action():
+    # Secrets에서 정보 가져오기
+    token = st.secrets["GITHUB_TOKEN"]
+    owner = st.secrets["GITHUB_OWNER"]
+    repo = st.secrets["GITHUB_REPO"]
+    workflow_file = "main.yml" # GitHub에 올린 yml 파일 이름
+    
+    url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_file}/dispatches"
+    
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    data = {"ref": "main"}
+    
+    response = requests.post(url, headers=headers, json=data)
+    
+    if response.status_code == 204:
+        st.sidebar.success("✅ 수집 명령을 보냈습니다! (약 3~5분 소요)")
+    else:
+        st.sidebar.error(f"❌ 실행 실패: {response.status_code} - {response.text}")
+        
 st.title("📊 Qoo10 메가와리 랭킹 인사이트")
 
-df = load_data()
+with st.spinner('데이터 분석 중...'):
+    df, og_df = load_data()
 
 if df.empty:
-    st.warning("데이터가 없습니다.")
+    st.warning("데이터가 없습니다. 수집기를 먼저 실행해주세요.")
 else:
     # --- 사이드바 필터 ---
     st.sidebar.header("🔍 기본 필터")
-    
-    # 1. 행사 SID
+
     events = sorted(df['event_sid'].unique(), reverse=True)
+    events.insert(0, "전체 (All Events)")
     sel_event = st.sidebar.selectbox("행사(SID)", events, index=0)
-    filtered_df = df[df['event_sid'] == sel_event]
+    if sel_event != "전체 (All Events)":
+        df = df[df['event_sid'] == sel_event]
 
-    # 2. 랭킹 기준 (디폴트 지정 가능)
-    r_types = sorted(filtered_df['rank_type'].unique())
-    # '누적건수'가 있으면 그것을 디폴트로, 없으면 첫번째 값
-    default_r_idx = r_types.index('누적건수') if '누적건수' in r_types else 0
-    sel_type = st.sidebar.selectbox("랭킹 기준", r_types, index=default_r_idx)
-    filtered_df = filtered_df[filtered_df['rank_type'] == sel_type]
+    r_types = df['rank_type'].unique()
+    sel_type = st.sidebar.selectbox("랭킹 기준", r_types)
+    df = df[df['rank_type'] == sel_type]
 
-    # 3. 타겟(카테고리)
-    cats = sorted(filtered_df['category'].unique())
-    sel_cat = st.sidebar.selectbox("타겟(연령/카테고리)", cats, index=0)
-    filtered_df = filtered_df[filtered_df['category'] == sel_cat]
-
-    # 4. 기간 설정
+    cats = df['category'].unique()
+    sel_cat = st.sidebar.selectbox("타겟(연령/카테고리)", cats)
+    df = df[df['category'] == sel_cat]
+    
+    # 기간 설정
     st.sidebar.divider()
-    min_date, max_date = filtered_df['date_only'].min(), filtered_df['date_only'].max()
-    date_range = st.sidebar.date_input("조회 기간", value=(min_date, max_date))
+    st.sidebar.subheader("📅 기간 설정")
+    min_date = df['date_only'].min()
+    max_date = df['date_only'].max()
+    date_range = st.sidebar.date_input("조회 기간", value=(min_date, max_date), min_value=min_date, max_value=max_date)
     
     if len(date_range) == 2:
-        filtered_df = filtered_df[(filtered_df['date_only'] >= date_range[0]) & (filtered_df['date_only'] <= date_range[1])]
-
-    # 5. 브랜드 선택 (핵심: session_state 활용)
+        start_d, end_d = date_range
+        df = df[(df['date_only'] >= start_d) & (df['date_only'] <= end_d)]
+    
+    # 상위 N개
     st.sidebar.divider()
-    st.sidebar.subheader("🏢 브랜드 필터")
-    
-    all_brands = sorted(filtered_df['brand'].unique())
-    
-    # 즐겨찾기 버튼
-    if st.sidebar.button("⭐ 즐겨찾기 브랜드만 보기"):
-        st.session_state.selected_brands = [b for b in FAVORITE_BRANDS.keys() if b in all_brands]
+    st.sidebar.subheader("📊 시각화 옵션")
+    top_n_options = [5, 10, 15, 20, 30, 50, "전체"]
+    top_n = st.sidebar.selectbox("상위 N개 항목만 보기", top_n_options, index=1)
 
-    # 브랜드 멀티 선택 (선택 유지)
-    st.session_state.selected_brands = st.sidebar.multiselect(
-        "브랜드 선택 (미선택 시 전체)", 
-        options=all_brands, 
-        default=st.session_state.selected_brands
-    )
-
-    if st.session_state.selected_brands:
-        final_df = filtered_df[filtered_df['brand'].isin(st.session_state.selected_brands)]
+    # 브랜드
+    all_brands = sorted(df['brand'].unique())
+    sel_brands = st.sidebar.multiselect("브랜드 직접 선택 (옵션)", all_brands)
+    
+    if sel_brands:
+        final_df = df[df['brand'].isin(sel_brands)]
     else:
-        final_df = filtered_df
+        final_df = df
+        
+    if st.sidebar.button("🚀 데이터 수집 즉시 실행"):
+        trigger_github_action()
 
-    # 6. 상위 N개 및 색상 설정
-    top_n = st.sidebar.selectbox("상위 N개 항목", [5, 10, 20, 50, "전체"], index=2)
+    if st.sidebar.button("🔄 데이터 즉시 새로고침"):
+        st.cache_data.clear()
+        st.rerun()
 
-    # 색상 맵 생성 (즐겨찾기 브랜드 고정색 적용)
-    unique_brands = final_df['brand'].unique()
-    color_map = {}
-    for b in unique_brands:
-        if b in FAVORITE_BRANDS:
-            color_map[b] = FAVORITE_BRANDS[b]
-        # 즐겨찾기가 아닌 경우 Plotly의 기본 색상을 따르도록 설정 (아래 차트 설정에서 구현)
+    st.sidebar.markdown("---")
+    file_label = sel_event if sel_event != "전체 (All Events)" else "All_Events"
+    st.sidebar.download_button("🔍 현재 데이터 받기", convert_df(final_df), "filtered_data.csv", "text/csv")
+    st.sidebar.write("")
+    st.sidebar.download_button("💾 전체 원본 받기", convert_df(og_df), f"Raw_{file_label}.csv", "text/csv")
 
     # ==========================================================================
     # [4] 시각화
     # ==========================================================================
+    st.divider()
+    
     def filter_top_n(dataframe, group_col, n_limit):
         if n_limit == "전체": return dataframe
         top_items = dataframe.groupby(group_col)['rank'].min().sort_values().head(n_limit).index.tolist()
         return dataframe[dataframe[group_col].isin(top_items)]
 
-    tab1, tab2 = st.tabs(["📈 순위 트렌드", "💰 가격/리뷰/점유율"])
+    tab1, tab2, tab3 = st.tabs(["📈 순위 트렌드", "💰 가격/리뷰 분석", "🔲 카테고리 점유율"])
 
     with tab1:
         col1, col2 = st.columns(2)
         
-        # 1. 브랜드별 트렌드
+        # 1. 브랜드별
         with col1:
-            st.subheader("🏢 브랜드별 최고 순위")
-            chart_df = filter_top_n(final_df, 'brand', top_n)
-            brand_trend = chart_df.groupby(['collected_at', 'brand'])['rank'].min().reset_index()
-            
-            fig = px.line(
-                brand_trend, x='collected_at', y='rank', color='brand',
-                markers=True, color_discrete_map=color_map, # 고정 색상 적용
-                title="브랜드 트렌드"
-            )
-            fig.update_yaxes(autorange="reversed")
-            st.plotly_chart(fig, use_container_width=True)
+            st.subheader(f"🏢 브랜드 Top {top_n} 순위")
+            if not final_df.empty:
+                chart_df = filter_top_n(final_df, 'brand', top_n)
+                brand_trend = chart_df.groupby(['collected_at', 'display_time', 'brand'])['rank'].min().reset_index().sort_values('collected_at')
+                sorted_brands = brand_trend.groupby('brand')['rank'].min().sort_values().index.tolist()
+                
+                fig = px.line(
+                    brand_trend, x='collected_at', y='rank', color='brand',
+                    markers=True, title="브랜드별 최고 순위 흐름",
+                    category_orders={"brand": sorted_brands},
+                    hover_data={"collected_at": "|%m/%d %H시"}
+                )
+                fig.update_yaxes(autorange="reversed", title="순위")
+                fig.update_xaxes(tickformat="%m/%d %H시", title="수집 시간")
+                fig.update_traces(connectgaps=True)
+                
+                fig.update_layout(
+                    height=600, 
+                    legend=dict(
+                        orientation="v", 
+                        yanchor="top", y=1, 
+                        xanchor="left", x=1.02,
+                        itemsizing='constant', font=dict(size=10)
+                    )
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("데이터가 없습니다.")
 
-        # 2. 상품별 트렌드 (브랜드 색상과 통일)
+        # 2. 상품별
         with col2:
-            st.subheader("📦 상품별 순위 (브랜드 색상 통일)")
-            prod_df = filter_top_n(final_df, 'goods_no', top_n)
-            # 상품 이름 가공
-            last_names = prod_df.groupby('goods_no')['goods_name'].last().to_dict()
-            prod_df['display_name'] = prod_df['goods_no'].map(lambda x: f"{last_names[x][:15]}..")
-            
-            fig = px.line(
-                prod_df, x='collected_at', y='rank', color='brand', # 색상을 brand로 지정하여 통일
-                line_group='goods_no', # 선은 상품별로 분리
-                hover_data=['goods_name', 'sale_price'],
-                markers=True, color_discrete_map=color_map,
-                title="상품 트렌드 (브랜드별 색상 그룹화)"
-            )
-            fig.update_yaxes(autorange="reversed")
-            st.plotly_chart(fig, use_container_width=True)
+            st.subheader(f"📦 상품 Top {top_n} 순위")
+            if not final_df.empty:
+                chart_df = filter_top_n(final_df, 'goods_no', top_n)
+                chart_df = chart_df.sort_values('collected_at')
+                
+                last_names = chart_df.sort_values('collected_at').groupby('goods_no')['goods_name'].last().to_dict()
+                chart_df['unified_name'] = chart_df['goods_no'].map(last_names)
+
+                def make_legend_label(row):
+                    name = row['unified_name']
+                    g_no = str(row['goods_no'])
+                    short_name = name[:10] + '..' if len(name) > 10 else name
+                    return f"{short_name} (#{g_no[-4:]})"
+
+                chart_df['legend_label'] = chart_df.apply(make_legend_label, axis=1)
+                sorted_labels = chart_df.groupby('legend_label')['rank'].min().sort_values().index.tolist()
+                
+                if not chart_df.empty:
+                    fig = px.line(
+                        chart_df, x="collected_at", y="rank", color="legend_label",
+                        hover_name="unified_name",
+                        hover_data={
+                            "brand": True, "sale_price": True, 
+                            "legend_label": False, "collected_at": "|%m/%d %H시"
+                        },
+                        markers=True, title="개별 상품 순위 흐름",
+                        category_orders={"legend_label": sorted_labels}
+                    )
+                    fig.update_yaxes(autorange="reversed", title="순위")
+                    fig.update_xaxes(tickformat="%m/%d %H시", title="수집 시간")
+                    fig.update_traces(connectgaps=True)
+                    
+                    fig.update_layout(
+                        height=600, 
+                        showlegend=True,
+                        legend=dict(
+                            orientation="v",
+                            yanchor="top", y=1,
+                            xanchor="left", x=1.02,
+                            itemsizing='constant', font=dict(size=10)
+                        )
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("조건에 맞는 상품 데이터가 없습니다.")
+            else:
+                st.info("데이터가 없습니다.")
 
     with tab2:
-        # 기존 트리맵 등 시각화 유지 (color를 brand로 설정하면 색상 통일 가능)
-        st.subheader("🔲 브랜드별 카테고리 점유율")
-        fig = px.treemap(
-            final_df, path=['brand', 'medium_category'], 
-            values='sale_price', color='brand',
-            color_discrete_map=color_map
-        )
-        st.plotly_chart(fig, use_container_width=True)
+        col3, col4 = st.columns(2)
+        with col3:
+            st.subheader("🔵 가격 vs 리뷰 (Top 상품)")
+            if not final_df.empty:
+                chart_df = filter_top_n(final_df, 'goods_name', top_n)
+                chart_df = chart_df.sort_values('collected_at') \
+                                   .drop_duplicates(subset=['goods_no'], keep='last')
+                if not chart_df.empty:
+                    fig = px.scatter(
+                        chart_df, x="sale_price", y="rank", 
+                        size="review_count", color="medium_category",
+                        hover_data=["goods_name", "brand", "goods_no", "display_time"],
+                        title=f"가격 분포와 순위 (상위 {top_n}개)"
+                    )
+                    fig.update_yaxes(autorange="reversed")
+                    st.plotly_chart(fig, use_container_width=True)
+                else: st.info("표시할 데이터가 부족합니다.")
+        with col4:
+            st.subheader("💰 카테고리별 가격대")
+            if not final_df.empty:
+                fig = px.box(
+                    final_df, x="medium_category", y="sale_price", 
+                    color="medium_category", points="all",
+                    title="중분류별 가격 범위"
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
-    # 저장 및 새로고침 버튼 등 하단 배치
-    if st.sidebar.button("🔄 데이터 새로고침"):
-        st.cache_data.clear()
-        st.rerun()
+    with tab3:
+        col5, col6 = st.columns(2)
+        with col5:
+            st.subheader("🔲 카테고리 점유율")
+            if not final_df.empty:
+                fig = px.treemap(
+                    final_df, 
+                    path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
+                    values='sale_price', color='medium_category',
+                    color_discrete_sequence=px.colors.qualitative.Pastel
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        with col6:
+            st.subheader("☀️ 세부 계층 구조")
+            if not final_df.empty:
+                fig = px.sunburst(
+                    final_df,
+                    path=['large_category', 'medium_category', 'small_category'],
+                    values='sale_price', color='medium_category',
+                    color_discrete_sequence=px.colors.qualitative.Pastel
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+    st.divider()
+    with st.expander("📋 필터링된 데이터 원본 보기"):
+        view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count', 'large_category']
+        st.dataframe(
+            final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
+            use_container_width=True, hide_index=True
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+

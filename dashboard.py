@@ -276,7 +276,7 @@ else:
                 )
                 st.caption("💡 범례 항목 **클릭**: 해당 항목만 보기 | **더블 클릭**: 해당 항목 숨기기")
 
-                fig.update_yaxes(autorange=True, dtick=None, nticks=10)
+                fig.update_yaxes(autorange="reversed", dtick=None, nticks=10)
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 fig.update_traces(line=dict(width=2))
                 st.plotly_chart(fig, use_container_width=True)
@@ -310,7 +310,7 @@ else:
                     legend_itemclick="toggleothers", 
                     legend_itemdoubleclick="toggle"
                 )
-                fig.update_yaxes(autorange=True, dtick=None, nticks=10)
+                fig.update_yaxes(autorange="reversed", dtick=None, nticks=10)
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 fig.update_traces(line=dict(width=2)) 
                 # for brand, color in color_map.items():
@@ -349,6 +349,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

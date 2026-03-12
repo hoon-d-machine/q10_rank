@@ -221,7 +221,13 @@ else:
     f4_df = f3_df[f3_df['category'] == sel_cat]
 
     # 5. 기간 설정
-    min_d, max_d = f4_df['date_only'].min(), f4_df['date_only'].max()
+    if not f4_df.empty:
+        min_d, max_d = f4_df['date_only'].min(), f4_df['date_only'].max()
+        # min_d와 max_d가 NaT인지 한 번 더 체크
+        if pd.isna(min_d) or pd.isna(max_d):
+            min_d, max_d = datetime.now().date(), datetime.now().date()
+    else:
+        min_d, max_d = datetime.now().date(), datetime.now().date()
     date_range = st.sidebar.date_input("5. 조회 기간", value=(min_d, max_d))
     if len(date_range) == 2:
         f5_df = f4_df[(f4_df['date_only'] >= date_range[0]) & (f4_df['date_only'] <= date_range[1])]
@@ -400,6 +406,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

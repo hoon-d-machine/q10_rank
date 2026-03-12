@@ -276,22 +276,29 @@ else:
                 )
                 st.caption("💡 범례 항목 **클릭**: 해당 항목만 보기 | **더블 클릭**: 해당 항목 숨기기")
 
+                # 1. 현재 데이터의 최소/최대값 확인
                 curr_min = chart_df['rank'].min()
                 curr_max = chart_df['rank'].max()
-                y_start = curr_max + 0.5
-                y_end = curr_min - 0.5
+                
+                # 2. 범위 결정 (최소 10칸 확보 로직)
                 if (curr_max - curr_min) < 10:
                     center = (curr_max + curr_min) / 2
                     y_start = center + 5.5
                     y_end = center - 5.5
-
+                else:
+                    # 변동폭이 클 때는 데이터 앞뒤로 2칸 정도만 여백 부여
+                    y_start = curr_max + 2
+                    y_end = curr_min - 2
+                
+                # 3. 1~100 범위를 넘지 않도록 최종 제한
                 y_start = min(y_start, 100.5)
                 y_end = max(y_end, 0.5)
-                
+
+                # 4. Y축 설정 (nticks가 핵심입니다)
                 fig.update_yaxes(
-                    range=[y_start, y_end],
-                    dtick=1,            
-                    tickformat='d',     
+                    range=[y_start, y_end], 
+                    tickformat='d',          # 정수 표시 유지
+                    nticks=10,               # 눈금의 최대 개수를 10개 내외로 제한 (자동 간격 조절)
                     autorange=False
                 )
                 fig.update_xaxes(type='category', categoryorder='category ascending')
@@ -327,22 +334,29 @@ else:
                     legend_itemclick="toggleothers", 
                     legend_itemdoubleclick="toggle"
                 )
+                # 1. 현재 데이터의 최소/최대값 확인
                 curr_min = chart_df['rank'].min()
                 curr_max = chart_df['rank'].max()
-                y_start = curr_max + 0.5
-                y_end = curr_min - 0.5
+                
+                # 2. 범위 결정 (최소 10칸 확보 로직)
                 if (curr_max - curr_min) < 10:
                     center = (curr_max + curr_min) / 2
                     y_start = center + 5.5
                     y_end = center - 5.5
-
+                else:
+                    # 변동폭이 클 때는 데이터 앞뒤로 2칸 정도만 여백 부여
+                    y_start = curr_max + 2
+                    y_end = curr_min - 2
+                
+                # 3. 1~100 범위를 넘지 않도록 최종 제한
                 y_start = min(y_start, 100.5)
                 y_end = max(y_end, 0.5)
-                
+
+                # 4. Y축 설정 (nticks가 핵심입니다)
                 fig.update_yaxes(
-                    range=[y_start, y_end],
-                    dtick=1,            
-                    tickformat='d',     
+                    range=[y_start, y_end], 
+                    tickformat='d',          # 정수 표시 유지
+                    nticks=10,               # 눈금의 최대 개수를 10개 내외로 제한 (자동 간격 조절)
                     autorange=False
                 )
                 fig.update_xaxes(type='category', categoryorder='category ascending')
@@ -383,6 +397,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

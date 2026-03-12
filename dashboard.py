@@ -89,69 +89,58 @@ def load_data():
 
 st.markdown("""
         <style>
-        /* 사이드바 기본 설정 */
+        /* 기본 사이드바 폰트 압축 */
         [data-testid="stSidebar"] { font-size: 0.75rem !important; }
-        [data-testid="stSidebar"] [data-testid="stVerticalBlock"] { gap: 0.2rem !important; }
         
-        /* 드롭다운 하단 간격 확보 */
-        [data-testid="stExpander"] .stSelectbox { margin-bottom: 8px !important; }
-
-        /* 구분선(hr) 여백 조정 */
-        [data-testid="stExpander"] hr {
-            margin: 8px 0px !important;
-            padding: 0 !important;
+        /* 1. 구분선(hr) 겹침 해결: 부모 컨테이너에 높이 및 마진 강제 부여 */
+        [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] hr {
+            height: auto !important;
+            margin: 1.5rem 0 1rem 0 !important;
+        }
+        /* hr을 감싼 최상위 컨테이너 높이 보정 */
+        div.element-container:has(hr) {
+            margin-top: 10px !important;
+            margin-bottom: 10px !important;
         }
 
-        /* 즐겨찾기 목록 Flex 컨테이너 */
+        /* 2. 즐겨찾기 행 디자인 */
         .fav-row {
             display: flex;
-            align-items: center; /* 수직 중앙 정렬 */
-            justify-content: space-between; /* 양 끝 정렬 */
-            width: 100%;
-            height: 36px; /* 행 높이 통일 */
+            align-items: center;
+            justify-content: space-between;
+            height: 36px;
             padding: 0 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin-bottom: -36px; /* 다음 요소(버튼)를 이 영역 안으로 끌어들임 */
         }
         .fav-info {
             display: flex;
             align-items: center;
-            gap: 10px;
-            flex-grow: 1;
-            overflow: hidden;
+            gap: 8px;
+            flex: 1;
         }
-        .fav-name {
-            font-size: 0.75rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .fav-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-        
-        /* 버튼 컨테이너 - 버튼이 이 영역 안에서만 놀도록 고정 */
-        .fav-btn-box {
+        .fav-name { font-size: 0.8rem; font-weight: 500; }
+        .fav-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+        /* 3. 분리된 버튼 컨테이너 정렬 보정 */
+        /* 'del_' 키를 가진 버튼 컨테이너를 우측 상단으로 이동 */
+        div.element-container:has(button[key^="del_"]) {
             display: flex;
-            align-items: center;
             justify-content: flex-end;
-            width: 36px;
-            flex-shrink: 0;
+            background: transparent !important;
+            z-index: 10;
         }
-        
-        /* Streamlit 버튼 스타일 리셋 */
-        .fav-btn-box div[data-testid="stButton"] button {
-            background-color: transparent !important;
+
+        /* 버튼 자체 스타일 조정 */
+        div[data-testid="stButton"]:has(button[key^="del_"]) button {
+            background: transparent !important;
             border: none !important;
+            box-shadow: none !important;
             padding: 0 !important;
-            color: #ff4b4b !important;
-            height: 30px !important;
-            width: 30px !important;
-            margin: 0 !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 36px !important;
+            height: 36px !important;
+            margin-top: 0px !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -217,17 +206,14 @@ else:
                             <span class="fav-name">{b}</span>
                             <div class="fav-dot" style="background-color: {c};"></div>
                         </div>
-                        <div class="fav-btn-box">
+                        <div style="width: 36px;"></div> </div>
                 """, unsafe_allow_html=True)
                 
-                # 버튼을 컨테이너 안에 배치
+                # 버튼
                 if st.button("🗑️", key=f"del_{b}"):
                     delete_favorite(b)
                     st.session_state.fav_map = load_favorites()
                     st.rerun()
-                
-                st.markdown("</div></div>", unsafe_allow_html=True)
-
     # 3. 브랜드 선택 버튼
     c_f1, c_f2 = st.sidebar.columns(2)
     with c_f1:
@@ -354,6 +340,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

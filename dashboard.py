@@ -235,12 +235,18 @@ else:
 
     with tab1:
         # --- [통합 컬러 맵 생성 로직] ---
-        import plotly.express as px
         # 데이터프레임 내 모든 브랜드를 추출
         all_brands_in_df = final_df['brand'].unique()
         # 즐겨찾기 외 브랜드를 위한 연한 팔레트 (Pastel 계열)
-        base_palette = px.colors.qualitative.Pastel 
+        raw_palette = px.colors.qualitative.Light24 
         
+        def hex_to_rgba(hex_color, opacity=0.2):
+            hex_color = hex_color.lstrip('#')
+            lv = len(hex_color)
+            rgb = tuple(int(hex_color[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+            return f'rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {opacity})'
+        
+        base_palette = [hex_to_rgba(c, opacity=0.2) for c in raw_palette]
         full_color_map = {}
         other_brand_count = 0
         
@@ -267,6 +273,9 @@ else:
                 
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
+                fig.update_traces(line=dict(width=1)) 
+                for brand, color in color_map.items():
+                    fig.update_traces(selector=dict(name=brand), line=dict(width=3))
                 st.plotly_chart(fig, use_container_width=True)
 
         with col2:
@@ -285,6 +294,9 @@ else:
                 
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
+                fig.update_traces(line=dict(width=1)) 
+                for brand, color in color_map.items():
+                    fig.update_traces(selector=dict(name=brand), line=dict(width=3))
                 st.plotly_chart(fig, use_container_width=True)
     with tab2:
         col3, col4 = st.columns(2)
@@ -319,6 +331,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

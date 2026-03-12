@@ -162,36 +162,40 @@ else:
     all_brands = sorted(f1_df['brand'].unique())
 
     with st.sidebar.expander("⭐ 즐겨찾기 관리", expanded=False):
-        # 등록 UI
         c_reg1, c_reg2 = st.columns([3, 1])
-    with c_reg1:
-        reg_brand = st.selectbox("브랜드", all_brands, key="reg_box", label_visibility="collapsed")
-    with c_reg2:
-        reg_color = st.color_picker("색상", "#FF4B4B", label_visibility="collapsed")
-    
-    if st.button("💾 저장/수정", use_container_width=True):
-        save_favorite(reg_brand, reg_color)
-        st.session_state.fav_map = load_favorites()
-        st.rerun()
+        with c_reg1:
+            reg_brand = st.selectbox("브랜드", all_brands, key="reg_box", label_visibility="collapsed")
+        with c_reg2:
+            reg_color = st.color_picker("색상", "#FF4B4B", label_visibility="collapsed")
+        
+        if st.button("💾 저장/수정", use_container_width=True):
+            save_favorite(reg_brand, reg_color)
+            st.session_state.fav_map = load_favorites()
+            st.rerun()
 
-    st.divider()
-    
-    for b, c in st.session_state.fav_map.items():
-        mc1, mc2, mc3 = st.columns([6.5, 1, 1.5])
-        with mc1:
-            st.markdown(f"<div style='font-size: 0.75rem; padding-top: 5px; overflow: hidden; white-space: nowrap;'>{b}</div>", unsafe_allow_html=True)
-        with mc2:
-            st.markdown(f'<div style="background-color:{c}; width:12px; height:12px; border-radius:50%; margin-top:8px;"></div>', unsafe_allow_html=True)
-        with mc3:
-            # HTML 컨테이너로 감싸서 CSS 강제 적용
-            st.markdown('<div class="del-btn-container">', unsafe_allow_html=True)
-            if st.button("🗑️", key=f"del_{b}"):
-                delete_favorite(b)
-                st.session_state.fav_map = load_favorites()
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.divider()
+        
+        # 목록 UI 출력 로직
+        if not st.session_state.fav_map:
+            st.caption("저장된 브랜드가 없습니다.")
+        else:
+            for b, c in st.session_state.fav_map.items():
+                mc1, mc2, mc3 = st.columns([6.5, 1, 1.5])
+                with mc1:
+                    st.markdown(f"<div style='font-size: 0.75rem; padding-top: 5px; overflow: hidden; white-space: nowrap;'>{b}</div>", unsafe_allow_html=True)
+                with mc2:
+                    # 색상을 원형으로 표시
+                    st.markdown(f'<div style="background-color:{c}; width:12px; height:12px; border-radius:50%; margin-top:8px;"></div>', unsafe_allow_html=True)
+                with mc3:
+                    # 삭제 버튼이 확실히 보이도록 CSS 클래스 및 스타일 유지
+                    st.markdown('<div class="del-btn-container">', unsafe_allow_html=True)
+                    if st.button("🗑️", key=f"del_{b}"):
+                        delete_favorite(b)
+                        st.session_state.fav_map = load_favorites()
+                        st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-    # 3. 버튼 가로 배치
+    # 3. 브랜드 선택 버튼
     c_f1, c_f2 = st.sidebar.columns(2)
     with c_f1:
         if st.button("✅ 즐겨찾기", use_container_width=True):
@@ -319,16 +323,4 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
-
-
-
-
-
-
-
-
-
-
-
-
 

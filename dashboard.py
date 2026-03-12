@@ -276,18 +276,23 @@ else:
                 )
                 st.caption("💡 범례 항목 **클릭**: 해당 항목만 보기 | **더블 클릭**: 해당 항목 숨기기")
 
-                min_rank = chart_df['rank'].min()
-                max_rank = chart_df['rank'].max()
-                if max_rank - min_rank < 10:
-                    center = (max_rank + min_rank) / 2
-                    y_range = [center + 5.5, center - 5.5]
-                else:
-                    y_range = [max_rank + 1, min_rank - 1]
+                curr_min = chart_df['rank'].min()
+                curr_max = chart_df['rank'].max()
+                y_start = curr_max + 0.5
+                y_end = curr_min - 0.5
+                if (curr_max - curr_min) < 10:
+                    center = (curr_max + curr_min) / 2
+                    y_start = center + 5.5
+                    y_end = center - 5.5
+
+                y_start = min(y_start, 100.5)
+                y_end = max(y_end, 0.5)
+                
                 fig.update_yaxes(
-                    range=y_range,
+                    range=[y_start, y_end],
                     dtick=1,            
                     tickformat='d',     
-                    autorange="reversed"
+                    autorange=False
                 )
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 fig.update_traces(line=dict(width=2))
@@ -322,20 +327,24 @@ else:
                     legend_itemclick="toggleothers", 
                     legend_itemdoubleclick="toggle"
                 )
-                min_rank = chart_df['rank'].min()
-                max_rank = chart_df['rank'].max()
-                if max_rank - min_rank < 10:
-                    center = (max_rank + min_rank) / 2
-                    y_range = [center + 5.5, center - 5.5]
-                else:
-                    y_range = [max_rank + 1, min_rank - 1]
+                curr_min = chart_df['rank'].min()
+                curr_max = chart_df['rank'].max()
+                y_start = curr_max + 0.5
+                y_end = curr_min - 0.5
+                if (curr_max - curr_min) < 10:
+                    center = (curr_max + curr_min) / 2
+                    y_start = center + 5.5
+                    y_end = center - 5.5
+
+                y_start = min(y_start, 100.5)
+                y_end = max(y_end, 0.5)
+                
                 fig.update_yaxes(
-                    range=y_range,
+                    range=[y_start, y_end],
                     dtick=1,            
                     tickformat='d',     
-                    autorange="reversed"
+                    autorange=False
                 )
-                fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 fig.update_traces(line=dict(width=2)) 
                 # for brand, color in color_map.items():
@@ -374,6 +383,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

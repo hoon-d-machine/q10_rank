@@ -89,39 +89,37 @@ def load_data():
 
 st.markdown("""
     <style>
-    /* 1. 사이드바 전체 폰트 및 간격 최적화 */
     [data-testid="stSidebar"] {
-        font-size: 0.85rem !important;
+        font-size: 0.8rem !important;
     }
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        gap: 0.4rem !important;  /* 위젯 간의 수직 간격을 더 좁힘 */
+        gap: 0.2rem !important;
     }
     
-    /* 2. 익스팬더 내부 여백 제거 */
-    [data-testid="stExpander"] [data-testid="stVerticalBlock"] {
-        gap: 0.1rem !important;
-        padding: 0.5rem !important;
-    }
+    .st-emotion-cache-p8m9p6 { font-size: 0.85rem !important; }
 
-    /* 3. 버튼 스타일 통합 (슬림화) */
     div.stButton > button {
-        padding: 2px 5px !important;
-        height: auto !important;
-        min-height: 25px !important;
+        padding: 2px 8px !important;
+        height: 28px !important;
+        min-height: 28px !important;
+        line-height: 1 !important;
         font-size: 0.75rem !important;
     }
 
-    /* 4. 휴지통 버튼 완전 투명화 */
+    .fav-row {
+        display: flex;
+        align-items: center; /* 수직 중앙 정렬 */
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+    
     .del-btn-container button {
         background-color: transparent !important;
-        border: none !important;
+        border: 1px solid #eee !important;
         padding: 0 !important;
+        width: 28px !important;
+        height: 28px !important;
         color: #ff4b4b !important;
-        box-shadow: none !important;
-    }
-    .del-btn-container button:hover {
-        color: #ff0000 !important;
-        background: transparent !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -180,20 +178,21 @@ else:
             st.caption("저장된 브랜드가 없습니다.")
         else:
             for b, c in st.session_state.fav_map.items():
-                mc1, mc2, mc3 = st.columns([6, 1, 3])
-                with mc1:
-                    st.markdown(f"<div style='font-size: 0.75rem; padding-top: 5px; overflow: hidden; white-space: nowrap;'>{b}</div>", unsafe_allow_html=True)
-                with mc2:
-                    # 색상을 원형으로 표시
-                    st.markdown(f'<div style="background-color:{c}; width:12px; height:12px; border-radius:50%; margin-top:8px;"></div>', unsafe_allow_html=True)
-                with mc3:
-                    # 삭제 버튼이 확실히 보이도록 CSS 클래스 및 스타일 유지
-                    st.markdown('<div class="del-btn-container">', unsafe_allow_html=True)
-                    if st.button("🗑️", key=f"del_{b}"):
-                        delete_favorite(b)
-                        st.session_state.fav_map = load_favorites()
-                        st.rerun()
-                    st.markdown('</div>', unsafe_allow_html=True)
+                st.markdown(f"""
+                    <div class="fav-row">
+                        <div style="flex: 8; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px;">
+                            {b}
+                        </div>
+                        <div style="flex: 1; display: flex; justify-content: center;">
+                            <div style="background-color:{c}; width:12px; height:12px; border-radius:50%;"></div>
+                        </div>
+                        <div style="flex: 2; display: flex; justify-content: flex-end;" class="del-btn-container">
+                """, unsafe_allow_html=True)
+                if st.button("🗑️", key=f"del_{b}"):
+                    delete_favorite(b)
+                    st.session_state.fav_map = load_favorites()
+                    st.rerun()
+                st.markdown('</div></div>', unsafe_allow_html=True)
 
     # 3. 브랜드 선택 버튼
     c_f1, c_f2 = st.sidebar.columns(2)
@@ -323,5 +322,6 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 

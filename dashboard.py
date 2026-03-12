@@ -275,7 +275,20 @@ else:
                     legend_itemdoubleclick="toggle"
                 )
                 st.caption("💡 범례 항목 **클릭**: 해당 항목만 보기 | **더블 클릭**: 해당 항목 숨기기")
-                fig.update_yaxes(autorange="reversed")
+
+                min_rank = chart_df['rank'].min()
+                max_rank = chart_df['rank'].max()
+                if max_rank - min_rank < 10:
+                    center = (max_rank + min_rank) / 2
+                    y_range = [center + 5.5, center - 5.5]
+                else:
+                    y_range = [max_rank + 1, min_rank - 1]
+                fig.update_yaxes(
+                    range=y_range,
+                    dtick=1,            
+                    tickformat='d',     
+                    autorange="reversed"
+                )
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 fig.update_traces(line=dict(width=2))
                 st.plotly_chart(fig, use_container_width=True)
@@ -308,6 +321,19 @@ else:
                 fig.update_layout(
                     legend_itemclick="toggleothers", 
                     legend_itemdoubleclick="toggle"
+                )
+                min_rank = chart_df['rank'].min()
+                max_rank = chart_df['rank'].max()
+                if max_rank - min_rank < 10:
+                    center = (max_rank + min_rank) / 2
+                    y_range = [center + 5.5, center - 5.5]
+                else:
+                    y_range = [max_rank + 1, min_rank - 1]
+                fig.update_yaxes(
+                    range=y_range,
+                    dtick=1,            
+                    tickformat='d',     
+                    autorange="reversed"
                 )
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
@@ -348,6 +374,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

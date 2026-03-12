@@ -265,6 +265,7 @@ else:
             st.subheader(f"🏢 브랜드 Top {sel_n} 순위")
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'brand', sel_n)
+                chart_df = chart_df[chart_df['brand'].notna() & (chart_df['brand'] != '')]
                 brand_trend = chart_df.groupby(['display_time', 'brand'])['rank'].min().reset_index()
                 
                 fig = px.line(brand_trend, x='display_time', y='rank', color='brand', markers=True, 
@@ -285,7 +286,7 @@ else:
             st.subheader(f"📦 상품 Top {sel_n} 순위")
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'goods_no', sel_n)
-                
+                chart_df = chart_df[chart_df['brand'].notna() & (chart_df['brand'] != '')]
                 last_names = chart_df.groupby('goods_no')['goods_name'].last().to_dict()
                 chart_df['unified_name'] = chart_df['goods_no'].map(last_names)
                 chart_df['legend_label'] = chart_df.apply(lambda r: f"{r['unified_name'][:10]}.. (#{str(r['goods_no'])[-4:]})", axis=1)
@@ -349,6 +350,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

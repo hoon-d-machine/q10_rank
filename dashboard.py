@@ -89,37 +89,50 @@ def load_data():
 
 st.markdown("""
     <style>
+    /* 1. 사이드바 전체 압축 */
     [data-testid="stSidebar"] {
-        font-size: 0.8rem !important;
-    }
-    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-        gap: 0.2rem !important;
-    }
-    
-    .st-emotion-cache-p8m9p6 { font-size: 0.85rem !important; }
-
-    div.stButton > button {
-        padding: 2px 8px !important;
-        height: 28px !important;
-        min-height: 28px !important;
-        line-height: 1 !important;
         font-size: 0.75rem !important;
     }
-
-    .fav-row {
-        display: flex;
-        align-items: center; /* 수직 중앙 정렬 */
-        justify-content: space-between;
-        margin-bottom: 4px;
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.1rem !important; /* 위젯 간 간격 최소화 */
     }
     
-    .del-btn-container button {
-        background-color: transparent !important;
-        border: 1px solid #eee !important;
+    /* 2. 즐겨찾기 행 정렬 전용 스타일 */
+    .fav-item-container {
+        display: flex;
+        align-items: center;
+        height: 32px; /* 행 높이 고정 */
+        margin-bottom: 2px;
+        position: relative;
+    }
+    .fav-text {
+        flex: 1;
+        font-size: 0.75rem;
+        line-height: 32px; /* 텍스트 수직 중앙 */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .fav-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin: 0 10px;
+    }
+    
+    /* 3. 삭제 버튼 투명화 및 위치 고정 */
+    .stButton.del-btn-inline {
+        margin-top: -32px; /* 위로 끌어올려 텍스트와 겹침 */
+        text-align: right;
+    }
+    .stButton.del-btn-inline > button {
+        background: transparent !important;
+        border: none !important;
         padding: 0 !important;
-        width: 28px !important;
-        height: 28px !important;
+        width: 32px !important;
+        height: 32px !important;
         color: #ff4b4b !important;
+        float: right;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -179,20 +192,19 @@ else:
         else:
             for b, c in st.session_state.fav_map.items():
                 st.markdown(f"""
-                    <div class="fav-row">
-                        <div style="flex: 8; font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 5px;">
-                            {b}
-                        </div>
-                        <div style="flex: 1; display: flex; justify-content: center;">
-                            <div style="background-color:{c}; width:12px; height:12px; border-radius:50%;"></div>
-                        </div>
-                        <div style="flex: 2; display: flex; justify-content: flex-end;" class="del-btn-container">
-                """, unsafe_allow_html=True)
-                if st.button("🗑️", key=f"del_{b}"):
-                    delete_favorite(b)
-                    st.session_state.fav_map = load_favorites()
-                    st.rerun()
-                st.markdown('</div></div>', unsafe_allow_html=True)
+                <div class="fav-item-container">
+                    <div class="fav-text">{b}</div>
+                    <div class="fav-dot" style="background-color: {c};"></div>
+                    <div style="width: 32px;"></div> </div>
+            """, unsafe_allow_html=True)
+            
+            # 2. 삭제 버튼 (위 레이아웃 위에 겹치게 배치)
+            st.markdown('<div class="del-btn-inline">', unsafe_allow_html=True)
+            if st.button("🗑️", key=f"del_{b}"):
+                delete_favorite(b)
+                st.session_state.fav_map = load_favorites()
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
     # 3. 브랜드 선택 버튼
     c_f1, c_f2 = st.sidebar.columns(2)
@@ -322,6 +334,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

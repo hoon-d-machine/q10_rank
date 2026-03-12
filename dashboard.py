@@ -86,6 +86,46 @@ def load_data():
 # ==============================================================================
 # [3] 메인 화면 로직
 # ==============================================================================
+
+st.markdown("""
+    <style>
+    /* 1. 사이드바 전체 폰트 및 간격 최적화 */
+    [data-testid="stSidebar"] {
+        font-size: 0.85rem !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        gap: 0.4rem !important;  /* 위젯 간의 수직 간격을 더 좁힘 */
+    }
+    
+    /* 2. 익스팬더 내부 여백 제거 */
+    [data-testid="stExpander"] [data-testid="stVerticalBlock"] {
+        gap: 0.1rem !important;
+        padding: 0.5rem !important;
+    }
+
+    /* 3. 버튼 스타일 통합 (슬림화) */
+    div.stButton > button {
+        padding: 2px 5px !important;
+        height: auto !important;
+        min-height: 25px !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* 4. 휴지통 버튼 완전 투명화 */
+    .del-btn-container button {
+        background-color: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        color: #ff4b4b !important;
+        box-shadow: none !important;
+    }
+    .del-btn-container button:hover {
+        color: #ff0000 !important;
+        background: transparent !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 def trigger_github_action():
     token = st.secrets["GITHUB_TOKEN"]
     owner = st.secrets["GITHUB_OWNER"]
@@ -108,31 +148,7 @@ with st.spinner('데이터 분석 중...'):
 if df.empty:
     st.warning("데이터가 없습니다. 수집기를 먼저 실행해주세요.")
 else:
-    # --- 사이드바 필터 (순서 및 디폴트 설정 적용) ---
-    st.markdown("""
-        <style>
-        /* 전체 사이드바 폰트 크기 축소 */
-        [data-testid="stSidebar"] {
-            font-size: 0.8rem;
-        }
-        /* 위젯 간의 간격(Gap) 축소 */
-        [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-            gap: 0.3rem;
-        }
-        /* 버튼 내부 여백 축소 */
-        div.stButton > button {
-            padding: 2px 10px;
-            font-size: 0.75rem;
-        }
-        /* 휴지통 버튼 전용 스타일: 배경 없애고 작게 */
-        .del-btn button {
-            background-color: transparent !important;
-            border: none !important;
-            padding: 0 !important;
-            color: #ff4b4b !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # --- 사이드바 필터 ---
     st.sidebar.header("🔍 데이터 필터")
 
     # 1. 행사 SID (디폴트: 전체)
@@ -146,49 +162,47 @@ else:
     all_brands = sorted(f1_df['brand'].unique())
 
     with st.sidebar.expander("⭐ 즐겨찾기 관리", expanded=False):
-        c_reg1, c_reg2 = st.columns([3, 1.2])
-        with c_reg1:
-            reg_brand = st.selectbox("브랜드", all_brands, key="reg_box", label_visibility="collapsed")
-        with c_reg2:
-            reg_color = st.color_picker("색상", "#FF4B4B", label_visibility="collapsed")
-        
-        if st.button("💾 저장/수정 ", use_container_width=True):
-            save_favorite(reg_brand, reg_color)
-            st.session_state.fav_map = load_favorites()
-            st.rerun()
+    # 등록 UI
+    c_reg1, c_reg2 = st.columns([3, 1])
+    with c_reg1:
+        reg_brand = st.selectbox("브랜드", all_brands, key="reg_box", label_visibility="collapsed")
+    with c_reg2:
+        reg_color = st.color_picker("색상", "#FF4B4B", label_visibility="collapsed")
     
-        st.divider()
-        
-        for b, c in st.session_state.fav_map.items():
-            # 컬럼 비율을 더 최적화
-            mc1, mc2, mc3 = st.columns([6, 1, 1.5])
-            with mc1:
-                st.markdown(f"<div style='font-size: 0.75rem; padding-top: 3px;'>{b}</div>", unsafe_allow_html=True)
-            with mc2:
-                st.markdown(f'<div style="background-color:{c}; width:12px; height:12px; border-radius:2px; margin-top:6px;"></div>', unsafe_allow_html=True)
-            with mc3:
-                # CSS 클래스를 입혀서 휴지통 아이콘이 튀어나가지 않게 설정
-                st.markdown('<div class="del-btn">', unsafe_allow_html=True)
-                if st.button("🗑️", key=f"del_{b}"):
-                    delete_favorite(b)
-                    st.session_state.fav_map = load_favorites()
-                    st.rerun()
-                st.markdown('</div>', unsafe_allow_html=True)
+    if st.button("💾 저장/수정", use_container_width=True):
+        save_favorite(reg_brand, reg_color)
+        st.session_state.fav_map = load_favorites()
+        st.rerun()
+
+    st.divider()
     
-    # 3. 브랜드 선택 버튼 (슬림하게 가로 배치)
+    for b, c in st.session_state.fav_map.items():
+        mc1, mc2, mc3 = st.columns([6.5, 1, 1.5])
+        with mc1:
+            st.markdown(f"<div style='font-size: 0.75rem; padding-top: 5px; overflow: hidden; white-space: nowrap;'>{b}</div>", unsafe_allow_html=True)
+        with mc2:
+            st.markdown(f'<div style="background-color:{c}; width:12px; height:12px; border-radius:50%; margin-top:8px;"></div>', unsafe_allow_html=True)
+        with mc3:
+            # HTML 컨테이너로 감싸서 CSS 강제 적용
+            st.markdown('<div class="del-btn-container">', unsafe_allow_html=True)
+            if st.button("🗑️", key=f"del_{b}"):
+                delete_favorite(b)
+                st.session_state.fav_map = load_favorites()
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    # 3. 버튼 가로 배치
     c_f1, c_f2 = st.sidebar.columns(2)
     with c_f1:
         if st.button("✅ 즐겨찾기", use_container_width=True):
             st.session_state.selected_brands = [b for b in st.session_state.fav_map.keys() if b in all_brands]
     with c_f2:
-        if st.button("🔄 해제", use_container_width=True):
+        if st.button("🔄 전체 해제", use_container_width=True):
             st.session_state.selected_brands = []
     
+    # 멀티셀렉트
     st.session_state.selected_brands = st.sidebar.multiselect(
-        "브랜드를 선택하세요", 
-        options=all_brands, 
-        default=st.session_state.selected_brands,
-        label_visibility="collapsed"
+        "브랜드 선택", options=all_brands, default=st.session_state.selected_brands, label_visibility="collapsed"
     )
     f2_df = f1_df[f1_df['brand'].isin(st.session_state.selected_brands)] if st.session_state.selected_brands else f1_df
 
@@ -305,6 +319,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

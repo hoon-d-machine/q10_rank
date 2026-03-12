@@ -240,7 +240,7 @@ else:
         # 즐겨찾기 외 브랜드를 위한 연한 팔레트 (Pastel 계열)
         raw_palette = px.colors.qualitative.Light24 
         
-        def hex_to_rgba(hex_color, opacity=0.2):
+        def hex_to_rgba(hex_color, opacity=0.5):
             hex_color = hex_color.lstrip('#')
             lv = len(hex_color)
             rgb = tuple(int(hex_color[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
@@ -392,6 +392,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

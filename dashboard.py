@@ -270,7 +270,11 @@ else:
                 fig = px.line(brand_trend, x='display_time', y='rank', color='brand', markers=True, 
                               color_discrete_map=full_color_map, # 수정 포인트
                               title="브랜드별 최고 순위")
-                
+                fig.update_layout(
+                    legend_itemclick="toggleothers", 
+                    legend_itemdoubleclick="toggle"
+                )
+                st.caption("💡 **클릭**: 해당 항목만 보기 | **더블 클릭**: 해당 항목 숨기기")
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 fig.update_traces(line=dict(width=2))
@@ -301,7 +305,11 @@ else:
                     markers=True, 
                     title="상품별 순위 (브랜드 색상 동기화)"
                 )
-                
+                fig.update_layout(
+                    legend_itemclick="toggleothers", 
+                    legend_itemdoubleclick="toggle"
+                )
+                st.caption("💡 **클릭**: 해당 항목만 보기 | **더블 클릭**: 해당 항목 숨기기")
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 fig.update_traces(line=dict(width=2)) 
@@ -341,6 +349,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

@@ -180,7 +180,7 @@ else:
             st.caption("저장된 브랜드가 없습니다.")
         else:
             for b, c in st.session_state.fav_map.items():
-                mc1, mc2, mc3 = st.columns([6.5, 1, 1.5])
+                mc1, mc2, mc3 = st.columns([6, 1, 3])
                 with mc1:
                     st.markdown(f"<div style='font-size: 0.75rem; padding-top: 5px; overflow: hidden; white-space: nowrap;'>{b}</div>", unsafe_allow_html=True)
                 with mc2:
@@ -323,4 +323,5 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 

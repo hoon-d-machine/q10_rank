@@ -89,71 +89,33 @@ def load_data():
 
 st.markdown("""
         <style>
-        [data-testid="stSidebar"] { font-size: 0.75rem !important; }
+        /* 구분선 여백 확보 */
+        hr {
+            margin: 1.5rem 0px !important;
+        }
         
-        .custom-divider {
-            height: 1px;
-            background-color: #d3d3d3;
-            margin: 15px 0 10px 0;
-            width: 100%;
+        /* 목록 가독성을 위한 행 간격 및 정렬 */
+        .fav-item-text {
+            font-size: 0.85rem;
+            line-height: 2.2; /* 버튼과 수직 높이를 맞추기 위한 조정 */
+            display: inline-block;
+            vertical-align: middle;
         }
-
-        /* 즐겨찾기 리스트 컨테이너 */
-        .fav-container {
-            position: relative;
-            padding-bottom: 5px;
-        }
-
-        .fav-row {
+        
+        /* 버튼 컨테이너 정렬 */
+        div[data-testid="column"] {
             display: flex;
             align-items: center;
-            height: 38px;
-            padding: 0 5px;
-            background: rgba(0,0,0,0.03);
-            border-radius: 5px;
-            margin-bottom: 5px;
         }
-
-        .fav-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 80%; /* 버튼 공간 확보 */
-        }
-
-        .fav-name {
-            font-size: 0.8rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .fav-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
-        div[data-testid="stVerticalBlockBorderWrapper"] div.element-container:has(button[key^="del_"]) {
-            position: absolute;
-            right: 5px;
-            margin-top: -42px !important; /* 위 row 높이에 맞춰 수동 조절 */
-            width: 38px !important;
-            z-index: 99;
-        }
-
-        /* 버튼 자체 스타일 */
-        button[key^="del_"] {
-            background: transparent !important;
+        
+        /* 삭제 버튼 스타일링 */
+        div[data-testid="stButton"] button[key^="del_"] {
             border: none !important;
+            background: transparent !important;
             padding: 0 !important;
             color: #ff4b4b !important;
-            width: 32px !important;
-            height: 32px !important;
+            box-shadow: none !important;
         }
-        
-        button[key^="del_"]:hover { color: #ff0000 !important; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -205,31 +167,26 @@ else:
             st.rerun()
 
         st.divider()
-        st.markdown('<div class="custom-divider"></div>', unsafe_allow_html=True)
         st.markdown("**저장된 즐겨찾기 목록**")
-        # 목록 UI 출력 로직
+        
         if not st.session_state.fav_map:
             st.caption("저장된 브랜드가 없습니다.")
         else:
             for b, c in st.session_state.fav_map.items():
-                st.markdown('<div class="fav-container">', unsafe_allow_html=True)
-            for b, c in st.session_state.fav_map.items():
-                # 1. 정보 행
-                st.markdown(f"""
-                    <div class="fav-row">
-                        <div class="fav-info">
-                            <span class="fav-name">{b}</span>
-                            <div class="fav-dot" style="background-color: {c};"></div>
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
+                # 테이블 방식 (Columns)으로 복구
+                # [이름/점 | 버튼] 비율 조정
+                col_info, col_btn = st.columns([4, 1])
                 
-                # 2. 버튼
-                if st.button("🗑️", key=f"del_{b}"):
-                    delete_favorite(b)
-                    st.session_state.fav_map = load_favorites()
-                    st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+                with col_info:
+                    # 텍스트와 색상 점을 나란히 배치
+                    st.markdown(f'<span class="fav-item-text">{b} <span style="color:{c};">●</span></span>', unsafe_allow_html=True)
+                
+                with col_btn:
+                    if st.button("🗑️", key=f"del_{b}"):
+                        delete_favorite(b)
+                        st.session_state.fav_map = load_favorites()
+                        st.rerun()
+                        
     # 3. 브랜드 선택 버튼
     c_f1, c_f2 = st.sidebar.columns(2)
     with c_f1:
@@ -356,6 +313,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

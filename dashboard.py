@@ -121,48 +121,50 @@ else:
     st.sidebar.markdown("2. 브랜드 필터")
     all_brands = sorted(f1_df['brand'].unique())
 
-    with st.sidebar.expander("⭐ 브랜드 즐겨찾기 설정"):
-        c_reg1, c_reg2 = st.columns([2, 1])
+    with st.sidebar.expander("⭐ 즐겨찾기 관리", expanded=False):
+        c_reg1, c_reg2 = st.columns([3, 1.2])
         with c_reg1:
-            reg_brand = st.selectbox("브랜드 선택", all_brands, key="reg_box", label_visibility="collapsed")
+            reg_brand = st.selectbox("브랜드", all_brands, key="reg_box", label_visibility="collapsed")
         with c_reg2:
             reg_color = st.color_picker("색상", "#FF4B4B", label_visibility="collapsed")
-        if st.button("💾 저장/수정", use_container_width=True):
+        
+        if st.button("💾 저장", use_container_width=True):
             save_favorite(reg_brand, reg_color)
             st.session_state.fav_map = load_favorites()
             st.rerun()
+    
         st.divider()
-        st.markdown("**저장된 즐겨찾기 목록**")
-        if not st.session_state.fav_map:
-            st.caption("저장된 브랜드가 없습니다.")
-        else:
-            for b, c in st.session_state.fav_map.items():
-                mc1, mc2, mc3 = st.columns([8, 1, 1])
-                with mc1:
-                    # 텍스트가 너무 길면 잘리지 않게 조정
-                    st.markdown(f"<div style='padding-top: 5px; font-size: 14px;'>{b}</div>", unsafe_allow_html=True)
-                
-                with mc2:
-                    # 색상 박스 위치 정렬
-                    st.markdown(f'<div style="background-color:{c}; width:18px; height:18px; border-radius:4px; margin-top:8px;"></div>', unsafe_allow_html=True)
-                
-                with mc3:
-                    # 버튼을 작게 만들고 간격 조정
-                    if st.button("🗑️", key=f"del_{b}"):
-                        delete_favorite(b)
-                        st.session_state.fav_map = load_favorites()
-                        st.rerun()
-
+        
+        for b, c in st.session_state.fav_map.items():
+            # 컬럼 비율을 더 최적화
+            mc1, mc2, mc3 = st.columns([6, 1, 1.5])
+            with mc1:
+                st.markdown(f"<div style='font-size: 0.75rem; padding-top: 3px;'>{b}</div>", unsafe_allow_html=True)
+            with mc2:
+                st.markdown(f'<div style="background-color:{c}; width:12px; height:12px; border-radius:2px; margin-top:6px;"></div>', unsafe_allow_html=True)
+            with mc3:
+                # CSS 클래스를 입혀서 휴지통 아이콘이 튀어나가지 않게 설정
+                st.markdown('<div class="del-btn">', unsafe_allow_html=True)
+                if st.button("🗑️", key=f"del_{b}"):
+                    delete_favorite(b)
+                    st.session_state.fav_map = load_favorites()
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
+    
+    # 3. 브랜드 선택 버튼 (슬림하게 가로 배치)
     c_f1, c_f2 = st.sidebar.columns(2)
-    if c_f1.button("✅ 즐겨찾기", use_container_width=True):
-        st.session_state.selected_brands = [b for b in st.session_state.fav_map.keys() if b in all_brands]
-    if c_f2.button("🔄 전체 해제", use_container_width=True):
-        st.session_state.selected_brands = []
-
+    with c_f1:
+        if st.button("✅ 즐겨찾기", use_container_width=True):
+            st.session_state.selected_brands = [b for b in st.session_state.fav_map.keys() if b in all_brands]
+    with c_f2:
+        if st.button("🔄 해제", use_container_width=True):
+            st.session_state.selected_brands = []
+    
     st.session_state.selected_brands = st.sidebar.multiselect(
-        "브랜드를 선택하세요 (미선택 시 전체)", 
+        "브랜드를 선택하세요", 
         options=all_brands, 
-        default=st.session_state.selected_brands
+        default=st.session_state.selected_brands,
+        label_visibility="collapsed"
     )
     f2_df = f1_df[f1_df['brand'].isin(st.session_state.selected_brands)] if st.session_state.selected_brands else f1_df
 
@@ -279,6 +281,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

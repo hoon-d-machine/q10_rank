@@ -130,7 +130,22 @@ else:
     # 2. 브랜드 필터 & 즐겨찾기 설정 (익스팬더)
     st.sidebar.markdown("2. 브랜드 필터")
     all_brands = sorted(f1_df['brand'].unique())
-
+    if not f1_df.empty:
+        last_date = f1_df['collected_at'].max()
+        # 마지막 시점의 브랜드별 최소 순위(최고 순위) 계산
+        brand_ranking = (
+            f1_df[f1_df['collected_at'] == last_date]
+            .groupby('brand')['rank']
+            .min()
+            .sort_values()
+        )
+        ranked_brands = brand_ranking.index.tolist()
+        
+        # 데이터에는 있지만 마지막 시점에 없는 브랜드는 뒤에 가나다순 추가
+        remaining_brands = sorted([b for b in f1_df['brand'].unique() if b not in ranked_brands])
+        all_brands_sorted = ranked_brands + remaining_brands
+    else:
+        all_brands_sorted = []
     with st.sidebar.expander("⭐ 즐겨찾기 관리", expanded=False):
         c_reg1, c_reg2 = st.columns([3, 1])
         with c_reg1:
@@ -176,9 +191,21 @@ else:
             st.session_state.selected_brands = []
     
     # 멀티셀렉트
-    st.session_state.selected_brands = st.sidebar.multiselect(
-        "브랜드 선택", options=all_brands, default=st.session_state.selected_brands, label_visibility="collapsed"
-    )
+    with st.sidebar.form("brand_filter_form"):
+        selected = st.multiselect(
+            "브랜드 선택 (랭킹순 정렬)", 
+            options=all_brands_sorted, 
+            default=st.session_state.selected_brands,
+            help="마지막 수집일의 순위가 높은 브랜드부터 표시됩니다."
+        )
+        
+        col_btn1, col_btn2 = st.columns(2)
+        submit_button = st.form_submit_button("📊 필터 적용", use_container_width=True)
+        
+        if submit_button:
+            st.session_state.selected_brands = selected
+            st.rerun()
+            
     f2_df = f1_df[f1_df['brand'].isin(st.session_state.selected_brands)] if st.session_state.selected_brands else f1_df
 
     # 3. 랭킹 기준 (디폴트: 누적건수)
@@ -373,6 +400,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

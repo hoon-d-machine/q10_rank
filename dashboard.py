@@ -118,7 +118,7 @@ else:
     f1_df = df if sel_event == "전체 (All Events)" else df[df['event_sid'] == sel_event]
 
     # 2. 브랜드 필터 & 즐겨찾기 설정 (익스팬더)
-    st.sidebar.subheader("2. 브랜드 필터")
+    st.sidebar("2. 브랜드 필터")
     all_brands = sorted(f1_df['brand'].unique())
 
     with st.sidebar.expander("⭐ 브랜드 즐겨찾기 설정"):
@@ -279,6 +279,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

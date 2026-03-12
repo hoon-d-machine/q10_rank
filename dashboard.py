@@ -286,8 +286,8 @@ else:
                 y_start = curr_max + margin
                 y_end = curr_min - margin
                 
-                y_start = min(y_start, 100.5)
-                y_end = max(y_end, 0.5)
+                if y_start > 100: ystart == 100
+                if y_end < 1: y_end == 1
                 
                 brand_trend = chart_df.groupby(['display_time', 'brand'])['rank'].min().reset_index()
                 
@@ -392,6 +392,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

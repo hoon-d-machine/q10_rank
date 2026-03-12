@@ -239,8 +239,8 @@ else:
             st.subheader(f"🏢 브랜드 Top {sel_n} 순위")
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'brand', sel_n)
-                brand_trend = chart_df.groupby(['collected_at', 'brand'])['rank'].min().reset_index()
-                fig = px.line(brand_trend, x='collected_at', y='rank', color='brand', markers=True, 
+                brand_trend = chart_df.groupby(['display_time', 'brand'])['rank'].min().reset_index()
+                fig = px.line(brand_trend, x='display_time', y='rank', color='brand', markers=True, 
                               color_discrete_map=color_map, title="브랜드별 최고 순위")
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
@@ -294,6 +294,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

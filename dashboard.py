@@ -124,9 +124,9 @@ else:
     with st.sidebar.expander("⭐ 브랜드 즐겨찾기 설정"):
         c_reg1, c_reg2 = st.columns([2, 1])
         with c_reg1:
-            reg_brand = st.selectbox("브랜드 선택", all_brands, key="reg_box")
+            reg_brand = st.selectbox("브랜드 선택", all_brands, key="reg_box", label_visibility="collapsed")
         with c_reg2:
-            reg_color = st.color_picker("색상", "#FF4B4B")
+            reg_color = st.color_picker("색상", "#FF4B4B", label_visibility="collapsed")
         if st.button("💾 저장/수정", use_container_width=True):
             save_favorite(reg_brand, reg_color)
             st.session_state.fav_map = load_favorites()
@@ -279,6 +279,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

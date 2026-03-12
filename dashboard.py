@@ -283,12 +283,24 @@ else:
                 
                 last_names = chart_df.groupby('goods_no')['goods_name'].last().to_dict()
                 chart_df['unified_name'] = chart_df['goods_no'].map(last_names)
-                
-                # 브랜드 순위와 동일한 full_color_map을 사용하여 상품별 선 색상도 브랜드 색상을 따름
-                fig = px.line(chart_df, x="display_time", y="rank", color="brand", line_group="goods_no",
-                              hover_name="unified_name", 
-                              color_discrete_map=full_color_map,
-                              markers=True, title="상품별 순위 (브랜드 색상 동기화)")
+                chart_df['legend_label'] = chart_df.apply(lambda r: f"{r['unified_name'][:10]}.. (#{str(r['goods_no'])[-4:]})", axis=1)
+
+                item_color_map = {
+                    row['legend_label']: full_color_map.get(row['brand'], '#D3D3D3')
+                    for _, row in chart_df.drop_duplicates('legend_label').iterrows()
+                }
+
+                fig = px.line(
+                    chart_df, 
+                    x="display_time", 
+                    y="rank", 
+                    color="legend_label",
+                    line_group="goods_no",
+                    hover_name="unified_name", 
+                    color_discrete_map=item_color_map,
+                    markers=True, 
+                    title="상품별 순위 (브랜드 색상 동기화)"
+                )
                 
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
@@ -329,6 +341,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

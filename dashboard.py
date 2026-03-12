@@ -255,7 +255,7 @@ else:
                 chart_df['legend_label'] = chart_df.apply(lambda r: f"{r['unified_name'][:10]}.. (#{str(r['goods_no'])[-4:]})", axis=1)
                 
                 # 브랜드 색상으로 통일하되 상품별로 선 구분
-                fig = px.line(chart_df, x="collected_at", y="rank", color="brand", line_group="goods_no",
+                fig = px.line(chart_df, x="display_time", y="rank", color="brand", line_group="goods_no",
                               hover_name="unified_name", color_discrete_map=color_map, markers=True, title="상품별 순위 (브랜드 색상 동기화)")
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
@@ -294,6 +294,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

@@ -89,45 +89,55 @@ def load_data():
 
 st.markdown("""
     <style>
-    /* 1. 구분선(hr) */
+    /* 구분선(hr) */
     hr {
-        margin: 1rem 0px !important;
+        margin: 0.7rem 0px !important;
     }
     
-    /* 2. 저장된 목록의 텍스트 스타일: 크기를 줄이고 수직 중앙 정렬 */
-    .fav-item-text {
-        font-size: 0.8rem !important; /* 제안하신 대로 크기 축소 */
-        color: #31333F;
-        line-height: 1.2;
+    <style>
+    /* 1. 즐겨찾기 목록 전체 행 높이 통일 (버튼 높이에 맞춤) */
+    [data-testid="stSidebar"] .fav-row {
+        height: 2.5rem;
         display: flex;
         align-items: center;
-        gap: 5px;
+        justify-content: space-between;
+        margin-bottom: 4px;
     }
 
-    /* 3. 컬럼 내부 요소들을 수직 중앙으로 정렬 */
-    div[data-testid="column"] {
+    /* 2. 텍스트 영역 수직 중앙 정렬 */
+    .fav-info {
         display: flex;
         align-items: center;
-        justify-content: flex-start;
-    }
-
-    /* 4. 삭제 버튼 스타일: min-height 해제 및 크기 최적화 */
-    div[data-testid="stButton"] button[key^="del_"] {
-        min-height: 1.5rem !important; /* 기본 2.5rem에서 대폭 축소 */
-        height: 28px !important;
-        width: 28px !important;
-        padding: 0 !important;
-        border: none !important;
-        background: transparent !important;
-        color: #ff4b4b !important;
         font-size: 0.9rem !important;
-        line-height: 1 !important;
+        gap: 8px;
     }
-    
-    /* 버튼 호버 효과 (선택사항) */
-    div[data-testid="stButton"] button[key^="del_"]:hover {
-        background-color: rgba(255, 75, 75, 0.1) !important;
-        border-radius: 4px;
+
+    /* 3. 삭제 버튼 박스 강제 정렬 */
+    .fav-btn-box {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        width: 40px; /* 버튼 너비 고정 */
+    }
+
+    /* 4. 삭제 버튼 내부 여백 및 크기 조정 */
+    div[data-testid="stButton"] button[key^="del_"] {
+        width: 32px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border: 1px solid rgba(49, 51, 63, 0.1) !important; /* 살짝 테두리 추가로 정렬감 부여 */
+        background-color: white !important;
+    }
+
+    /* 버튼 내부 마크다운 여백 제거 (휴지통 아이콘 정렬) */
+    div[data-testid="stButton"] button[key^="del_"] div[data-testid="stMarkdownContainer"] p {
+        margin: 0 !important;
+        font-size: 1.1rem; /* 아이콘 크기 살짝 키움 */
+        line-height: 1 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -193,7 +203,7 @@ else:
                     st.markdown(f'<span class="fav-item-text">{b} <span style="color:{c};">●</span></span>', unsafe_allow_html=True)
                 
                 with col_btn:
-                    if st.button("🗑️", key=f"del_{b}"):
+                    if st.button("🗑️ ", key=f"del_{b}"):
                         delete_favorite(b)
                         st.session_state.fav_map = load_favorites()
                         st.rerun()
@@ -324,6 +334,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

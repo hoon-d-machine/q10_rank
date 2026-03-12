@@ -93,56 +93,6 @@ st.markdown("""
     hr {
         margin: 0.7rem 0px !important;
     }
-    /* 1. 즐겨찾기 행 컨테이너 정렬 */
-    .fav-row {
-        display: flex;
-        align-items: center; /* 수직 중앙 */
-        justify-content: space-between;
-        height: 40px; /* Streamlit 기본 버튼 높이에 맞춤 */
-        width: 100%;
-    }
-
-    /* 2. 텍스트 영역 세밀한 조정 */
-    .fav-info {
-        display: flex;
-        align-items: center;
-        line-height: 1.2; /* 텍스트 높이 최적화 */
-        margin-top: 2px; /* 눈대중으로 살짝 쳐진 느낌 교정 */
-    }
-
-    /* 3. 버튼 래퍼 및 버튼 자체 정렬 강화 */
-    /* 버튼을 감싸는 div의 여백 제거 */
-    div.stElementContainer:has(button[key^="del_"]) {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 0 !important;
-    }
-
-    /* 버튼 스타일 하드하게 고정 */
-    div[data-testid="stButton"] button[key^="del_"] {
-        width: 32px !important;
-        height: 32px !important;
-        min-height: 32px !important;
-        padding: 0 !important;
-        line-height: 1 !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        border: 1px solid rgba(49, 51, 63, 0.2) !important;
-        border-radius: 4px !important;
-    }
-
-    /* 4. 버튼 내부 아이콘(마크다운) 정렬 */
-    div[data-testid="stButton"] button[key^="del_"] p {
-        margin: 0 !important;
-        padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-size: 1.1rem !important;
-        line-height: 1 !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -200,17 +150,21 @@ else:
             st.caption("저장된 브랜드가 없습니다.")
         else:
             for b, c in st.session_state.fav_map.items():
-                col_info, col_btn = st.columns([4, 1])
+                mc1, mc2, mc3 = st.columns([6, 1, 3])
                 
-                with col_info:
-                    # 텍스트와 색상 점을 나란히 배치
-                    st.markdown(f'<span class="fav-item-text">{b} <span style="color:{c};">●</span></span>', unsafe_allow_html=True)
+                mc1.markdown(f'<div style="display: flex; align-items: center; height: 2.5rem; font-size: 0.9rem;">{b}</div>', unsafe_allow_html=True)
                 
-                with col_btn:
-                    if st.button("🗑️ ", key=f"del_{b}"):
-                        delete_favorite(b)
-                        st.session_state.fav_map = load_favorites()
-                        st.rerun()
+                mc2.markdown(f'''
+                    <div style="display: flex; align-items: center; justify-content: center; height: 2.5rem;">
+                        <div style="background-color:{c}; width:0.9rem; height:0.9rem; border-radius:3px;"></div>
+                    </div>
+                ''', unsafe_allow_html=True)
+                
+                if mc3.button("🗑️", key=f"del_{b}", use_container_width=True):
+                    delete_favorite(b)
+                    st.session_state.fav_map = load_favorites()
+                    st.toast(f"{b} 삭제됨")
+                    st.rerun()
                         
     # 3. 브랜드 선택 버튼
     c_f1, c_f2 = st.sidebar.columns(2)
@@ -338,6 +292,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

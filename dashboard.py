@@ -266,10 +266,23 @@ else:
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'brand', sel_n)
                 chart_df = chart_df[chart_df['brand'].notna() & (chart_df['brand'] != '')]
+                if not chart_df.empty:
+                    last_date = chart_df['display_time'].max()
+                    # 마지막 날짜의 데이터만 추출하여 순위순으로 정렬
+                    last_rank_df = chart_df[chart_df['display_time'] == last_date]
+                    brand_order = last_rank_df.groupby('brand')['rank'].min().sort_values().index.tolist()
+                    
+                    # 혹시 마지막 날짜에 없는 브랜드가 있다면 뒤에 추가
+                    all_brands = chart_df['brand'].unique()
+                    missing_brands = [b for b in all_brands if b not in brand_order]
+                    brand_order.extend(missing_brands)
+                else:
+                    brand_order = []
                 brand_trend = chart_df.groupby(['display_time', 'brand'])['rank'].min().reset_index()
                 
                 fig = px.line(brand_trend, x='display_time', y='rank', color='brand', markers=True, 
-                              color_discrete_map=full_color_map, # 수정 포인트
+                              color_discrete_map=full_color_map,
+                              category_orders={"brand": brand_order},
                               title="브랜드별 최고 순위")
                 fig.update_layout(
                     legend_itemclick="toggleothers", 
@@ -290,7 +303,14 @@ else:
                 last_names = chart_df.groupby('goods_no')['goods_name'].last().to_dict()
                 chart_df['unified_name'] = chart_df['goods_no'].map(last_names)
                 chart_df['legend_label'] = chart_df.apply(lambda r: f"{r['unified_name'][:10]}.. (#{str(r['goods_no'])[-4:]})", axis=1)
-
+                last_date = chart_df['display_time'].max()
+                last_rank_df = chart_df[chart_df['display_time'] == last_date]
+                
+                # 마지막 날짜 순위 -> 없으면 전체 기간 최고 순위 순으로 정렬
+                item_order = last_rank_df.groupby('legend_label')['rank'].min().sort_values().index.tolist()
+                all_items = chart_df['legend_label'].unique()
+                missing_items = [i for i in all_items if i not in item_order]
+                item_order.extend(missing_items)
                 item_color_map = {
                     row['legend_label']: full_color_map.get(row['brand'], '#D3D3D3')
                     for _, row in chart_df.drop_duplicates('legend_label').iterrows()
@@ -304,6 +324,7 @@ else:
                     line_group="goods_no",
                     hover_name="unified_name", 
                     color_discrete_map=item_color_map,
+                    category_orders={"legend_label": item_order},
                     markers=True, 
                     title="상품별 순위 (브랜드 색상 동기화)"
                 )
@@ -350,6 +371,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

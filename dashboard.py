@@ -8,9 +8,6 @@ import requests
 # [1] 기본 설정 및 연결
 # ==============================================================================
 st.set_page_config(page_title="Qoo10 메가와리 인사이트", layout="wide", page_icon="📊")
-#브랜드 설정 유지
-if "selected_brands" not in st.session_state:
-    st.session_state.selected_brands = []
 
 try:
     SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -29,6 +26,32 @@ supabase = init_connection()
 def convert_df(df):
     return df.to_csv(index=False).encode('utf-8-sig')
 
+
+# ==============================================================================
+# 데이터 및 즐겨찾기 관련 함수
+# ==============================================================================
+def load_favorites():
+    """DB에서 즐겨찾기 브랜드와 색상 정보를 가져옴"""
+    try:
+        res = supabase.table("brand_favorites").select("*").execute()
+        return {item['brand_name']: item['color_code'] for item in res.data}
+    except:
+        return {}
+
+def save_favorite(brand, color):
+    """DB에 즐겨찾기 추가/수정"""
+    supabase.table("brand_favorites").upsert({"brand_name": brand, "color_code": color}).execute()
+
+def delete_favorite(brand):
+    """DB에서 즐겨찾기 삭제"""
+    supabase.table("brand_favorites").delete().eq("brand_name", brand).execute()
+
+# 앱 실행 시 세션 초기화
+if "fav_map" not in st.session_state:
+    st.session_state.fav_map = load_favorites()
+if "selected_brands" not in st.session_state:
+    st.session_state.selected_brands = []
+    
 # ==============================================================================
 # [2] 데이터 로드
 # ==============================================================================
@@ -99,48 +122,98 @@ if df.empty:
     st.warning("데이터가 없습니다. 수집기를 먼저 실행해주세요.")
 else:
     # --- 사이드바 필터 ---
-    st.sidebar.header("🔍 기본 필터")
-
+    # --- 1. 행사 SID ---
     events = sorted(df['event_sid'].unique(), reverse=True)
-    events.insert(0, "전체 (All Events)")
-    sel_event = st.sidebar.selectbox("행사(SID)", events, index=0)
-    if sel_event != "전체 (All Events)":
-        df = df[df['event_sid'] == sel_event]
-
-    r_types = df['rank_type'].unique()
-    sel_type = st.sidebar.selectbox("랭킹 기준", r_types)
-    df = df[df['rank_type'] == sel_type]
-
-    cats = df['category'].unique()
-    sel_cat = st.sidebar.selectbox("타겟(연령/카테고리)", cats)
-    df = df[df['category'] == sel_cat]
+    events.insert(0, "전체 (All Events)")  # '전체' 옵션 추가
+    sel_event = st.sidebar.selectbox("1. 행사(SID) 선택", events, index=0)
     
-    # 기간 설정
-    st.sidebar.divider()
-    st.sidebar.subheader("📅 기간 설정")
-    min_date = df['date_only'].min()
-    max_date = df['date_only'].max()
-    date_range = st.sidebar.date_input("조회 기간", value=(min_date, max_date), min_value=min_date, max_value=max_date)
-    
-    if len(date_range) == 2:
-        start_d, end_d = date_range
-        df = df[(df['date_only'] >= start_d) & (df['date_only'] <= end_d)]
-    
-    # 상위 N개
-    st.sidebar.divider()
-    st.sidebar.subheader("📊 시각화 옵션")
-    top_n_options = [5, 10, 15, 20, 30, 50, "전체"]
-    top_n = st.sidebar.selectbox("상위 N개 항목만 보기", top_n_options, index=1)
-
-    # 브랜드
-    all_brands = sorted(df['brand'].unique())
-    sel_brands = st.sidebar.multiselect("브랜드 직접 선택 (옵션)", all_brands)
-    
-    if sel_brands:
-        final_df = df[df['brand'].isin(sel_brands)]
+    if sel_event == "전체 (All Events)":
+        f1_df = df
     else:
-        final_df = df
+        f1_df = df[df['event_sid'] == sel_event]
+    
+    # --- 2. 브랜드 필터 & 즐겨찾기 ---
+    st.sidebar.subheader("2. 브랜드 필터")
+    all_brands = sorted(f1_df['brand'].unique())
+    
+    # [즐겨찾기 관리 익스팬더]
+    with st.sidebar.expander("⭐ 브랜드 즐겨찾기 & 서버 저장"):
+        st.caption("여기서 저장하면 다음에 접속해도 유지됩니다.")
+        # 등록 UI
+        c_reg1, c_reg2 = st.columns([2, 1])
+        with c_reg1:
+            reg_brand = st.selectbox("등록할 브랜드", all_brands, key="reg_box")
+        with c_reg2:
+            reg_color = st.color_picker("색상", "#FF4B4B")
         
+        if st.button("💾 이 브랜드 저장/수정", use_container_width=True):
+            save_favorite(reg_brand, reg_color)
+            st.session_state.fav_map = load_favorites()
+            st.rerun()
+    
+        st.divider()
+        # 목록 UI
+        st.markdown("**저장된 즐겨찾기**")
+        for b, c in st.session_state.fav_map.items():
+            mc1, mc2, mc3 = st.columns([3, 1, 1])
+            mc1.write(f"{b}")
+            mc2.markdown(f'<div style="background-color:{c}; width:15px; height:15px; border-radius:3px; margin-top:5px;"></div>', unsafe_allow_html=True)
+            if mc3.button("🗑️", key=f"del_{b}"):
+                delete_favorite(b)
+                st.session_state.fav_map = load_favorites()
+                st.rerun()
+    
+    # [브랜드 선택 버튼 및 멀티셀렉트]
+    col_fav_btn1, col_fav_btn2 = st.sidebar.columns(2)
+    if col_fav_btn1.button("✅ 즐겨찾기만", use_container_width=True):
+        st.session_state.selected_brands = [b for b in st.session_state.fav_map.keys() if b in all_brands]
+    if col_fav_btn2.button("🔄 전체 해제", use_container_width=True):
+        st.session_state.selected_brands = []
+    
+    st.session_state.selected_brands = st.sidebar.multiselect(
+        "브랜드를 선택하세요 (미선택 시 전체)", 
+        options=all_brands, 
+        default=st.session_state.selected_brands
+    )
+    
+    # 브랜드 필터 적용
+    if st.session_state.selected_brands:
+        f2_df = f1_df[f1_df['brand'].isin(st.session_state.selected_brands)]
+    else:
+        f2_df = f1_df # 디폴트: 전체
+    
+    # --- 3. 랭킹 기준 ---
+    r_types = sorted(f2_df['rank_type'].unique())
+    # 디폴트: '누적건수'
+    d_idx_r = r_types.index('누적건수') if '누적건수' in r_types else 0
+    sel_type = st.sidebar.selectbox("3. 랭킹 기준", r_types, index=d_idx_r)
+    f3_df = f2_df[f2_df['rank_type'] == sel_type]
+    
+    # --- 4. 타겟 (카테고리) ---
+    cats = sorted(f3_df['category'].unique())
+    # 디폴트: '뷰티전체'
+    d_idx_c = cats.index('뷰티전체') if '뷰티전체' in cats else 0
+    sel_cat = st.sidebar.selectbox("4. 타겟(연령/카테고리)", cats, index=d_idx_c)
+    f4_df = f3_df[f3_df['category'] == sel_cat]
+    
+    # --- 5. 기간 설정 ---
+    st.sidebar.divider()
+    st.sidebar.subheader("5. 기간 설정")
+    if not f4_df.empty:
+        min_d, max_d = f4_df['date_only'].min(), f4_df['date_only'].max()
+        date_range = st.sidebar.date_input("조회 기간", value=(min_d, max_d), min_value=min_d, max_value=max_d)
+        
+        if len(date_range) == 2:
+            f5_df = f4_df[(f4_df['date_only'] >= date_range[0]) & (f4_df['date_only'] <= date_range[1])]
+        else:
+            f5_df = f4_df
+    else:
+        f5_df = f4_df
+    
+    # --- 6. 상위 N개 ---
+    top_n_list = ["전체", 5, 10, 15, 20, 30, 50]
+    sel_n = st.sidebar.selectbox("6. 상위 N개 항목만 보기", top_n_list, index=0) # 디폴트: 전체
+    
     if st.sidebar.button("🚀 데이터 수집 즉시 실행"):
         trigger_github_action()
 
@@ -308,6 +381,7 @@ else:
             final_df.sort_values(by=['collected_at', 'rank'])[view_cols],
             use_container_width=True, hide_index=True
         )
+
 
 
 

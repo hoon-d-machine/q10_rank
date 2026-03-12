@@ -137,16 +137,21 @@ else:
             st.caption("저장된 브랜드가 없습니다.")
         else:
             for b, c in st.session_state.fav_map.items():
-                mc1, mc2, mc3 = st.columns([3, 1, 1])
-                mc1.write(f"{b}")
-                mc2.markdown(f'<div style="background-color:{c}; width:15px; height:15px; border-radius:3px; margin-top:5px;"></div>', unsafe_allow_html=True)
+                mc1, mc2, mc3 = st.columns([7, 1, 2])
+                with mc1:
+                    # 텍스트가 너무 길면 잘리지 않게 조정
+                    st.markdown(f"<div style='padding-top: 5px; font-size: 14px;'>{b}</div>", unsafe_allow_html=True)
                 
-                # 삭제 버튼 클릭 시 처리
-                if mc3.button("🗑️", key=f"del_{b}"):
-                    delete_favorite(b) # 서버에서 삭제 함수 호출
-                    st.session_state.fav_map = load_favorites() # 세션 갱신
-                    st.toast(f"{b} 삭제됨") # 알림
-                    st.rerun() # 화면 새로고침
+                with mc2:
+                    # 색상 박스 위치 정렬
+                    st.markdown(f'<div style="background-color:{c}; width:18px; height:18px; border-radius:4px; margin-top:8px;"></div>', unsafe_allow_html=True)
+                
+                with mc3:
+                    # 버튼을 작게 만들고 간격 조정
+                    if st.button("🗑️", key=f"del_{b}", use_container_width=True):
+                        delete_favorite(b)
+                        st.session_state.fav_map = load_favorites()
+                        st.rerun()
 
     c_f1, c_f2 = st.sidebar.columns(2)
     if c_f1.button("✅ 즐겨찾기", use_container_width=True):
@@ -274,6 +279,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

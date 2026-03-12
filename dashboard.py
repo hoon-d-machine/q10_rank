@@ -121,7 +121,7 @@ else:
     st.sidebar.subheader("2. 브랜드 필터")
     all_brands = sorted(f1_df['brand'].unique())
 
-    with st.sidebar.expander("⭐ 브랜드 즐겨찾기 설정 (서버 저장)"):
+    with st.sidebar.expander("⭐ 브랜드 즐겨찾기 설정"):
         c_reg1, c_reg2 = st.columns([2, 1])
         with c_reg1:
             reg_brand = st.selectbox("브랜드 선택", all_brands, key="reg_box")
@@ -267,3 +267,4 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+

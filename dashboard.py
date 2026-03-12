@@ -234,34 +234,37 @@ else:
     color_map = st.session_state.fav_map
 
     with tab1:
+        # --- [통합 컬러 맵 생성 로직] ---
+        import plotly.express as px
+        # 데이터프레임 내 모든 브랜드를 추출
+        all_brands_in_df = final_df['brand'].unique()
+        # 즐겨찾기 외 브랜드를 위한 연한 팔레트 (Pastel 계열)
+        base_palette = px.colors.qualitative.Pastel 
+        
+        full_color_map = {}
+        other_brand_count = 0
+        
+        for brand in all_brands_in_df:
+            # 1. 즐겨찾기(color_map)에 등록된 브랜드인 경우 해당 색상 사용
+            if brand in color_map:
+                full_color_map[brand] = color_map[brand]
+            # 2. 즐겨찾기에 없는 경우 연한 색상 중 하나를 순차 배정
+            else:
+                full_color_map[brand] = base_palette[other_brand_count % len(base_palette)]
+                other_brand_count += 1
+        # ------------------------------
+
         col1, col2 = st.columns(2)
         with col1:
             st.subheader(f"🏢 브랜드 Top {sel_n} 순위")
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'brand', sel_n)
                 brand_trend = chart_df.groupby(['display_time', 'brand'])['rank'].min().reset_index()
-                # 1. 차트에 표시될 모든 브랜드 리스트
-                all_brands = chart_df['brand'].unique()
                 
-                # 2. 즐겨찾기 외 브랜드를 위한 연한 컬러 팔레트 생성
-                # Plotly의 기본 10색(Plotly)이나 24색(Light24) 팔레트 활용
-                import plotly.express as px
-                base_palette = px.colors.qualitative.Light24 
-                
-                full_color_map = {}
-                other_brand_count = 0
-                
-                for brand in all_brands:
-                    if brand in color_map:
-                        # 즐겨찾기 브랜드는 지정된 색상 사용
-                        full_color_map[brand] = color_map[brand]
-                    else:
-                        # 나머지 브랜드는 Light24 팔레트에서 순차적으로 배정
-                        # 팔레트 개수를 넘어서면 다시 처음부터 순환 (modulo 연산)
-                        full_color_map[brand] = base_palette[other_brand_count % len(base_palette)]
-                        other_brand_count += 1
                 fig = px.line(brand_trend, x='display_time', y='rank', color='brand', markers=True, 
-                              color_discrete_map=color_map, title="브랜드별 최고 순위")
+                              color_discrete_map=full_color_map, # 수정 포인트
+                              title="브랜드별 최고 순위")
+                
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 st.plotly_chart(fig, use_container_width=True)
@@ -270,17 +273,19 @@ else:
             st.subheader(f"📦 상품 Top {sel_n} 순위")
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'goods_no', sel_n)
+                
                 last_names = chart_df.groupby('goods_no')['goods_name'].last().to_dict()
                 chart_df['unified_name'] = chart_df['goods_no'].map(last_names)
-                chart_df['legend_label'] = chart_df.apply(lambda r: f"{r['unified_name'][:10]}.. (#{str(r['goods_no'])[-4:]})", axis=1)
                 
-                # 브랜드 색상으로 통일하되 상품별로 선 구분
+                # 브랜드 순위와 동일한 full_color_map을 사용하여 상품별 선 색상도 브랜드 색상을 따름
                 fig = px.line(chart_df, x="display_time", y="rank", color="brand", line_group="goods_no",
-                              hover_name="unified_name", color_discrete_map=color_map, markers=True, title="상품별 순위 (브랜드 색상 동기화)")
+                              hover_name="unified_name", 
+                              color_discrete_map=full_color_map,
+                              markers=True, title="상품별 순위 (브랜드 색상 동기화)")
+                
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
                 st.plotly_chart(fig, use_container_width=True)
-
     with tab2:
         col3, col4 = st.columns(2)
         with col3:
@@ -314,6 +319,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

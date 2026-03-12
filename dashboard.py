@@ -273,9 +273,7 @@ else:
                 
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
-                fig.update_traces(line=dict(width=1)) 
-                for brand, color in color_map.items():
-                    fig.update_traces(selector=dict(name=brand), line=dict(width=3))
+                fig.update_traces(line=dict(width=2))
                 st.plotly_chart(fig, use_container_width=True)
 
         with col2:
@@ -294,9 +292,9 @@ else:
                 
                 fig.update_yaxes(autorange="reversed")
                 fig.update_xaxes(type='category', categoryorder='category ascending')
-                fig.update_traces(line=dict(width=1)) 
-                for brand, color in color_map.items():
-                    fig.update_traces(selector=dict(name=brand), line=dict(width=3))
+                fig.update_traces(line=dict(width=2)) 
+                # for brand, color in color_map.items():
+                #     fig.update_traces(selector=dict(name=brand), line=dict(width=3))
                 st.plotly_chart(fig, use_container_width=True)
     with tab2:
         col3, col4 = st.columns(2)
@@ -331,6 +329,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

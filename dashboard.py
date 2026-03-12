@@ -240,6 +240,26 @@ else:
             if not final_df.empty:
                 chart_df = filter_top_n(final_df, 'brand', sel_n)
                 brand_trend = chart_df.groupby(['display_time', 'brand'])['rank'].min().reset_index()
+                # 1. 차트에 표시될 모든 브랜드 리스트
+                all_brands = chart_df['brand'].unique()
+                
+                # 2. 즐겨찾기 외 브랜드를 위한 연한 컬러 팔레트 생성
+                # Plotly의 기본 10색(Plotly)이나 24색(Light24) 팔레트 활용
+                import plotly.express as px
+                base_palette = px.colors.qualitative.Light24 
+                
+                full_color_map = {}
+                other_brand_count = 0
+                
+                for brand in all_brands:
+                    if brand in color_map:
+                        # 즐겨찾기 브랜드는 지정된 색상 사용
+                        full_color_map[brand] = color_map[brand]
+                    else:
+                        # 나머지 브랜드는 Light24 팔레트에서 순차적으로 배정
+                        # 팔레트 개수를 넘어서면 다시 처음부터 순환 (modulo 연산)
+                        full_color_map[brand] = base_palette[other_brand_count % len(base_palette)]
+                        other_brand_count += 1
                 fig = px.line(brand_trend, x='display_time', y='rank', color='brand', markers=True, 
                               color_discrete_map=color_map, title="브랜드별 최고 순위")
                 fig.update_yaxes(autorange="reversed")
@@ -294,6 +314,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

@@ -257,7 +257,8 @@ else:
     # [4] 시각화
     # ==========================================================================
     st.divider()
-    
+    if final_df.empty:
+        st.info("💡 선택하신 브랜드는 현재 설정된 필터(랭킹 기준/타겟/기간) 내에 데이터가 존재하지 않습니다. 필터를 변경해 보세요.")
     def filter_top_n(dataframe, group_col, n_limit):
         if n_limit == "전체": return dataframe
         top_items = dataframe.groupby(group_col)['rank'].min().sort_values().head(n_limit).index.tolist()
@@ -406,6 +407,7 @@ else:
     with st.expander("📋 필터링된 데이터 원본 보기"):
         view_cols = ['display_time', 'rank', 'brand', 'goods_name', 'sale_price', 'review_count']
         st.dataframe(final_df.sort_values(by=['collected_at', 'rank'])[view_cols], use_container_width=True, hide_index=True)
+
 
 
 

@@ -397,21 +397,27 @@ else:
             tab3_df = final_df.copy()
             tab3_df['rank_score'] = 101 - tab3_df['rank']
             
-            # 1. 중분류(Medium Category)별 고유 파스텔 배경색 사전 생성
+            # 1. 중분류(Medium Category)별 고유 파스텔 배경색 생성
             medium_cats = sorted(tab3_df['medium_category'].unique())
-            m_palette = px.colors.qualitative.Pastel # 부드러운 파스텔톤 팔레트
+            m_palette = px.colors.qualitative.Pastel # 부드러운 파스텔톤
             m_color_map = {cat: m_palette[i % len(m_palette)] for i, cat in enumerate(medium_cats)}
             
-            # 2. 모든 계층 요소에 대한 색상 매핑 딕셔너리 구축
-            # 트리맵의 모든 라벨(이름)에 대해 색상을 정의해야 꼬이지 않습니다.
-            final_discrete_map = {}
-            
-            # (1) 중분류 배경색 먼저 채우기
-            for cat, color in m_color_map.items():
-                final_discrete_map[cat] = color
-            
-            # (2) 즐겨찾기 브랜드 색상 덮어쓰기 (가장 높은 우선순위)
-            final_discrete_map.update(color_map)
+            def get_final_color_list(labels, parents):
+                colors = []
+                for label, parent in zip(labels, parents):
+                    # 우선순위 1: 즐겨찾기 브랜드인 경우 (지정 색상)
+                    if label in color_map:
+                        colors.append(color_map[label])
+                    # 우선순위 2: 중분류 박스 그 자체인 경우
+                    elif label in m_color_map:
+                        colors.append(m_color_map[label])
+                    # 우선순위 3: 일반 브랜드인 경우
+                    else:
+                        # 부모(parent) 이름이 중분류 맵에 있는지 확인
+                        # parents는 '전체/대분류/중분류' 형태로 들어올 수 있으므로 마지막 요소 체크
+                        parent_name = parent.split('/')[-1] if parent else ""
+                        colors.append(m_color_map.get(parent_name, m_color_map.get(label, '#E5ECF6')))
+                return colors
 
             with col5:
                 st.subheader("🔲 카테고리 점유율")
@@ -419,15 +425,12 @@ else:
                                  path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
                                  values='rank_score')
                 fig.update_traces(
-                    marker_colors=[
-                        final_discrete_map.get(label, 
-                            m_color_map.get(parent, '#E5ECF6') # 부모(중분류) 색상 상속
-                        )
-                        for label, parent in zip(fig.data[0].labels, fig.data[0].parents)
-                    ]
+                    marker_colors=get_final_color_list(fig.data[0].labels, fig.data[0].parents),
+                    marker_line_width=1,
+                    textinfo="label+value"
                 )
                 
-                fig.update_layout(margin=dict(t=30, l=10, r=10, b=10))
+                fig.update_layout(coloraxis_showscale=False, margin=dict(t=30, l=10, r=10, b=10))
                 st.plotly_chart(fig, use_container_width=True)
                 st.caption("※ 점유율 산정 방식: (101 - 순위)의 합계. 상위권에 오래 머무를수록 면적이 넓어집니다.")
 

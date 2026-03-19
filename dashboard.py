@@ -421,10 +421,13 @@ else:
                 st.subheader("🔲 카테고리 점유율")
                 fig = px.treemap(tab3_df, 
                                  path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
-                                 values='rank_score', 
-                                 color='final_display_color')
-                fig.update_traces(marker_colors=tab3_df['final_display_color'])
-                fig.update_layout(coloraxis_showscale=False)
+                                 values='rank_score')
+                fig.update_traces(
+                    marker_colors=[
+                        get_final_color({'brand': label, 'medium_category': parent}) 
+                        for label, parent in zip(fig.data[0].labels, fig.data[0].parents)
+                    ]
+                )
                 st.plotly_chart(fig, use_container_width=True)
                 st.caption("※ 점유율 산정 방식: (101 - 순위)의 합계. 상위권에 오래 머무를수록 면적이 넓어집니다.")
 

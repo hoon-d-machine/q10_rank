@@ -396,20 +396,35 @@ else:
         if not final_df.empty:
             tab3_df = final_df.copy()
             tab3_df['rank_score'] = 101 - tab3_df['rank']
+            
+            # 1. [데이터 전처리] 중분류(Medium Category)별 고유 배경색 생성 (가시성 확보)
             medium_cats = sorted(tab3_df['medium_category'].unique())
-            m_palette = px.colors.qualitative.Pastel
-            full_discrete_map = {cat: m_palette[i % len(m_palette)] for i, cat in enumerate(medium_cats)}
-            full_discrete_map.update(color_map)
+            # Plotly의 정해진 팔레트를 중분류 개수만큼 배분
+            m_color_palette = px.colors.qualitative.Pastel
+            m_color_map = {cat: m_color_palette[i % len(m_color_palette)] for i, cat in enumerate(medium_cats)}
+            
+            # [핵심] 하이브리드 컬러링 로직
+            # 모든 요소에 중분류 배경색을 깔되, 즐겨찾기 브랜드만 사용자 지정 색상으로 덮어씁니다.
+            def get_final_color(row):
+                # 우선순위 1: 즐겨찾기 브랜드인 경우 (지정 색상 강제 적용)
+                if row['brand'] in color_map: 
+                    return color_map[row['brand']]
+                
+                # 우선순위 2: 즐겨찾기가 아닌 브랜드나 카테고리 영역
+                # 해당 중분류의 배경색을 반환
+                return m_color_map.get(row['medium_category'], 'lightgrey')
+
+            # 'final_display_color' 컬럼 생성
+            tab3_df['final_display_color'] = tab3_df.apply(get_final_color, axis=1)
 
             with col5:
                 st.subheader("🔲 카테고리 점유율")
                 fig = px.treemap(tab3_df, 
                                  path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
                                  values='rank_score', 
-                                 color='medium_category',
-                                 color_discrete_map=full_discrete_map)
-                fig.update_traces(marker_line_width=1, selector=dict(type='treemap'))
-                fig.update_layout(margin=dict(t=30, l=10, r=10, b=10))
+                                 color='final_display_color')
+                fig.update_traces(marker_colors=tab3_df['final_display_color'])
+                fig.update_layout(coloraxis_showscale=False)
                 st.plotly_chart(fig, use_container_width=True)
                 st.caption("※ 점유율 산정 방식: (101 - 순위)의 합계. 상위권에 오래 머무를수록 면적이 넓어집니다.")
 

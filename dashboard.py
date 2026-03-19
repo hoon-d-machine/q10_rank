@@ -396,16 +396,25 @@ else:
         if not final_df.empty:
             tab3_df = final_df.copy()
             tab3_df['rank_score'] = 101 - tab3_df['rank']
-            
+            def get_display_color(brand):
+                if brand in color_map: # 즐겨찾기 맵(color_map)에 있는 경우
+                    return color_map[brand]
+                else:
+                    # 즐겨찾기가 아닌 경우: 아주 연한 회색 (투명도 0.3)
+                    return 'rgba(220, 220, 220, 0.3)'
+            tab3_df['display_color'] = tab3_df['brand'].apply(get_display_color)
             with col5:
                 st.subheader("🔲 카테고리 점유율")
                 fig = px.treemap(tab3_df, 
                                  path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
                                  values='rank_score', 
                                  color='medium_category', 
-                                 color_continuous_scale='Mint',
-                                 color_discrete_map=full_color_map)
-                fig.update_layout(coloraxis_showscale=True)
+                                 color='display_color')
+                fig.update_layout(coloraxis_showscale=False)
+                fig.update_traces(marker_colors=tab3_df['display_color'])
+                
+                # 툴팁 설정 보완 (점수 합계 표시)
+                fig.update_traces(hovertemplate='<b>%{label}</b><br>점수 합계: %{value:.1f}<extra></extra>')
                 st.plotly_chart(fig, use_container_width=True)
                 st.caption("※ 점유율 산정 방식: (101 - 순위)의 합계. 상위권에 오래 머무를수록 면적이 넓어집니다.")
 
@@ -414,7 +423,7 @@ else:
                 fig = px.sunburst(tab3_df, 
                                   path=['large_category', 'medium_category', 'small_category'], 
                                   values='rank_score',
-                                  color='large_category',
+                                  color='medium_category',
                                   color_discrete_sequence=px.colors.qualitative.Prism)
                 st.plotly_chart(fig, use_container_width=True)
 

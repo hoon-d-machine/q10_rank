@@ -396,21 +396,10 @@ else:
         if not final_df.empty:
             tab3_df = final_df.copy()
             tab3_df['rank_score'] = 101 - tab3_df['rank']
-            # 색상 팔레트 설정
             medium_cats = sorted(tab3_df['medium_category'].unique())
-            # Plotly의 정해진 팔레트를 중분류 개수만큼 배분
-            m_color_palette = px.colors.qualitative.Pastel
-            m_color_map = {cat: m_color_palette[i % len(m_color_palette)] for i, cat in enumerate(medium_cats)}
-            
-            # 2. 개별 요소(브랜드/카테고리)에 적용할 최종 색상 계산
-            def get_final_color(row):
-                # 우선순위 1: 즐겨찾기 브랜드인 경우 (사용자 지정 색상)
-                if row['brand'] in color_map: 
-                    return color_map[row['brand']]
-                
-                # 우선순위 2: 즐겨찾기가 아닌 브랜드나 카테고리 영역
-                # 해당 중분류의 배경색을 반환
-                return m_color_map.get(row['medium_category'], 'lightgrey')
+            m_palette = px.colors.qualitative.Pastel
+            full_discrete_map = {cat: m_palette[i % len(m_palette)] for i, cat in enumerate(medium_cats)}
+            full_discrete_map.update(color_map)
 
             tab3_df['final_display_color'] = tab3_df.apply(get_final_color, axis=1)
             with col5:
@@ -418,12 +407,10 @@ else:
                 fig = px.treemap(tab3_df, 
                                  path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
                                  values='rank_score', 
-                                 color='final_display_color')
-                fig.update_traces(marker_colors=tab3_df['final_display_color'])
-                fig.update_layout(coloraxis_showscale=False)
-                
-                # 툴팁 설정 보완 (점수 합계 표시)
-                fig.update_traces(hovertemplate='<b>%{label}</b><br>점수 합계: %{value:.1f}<extra></extra>')
+                                 color='brand',
+                                 color_discrete_map=full_discrete_map)
+                fig.update_traces(marker_line_width=1, selector=dict(type='treemap'))
+                fig.update_layout(margin=dict(t=30, l=10, r=10, b=10))
                 st.plotly_chart(fig, use_container_width=True)
                 st.caption("※ 점유율 산정 방식: (101 - 순위)의 합계. 상위권에 오래 머무를수록 면적이 넓어집니다.")
 

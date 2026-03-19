@@ -401,7 +401,6 @@ else:
             full_discrete_map = {cat: m_palette[i % len(m_palette)] for i, cat in enumerate(medium_cats)}
             full_discrete_map.update(color_map)
 
-            tab3_df['final_display_color'] = tab3_df.apply(get_final_color, axis=1)
             with col5:
                 st.subheader("🔲 카테고리 점유율")
                 fig = px.treemap(tab3_df, 

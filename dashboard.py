@@ -408,7 +408,6 @@ else:
                 fig = px.treemap(tab3_df, 
                                  path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
                                  values='rank_score', 
-                                 color='medium_category', 
                                  color='display_color')
                 fig.update_layout(coloraxis_showscale=False)
                 fig.update_traces(marker_colors=tab3_df['display_color'])

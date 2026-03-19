@@ -398,20 +398,24 @@ else:
             tab3_df['rank_score'] = 101 - tab3_df['rank']
             
             with col5:
-                st.subheader("🔲 카테고리 점유율 (순위 점수 기준)")
+                st.subheader("🔲 카테고리 점유율")
                 fig = px.treemap(tab3_df, 
                                  path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
                                  values='rank_score', 
-                                 color='brand', 
+                                 color='medium_category', 
+                                 color_continuous_scale='Mint',
                                  color_discrete_map=full_color_map)
+                fig.update_layout(coloraxis_showscale=True)
                 st.plotly_chart(fig, use_container_width=True)
                 st.caption("※ 점유율 산정 방식: (101 - 순위)의 합계. 상위권에 오래 머무를수록 면적이 넓어집니다.")
 
             with col6:
-                st.subheader("☀️ 세부 계층 구조 (순위 점수 기준)")
+                st.subheader("☀️ 세부 계층 구조")
                 fig = px.sunburst(tab3_df, 
                                   path=['large_category', 'medium_category', 'small_category'], 
-                                  values='rank_score')
+                                  values='rank_score',
+                                  color='large_category',
+                                  color_discrete_sequence=px.colors.qualitative.Prism)
                 st.plotly_chart(fig, use_container_width=True)
 
     with st.expander("📋 필터링된 데이터 원본 보기"):

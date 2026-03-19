@@ -406,7 +406,7 @@ else:
                 fig = px.treemap(tab3_df, 
                                  path=[px.Constant("전체"), 'large_category', 'medium_category', 'brand'], 
                                  values='rank_score', 
-                                 color='brand',
+                                 color='medium_category',
                                  color_discrete_map=full_discrete_map)
                 fig.update_traces(marker_line_width=1, selector=dict(type='treemap'))
                 fig.update_layout(margin=dict(t=30, l=10, r=10, b=10))

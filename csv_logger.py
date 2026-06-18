@@ -52,14 +52,22 @@ def get_daily_bestsellers(current_date): # 날짜를 인자로 받음
     return pd.DataFrame(data)
 
 def get_official_ranking(period, current_date): # 날짜를 인자로 받음
-    categories = {'전체': None, '스킨케어': '120000012', '베이스': '120000013', '포인트': '120000014'}
+    # (카테고리명, gdlcCd, gdmcCd, gdscCd)
+    categories = [
+        ('전체', None, None, None),
+        ('스킨케어', '120000012', None, None),
+        ('스킨케어>화장수', '120000012', '220000159', '320001619'),
+        ('스킨케어>미용액', '120000012', '220000159', '320001623'),
+        ('베이스', '120000013', None, None),
+        ('베이스>루스파우더', '120000013', '220000166', '320001665'),
+    ]
     url = 'https://m.qoo10.jp/gmkt.inc/Mobile/Beauty/OfficialRanking.aspx/GetBestSellerBeautyOfficialRanking'
     all_data = []
     period_name = "주간" if period == 'W' else "월간"
     
-    for name, code in categories.items():
+    for name, gdlc, gdmc, gdsc in categories:
         payload = {
-            'gdlcCd': code, 'gdmcCd': None, 'gdscCd': None, 
+            'gdlcCd': gdlc, 'gdmcCd': gdmc, 'gdscCd': gdsc, 
             'period': period, 'pageNo': 1, 'pageSize': 100, 
             'showMegaoshi': 'Y', '___cache_expire___': str(int(time.time()*1000))
         }

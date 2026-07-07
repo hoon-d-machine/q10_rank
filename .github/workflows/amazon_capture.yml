@@ -1,0 +1,36 @@
+name: Capture Amazon Bestsellers
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        working-directory: amazon
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: 캡쳐 실행
+        working-directory: amazon
+        run: python capture_and_scrape.py
+
+      - name: 결과 커밋 및 푸시
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add amazon/screenshots amazon/data
+          git diff --cached --quiet || git commit -m "chore: 랭킹 캡쳐 $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push

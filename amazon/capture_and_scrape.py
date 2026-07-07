@@ -43,7 +43,7 @@ def main():
         )
         page = context.new_page()
 
-        location_ok = set_location(page, POSTAL_CODE)
+        location_ok = set_location(page, POSTAL_CODE, debug_dir=SCREENSHOTS_DIR)
         if not location_ok:
             logger.warning("배송지 설정에 실패했지만 캡쳐는 계속 진행합니다.")
 

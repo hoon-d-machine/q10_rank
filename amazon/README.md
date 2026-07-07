@@ -26,11 +26,10 @@
 
 | Secret | 설명 |
 |---|---|
-| `SMTP_SERVER` | 예: `smtp.gmail.com` |
-| `SMTP_PORT` | 예: `587` |
-| `SMTP_USER` | 발신 이메일 계정 |
-| `SMTP_PASS` | 앱 비밀번호 (Gmail은 일반 로그인 비밀번호 대신 [앱 비밀번호](https://myaccount.google.com/apppasswords) 사용 필요) |
-| `EMAIL_TO` | 수신 이메일 주소 |
+| `RESEND_API_KEY` | [Resend](https://resend.com) 대시보드에서 발급받은 API 키 |
+| `RECEIVER_EMAIL` | 수신 이메일 주소 |
+
+> 발신자 주소는 `onboarding@resend.dev`로 고정되어 있어요 (Resend 무료/미인증 도메인 기본값). 직접 도메인을 인증하면 `send_daily_email.py`의 `from` 값을 바꿀 수 있어요.
 
 ## 3. GitHub Personal Access Token (cron-job.org용)
 
@@ -70,7 +69,7 @@
 pip install -r requirements.txt
 playwright install chromium
 python capture_and_scrape.py
-python send_daily_email.py   # SMTP 환경변수 미리 export 필요
+python send_daily_email.py   # RESEND_API_KEY, RECEIVER_EMAIL 환경변수 미리 export 필요
 ```
 
 ## 알아두어야 할 점 (중요)

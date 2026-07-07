@@ -24,11 +24,8 @@ jobs:
       - name: 이메일 발송
         working-directory: amazon
         env:
-          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RECEIVER_EMAIL: ${{ secrets.RECEIVER_EMAIL }}
         run: python send_daily_email.py
 
       - name: 발송용 zip 커밋 (기록 보관용, 선택)

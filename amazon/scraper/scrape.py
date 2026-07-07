@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 
 from scraper.config import ITEMS_PER_PAGE, MAX_PAGES
+from scraper.browser_utils import bypass_interstitial
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,7 @@ def scrape_category(page, category_key, category, screenshots_dir, run_ts):
         try:
             page.goto(url, wait_until="domcontentloaded", timeout=45000)
             page.wait_for_timeout(3000)
+            bypass_interstitial(page)
             page.wait_for_selector("[data-asin]", timeout=20000)
             _load_all_visible_items(page, ITEMS_PER_PAGE)
         except Exception as e:

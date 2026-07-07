@@ -2,6 +2,8 @@ name: Capture Amazon Bestsellers
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [amazon_capture_trigger]
 
 permissions:
   contents: write

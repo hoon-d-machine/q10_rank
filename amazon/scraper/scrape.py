@@ -89,6 +89,13 @@ def _extract_items_from_page(page, page_num):
         elif review_text and NUMBER_RE.fullmatch(review_text.strip()):
             review_count = review_text.strip()
 
+        if not review_count and text:
+            # Fallback: find the number visually positioned right after the "5つ星" star rating
+            # excluding numbers that are followed by currency or points.
+            fallback = re.search(r"5つ星(?:のうち)?\s*[\d.]+\s*[\n\r]*\s*([\d,]+)(?!\s*(?:pt|ポイント|%|￥|¥|円))", text)
+            if fallback:
+                review_count = fallback.group(1)
+
         # 상품명 추정: 순위 표기(#1위 등) 줄을 제외한 첫 유의미한 줄
         name = None
         for line in (l.strip() for l in text.split("\n") if l.strip()):

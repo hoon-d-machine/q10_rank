@@ -29,6 +29,6 @@ SCREENSHOTS_DIR = "screenshots"
 DATA_DIR = "data"
 EXCEL_PATH = os.path.join(DATA_DIR, "rankings.xlsx")
 
-VIEWPORT = {"width": 1920, "height": 1080}
+VIEWPORT = {"width": 2300, "height": 1080}
 ITEMS_PER_PAGE = 50
 MAX_PAGES = 2  # 100위까지 (페이지당 50개)

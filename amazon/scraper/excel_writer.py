@@ -11,6 +11,7 @@ HEADERS = [
     "category_label",
     "rank",
     "asin",
+    "brand",
     "name",
     "price",
     "rating",

@@ -49,6 +49,8 @@ def _extract_items_from_page(page, page_num):
                 const node = container.querySelector(selector);
                 return node ? node.getAttribute(attr) : null;
             };
+            
+            // For review text, sometimes it's just a raw number next to the stars inside .a-icon-row
             return {
                 asin: el.getAttribute('data-asin'),
                 text: container.innerText || container.textContent || '',
@@ -56,9 +58,8 @@ def _extract_items_from_page(page, page_num):
                 priceText: textOf('.a-price .a-offscreen, .p13n-sc-price, .a-color-price'),
                 ratingText: attrOf('.a-icon-alt', 'textContent') || textOf('.a-icon-alt'),
                 ratingLabel: attrOf('[aria-label*="5つ星"]', 'aria-label'),
-                reviewText: textOf('a[href*="customerReviews"] span, a[href*="#customerReviews"] span'),
-                reviewLabel: attrOf('a[href*="customerReviews"], a[href*="#customerReviews"], [aria-label*="個の評価"], [aria-label*="件のカスタマーレビュー"]', 'aria-label'),
-                brandText: textOf('[data-brand], .a-size-small.a-color-base, .a-size-small.a-color-secondary, .a-size-base.a-color-secondary')
+                reviewText: textOf('a[href*="customerReviews"] span, a[href*="#customerReviews"] span, .a-icon-row .a-size-small, .a-icon-row a:not([title])'),
+                reviewLabel: attrOf('a[href*="customerReviews"], a[href*="#customerReviews"], [aria-label*="個の評価"], [aria-label*="件のカスタマーレビュー"]', 'aria-label')
             };
         })""",
     )
@@ -98,15 +99,10 @@ def _extract_items_from_page(page, page_num):
                 break
 
         rank = int(rank_match.group(1)) if rank_match else (page_num - 1) * ITEMS_PER_PAGE + len(items) + 1
-        brand = b.get("brandText")
-        if brand and len(brand) > 30:
-            brand = brand[:30] # Limit overly long brand heuristics
-            
         items.append(
             {
                 "asin": asin,
                 "rank": rank,
-                "brand": brand,
                 "name": name,
                 "price": price_match.group(0) if price_match else None,
                 "rating": float(rating_match.group(1)) if rating_match else None,

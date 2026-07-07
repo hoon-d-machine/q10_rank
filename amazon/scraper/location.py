@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
 
+from scraper.browser_utils import bypass_interstitial
+
 logger = logging.getLogger(__name__)
 
 ZIP_INPUT_SELECTOR = "#GLUXZipUpdateInput, #GLUXZipUpdateInput_0, #GLUXZipUpdateInput_1"
@@ -99,6 +101,7 @@ def set_location(page, postal_code: str, debug_dir: str | None = None) -> bool:
     try:
         page.goto("https://www.amazon.co.jp/", wait_until="domcontentloaded", timeout=30000)
         page.wait_for_timeout(1500)
+        bypass_interstitial(page)
 
         _open_location_modal(page)
 

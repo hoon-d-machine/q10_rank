@@ -13,6 +13,7 @@ from scraper.config import (
     EXCEL_PATH,
     VIEWPORT,
 )
+from scraper.browser_utils import new_stealth_context, LAUNCH_ARGS
 from scraper.location import set_location
 from scraper.scrape import scrape_category
 from scraper.excel_writer import append_rows
@@ -34,13 +35,8 @@ def main():
     logger.info("=== 캡쳐 시작: %s ===", actual_ts.isoformat())
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
-            locale=LOCALE,
-            viewport=VIEWPORT,
-            device_scale_factor=1,
-            extra_http_headers={"Accept-Language": "ja-JP,ja;q=0.9"},
-        )
+        browser = p.chromium.launch(headless=True, args=LAUNCH_ARGS)
+        context = new_stealth_context(browser, LOCALE, VIEWPORT)
         page = context.new_page()
 
         location_ok = set_location(page, POSTAL_CODE, debug_dir=SCREENSHOTS_DIR)

@@ -1,0 +1,40 @@
+name: Send Daily Email
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  send-email:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 의존성 설치
+        working-directory: amazon
+        run: pip install -r requirements.txt
+
+      - name: 이메일 발송
+        working-directory: amazon
+        env:
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python send_daily_email.py
+
+      - name: 발송용 zip 커밋 (기록 보관용, 선택)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add amazon/screenshots
+          git diff --cached --quiet || git commit -m "chore: 발송용 zip 생성 $(date -u +'%Y-%m-%d')"
+          git push

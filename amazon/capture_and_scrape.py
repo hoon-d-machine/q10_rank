@@ -39,7 +39,9 @@ def main():
         context = new_stealth_context(browser, LOCALE, VIEWPORT)
         page = context.new_page()
 
-        location_ok = set_location(page, POSTAL_CODE, debug_dir=SCREENSHOTS_DIR)
+        # 디버그용 스크린샷(_debug_location.png 등)이 필요하면 아래 주석을 해제하고 debug_dir=SCREENSHOTS_DIR로 바꿔서 실행
+        # location_ok = set_location(page, POSTAL_CODE, debug_dir=SCREENSHOTS_DIR)
+        location_ok = set_location(page, POSTAL_CODE)
         if not location_ok:
             logger.warning("배송지 설정에 실패했지만 캡쳐는 계속 진행합니다.")
 

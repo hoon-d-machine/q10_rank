@@ -3,3 +3,7 @@ __pycache__/
 ~$*.xlsx
 ~$*.xls
 .DS_Store
+*.env
+env
+qsm_cookies.json
+logs/

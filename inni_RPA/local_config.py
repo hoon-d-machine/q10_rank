@@ -54,3 +54,32 @@ def get_save_dir():
     except OSError:
         return None
     return path
+
+
+def ask_retry_save(path):
+    """저장 실패 시 경고창. '닫은 후 저장' → True(재시도), '취소' → False. GUI 불가 시 False."""
+    try:
+        import tkinter as tk
+        root = tk.Tk()
+        root.title("저장 실패")
+        root.attributes("-topmost", True)
+        root.resizable(False, False)
+        result = {"retry": False}
+
+        def choose(v):
+            result["retry"] = v
+            root.destroy()
+
+        msg = (f"파일이 열려 있어 저장하지 못했습니다.\n\n{path}\n\n"
+               "엑셀 등에서 파일을 닫은 뒤 '닫은 후 저장'을 누르세요.\n"
+               "'취소'하면 로컬 저장 없이 종료되며 다시 실행해야 합니다.")
+        tk.Label(root, text=msg, justify="left", padx=20, pady=15).pack()
+        row = tk.Frame(root, pady=10)
+        row.pack()
+        tk.Button(row, text="닫은 후 저장", width=14, command=lambda: choose(True)).pack(side="left", padx=8)
+        tk.Button(row, text="취소", width=14, command=lambda: choose(False)).pack(side="left", padx=8)
+        root.protocol("WM_DELETE_WINDOW", lambda: choose(False))
+        root.mainloop()
+        return result["retry"]
+    except Exception:
+        return False

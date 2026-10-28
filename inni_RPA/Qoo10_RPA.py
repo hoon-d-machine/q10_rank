@@ -9,7 +9,6 @@ import time
 import calendar
 import logging
 import threading
-import csv
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
@@ -852,7 +851,7 @@ def get_gspread_client():
 
 
 # ============================================================
-# 로컬 CSV 저장 (시트와 동일: 전전월 1일 이전 유지 + 이후 덮어쓰기)
+# 로컬 xlsx 저장 (시트와 동일: 전전월 1일 이전 유지 + 이후 덮어쓰기)
 # ============================================================
 # 시트 1행과 동일한 헤더 (raw_data의 M·N열은 시트에서 따로 관리하는 분류/월 열이라 제외)
 RAW_DATA_COLUMNS = [
@@ -872,36 +871,70 @@ _CONVERSION_RENAME = {
 CONVERSION_HEADERS = [_CONVERSION_RENAME.get(c, c) for c in CONVERSION_COLUMNS]
 
 
-def update_local_csv(save_dir, name, rows, columns, date_idx):
-    """save_dir/name.csv 갱신. 임시 파일에 쓴 뒤 교체하므로 중간 실패 시 기존 파일 유지.
+LOCAL_XLSX_NAME = "Qoo10_RPA_data.xlsx"
+
+
+def update_local_xlsx(save_dir, datasets):
+    """save_dir/Qoo10_RPA_data.xlsx 한 파일에 시트별(raw_data/raw_trade/raw_conversion)로 갱신.
+    시트와 같은 규칙: 전전월 1일 이전 행은 유지, 이후는 새 데이터로 교체.
+    임시 파일에 저장한 뒤 교체하므로 중간 실패 시 기존 파일이 유지된다.
 
     Args:
-        date_idx: rows에서 날짜(YYYY-MM-DD) 열 위치
+        datasets: [(시트명, rows, 헤더, 날짜열 위치), ...] - rows가 None/빈 값이면 그 시트는 기존 그대로 둠
     """
+    from openpyxl import Workbook, load_workbook
+    
     yesterday = datetime.now().date() - timedelta(days=1)
     cutoff_date = (yesterday.replace(day=1) - relativedelta(months=2)).strftime("%Y-%m-%d")
-    path = os.path.join(save_dir, f"{name}.csv")
-
-    kept = []
-    if os.path.exists(path):
-        with open(path, "r", encoding="utf-8-sig", newline="") as f:
-            reader = csv.reader(f)
-            next(reader, None)  # 헤더
-            kept = [r for r in reader if len(r) > date_idx and r[date_idx] < cutoff_date]
-
-    new_rows = sorted(rows, key=lambda r: str(r[date_idx]))
-    tmp = path + ".tmp"
+    path = os.path.join(save_dir, LOCAL_XLSX_NAME)
+    
     try:
-        with open(tmp, "w", encoding="utf-8-sig", newline="") as f:
-            w = csv.writer(f)
-            w.writerow(columns)
-            w.writerows(kept)
-            w.writerows(new_rows)
-        os.replace(tmp, path)
+        wb = load_workbook(path) if os.path.exists(path) else Workbook()
+        if "Sheet" in wb.sheetnames and len(wb.sheetnames) == 1 and not os.path.exists(path):
+            wb.remove(wb["Sheet"])
+        
+        for name, rows, columns, date_idx in datasets:
+            if not rows:
+                continue
+            kept = []
+            if name in wb.sheetnames:
+                ws_old = wb[name]
+                for r in ws_old.iter_rows(min_row=2, values_only=True):
+                    d = r[date_idx] if len(r) > date_idx else None
+                    if d is not None and str(d) < cutoff_date:
+                        kept.append(list(r))
+                del wb[name]
+            ws = wb.create_sheet(name)
+            ws.append(columns)
+            for r in kept:
+                ws.append(r)
+            new_rows = sorted(rows, key=lambda r: str(r[date_idx]))
+            for r in new_rows:
+                ws.append(r)
+            ws.freeze_panes = "A2"
+            logger.info(f"  [{name}] 유지 {len(kept)} + 신규 {len(new_rows)}행")
+        
+        # 시트 순서 고정
+        order = [d[0] for d in datasets if d[0] in wb.sheetnames]
+        wb._sheets = [wb[n] for n in order] + [ws for ws in wb._sheets if ws.title not in order]
+        
+        from local_config import ask_retry_save
+        tmp = path + ".tmp"
+        while True:
+            try:
+                wb.save(tmp)
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                logger.warning(f"로컬 저장 실패: {path} 가 열려 있습니다.")
+                if not ask_retry_save(path):
+                    logger.error("로컬 저장 취소 - 파일을 닫고 다시 실행해야 합니다.")
+                    return False
+                logger.info("재저장 시도...")
     except Exception as e:
         logger.error(f"로컬 저장 실패 ({path}): {e}")
         return False
-    logger.info(f"로컬 저장 완료: {path} (유지 {len(kept)} + 신규 {len(new_rows)}행)")
+    logger.info(f"로컬 저장 완료: {path}")
     return True
 
 
@@ -1178,17 +1211,16 @@ if __name__ == "__main__":
     ]
     failures = [name for name, rows, _, _ in datasets if rows is None]
 
-    # 6. 로컬 CSV 저장 (최초 1회 폴더 선택, 이후 자동)
+    # 6. 로컬 xlsx 저장 (최초 1회 폴더 선택, 이후 자동)
     logger.info("\n" + "="*60)
-    logger.info("로컬 CSV 저장")
+    logger.info("로컬 xlsx 저장")
     logger.info("="*60)
     from local_config import get_save_dir
     save_dir = get_save_dir()
     if save_dir:
         logger.info(f"저장 폴더: {save_dir}")
-        for name, rows, columns, date_idx in datasets:
-            if rows and not update_local_csv(save_dir, name, rows, columns, date_idx):
-                failures.append(f"{name}(로컬)")
+        if not update_local_xlsx(save_dir, datasets):
+            failures.append("로컬 xlsx")
     else:
         logger.warning("저장 폴더 미설정/접근 불가 - 로컬 저장 건너뜀 (change_save_dir.py로 설정)")
 

@@ -7,3 +7,6 @@ __pycache__/
 env
 qsm_cookies.json
 logs/
+
+local_config.json
+browser_profile/

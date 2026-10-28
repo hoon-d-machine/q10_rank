@@ -8,6 +8,8 @@ import re
 import time
 import calendar
 import logging
+import threading
+import csv
 import requests
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
@@ -57,6 +59,7 @@ logger.info(f"로그 파일: {log_filename}")
 QSM_LOGIN_URL = "https://qsm.qoo10.jp/GMKT.INC.Gsm.Web/login.aspx"
 QSM_DOMAIN = "qsm.qoo10.jp"
 LOGIN_TIMEOUT = 300  # 로그인 대기 최대 5분 (초)
+PROFILE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "browser_profile")
 
 # ============================================================
 # 공통 유틸리티
@@ -87,8 +90,12 @@ def build_test_payload(size=5):
     }
 
 
-def qsm_login():
+def qsm_login(silent=False):
     """QSM 로그인 페이지를 띄우고 로그인 완료 후 세션 정보를 반환.
+    
+    전용 브라우저 프로필(browser_profile/)을 재사용하므로, 프로필의 로그인이 살아 있으면
+    로그인 화면 없이 토큰만 갱신한다. silent=True면 창을 숨기고(headless) 로그인이
+    필요한 상태일 때 사람을 기다리지 않고 바로 None을 반환한다.
     
     Returns:
         dict: {
@@ -105,12 +112,18 @@ def qsm_login():
     logger.info("=" * 60)
     
     with sync_playwright() as p:
-        # Chromium headful 모드 (사용자에게 보이는 브라우저)
-        browser = p.chromium.launch(headless=False)
-        context = browser.new_context(
+        # 영구 프로필: 쿠키/기기 신뢰가 쌓여 로그인 유지 및 reCAPTCHA 노출이 줄어든다
+        launch_kwargs = dict(
+            user_data_dir=PROFILE_DIR,
+            headless=silent,
             viewport={"width": 1280, "height": 900},
             locale="ja-JP",
         )
+        try:
+            context = p.chromium.launch_persistent_context(channel="chrome", **launch_kwargs)
+        except Exception:
+            context = p.chromium.launch_persistent_context(**launch_kwargs)  # Chrome 미설치 시 번들 Chromium
+        browser = context  # 아래 종료 처리에서 browser.close() 로 프로필 컨텍스트 종료
         page = context.new_page()
         
         # 로그인 페이지 이동
@@ -120,52 +133,66 @@ def qsm_login():
         logger.info("로그인 페이지 표시 완료")
         logger.info(f"  현재 URL: {page.url}")
         
-        # ID/PW 자동 입력 (env 파일에서 읽기)
-        from dotenv import dotenv_values
-        env_path = get_env_path()
-        env_vals = dotenv_values(env_path)
-        login_id = env_vals.get("USER_ID", "")
-        login_pw = env_vals.get("PASSWORD", "")
-        
-        if login_id and login_pw:
-            try:
-                page.locator('//*[@id="txtLoginID"]').fill(login_id)
-                page.locator('//*[@id="txtLoginPwd"]').fill(login_pw)
-                logger.info("  ID/PW 자동 입력 완료")
-            except Exception as e:
-                logger.warning(f"  자동 입력 실패: {e}")
-        
-        logger.info("")
-        logger.info(">>> reCAPTCHA 인증 후 로그인 버튼을 클릭해주세요 <<<")
-        logger.info("")
-        
-        # ep_id 입력창 대기 (로그인 버튼 클릭 후 나타남)
-        try:
-            ep_input = page.locator('//*[@id="ep_id"]')
-            ep_input.wait_for(state="visible", timeout=LOGIN_TIMEOUT * 1000)
-            logger.info("  EP 선택 화면 감지!")
-            
-            # ep_id에 아이디 입력 + 확인 버튼 클릭
-            ep_input.fill(login_id)
-            page.locator('xpath=//*[@id="subIdSection"]/div/div/a').click()
-            logger.info("  EP 자동 선택 완료")
-        except PlaywrightTimeout:
-            logger.info("  EP 선택 없이 바로 로그인됨")
-        except Exception as e:
-            logger.warning(f"  EP 처리 실패: {e}")
-        
-        # 로그인 완료 대기 (URL 변경 감지)
-        try:
-            page.wait_for_url(
-                lambda url: "login.aspx" not in url.lower(),
-                timeout=30000  # EP 처리 후 30초 대기
-            )
-            logger.info(f"로그인 완료 감지!")
-            logger.info(f"  리다이렉트 URL: {page.url}")
-        except PlaywrightTimeout:
-            logger.error(f"로그인 타임아웃")
+        already_logged_in = "login.aspx" not in page.url.lower()
+        if already_logged_in:
+            logger.info("  프로필 로그인 유지됨 - 로그인 절차 생략")
+        elif silent:
+            logger.info("  로그인 필요 - 무인 모드라 종료 (창 모드로 재시도)")
             browser.close()
             return None
+        
+        if not already_logged_in:
+            # ID/PW 자동 입력 (env 파일에서 읽기)
+            from dotenv import dotenv_values
+            env_path = get_env_path()
+            env_vals = dotenv_values(env_path)
+            login_id = env_vals.get("USER_ID", "")
+            login_pw = env_vals.get("PASSWORD", "")
+        
+            if login_id and login_pw:
+                try:
+                    page.locator('//*[@id="txtLoginID"]').fill(login_id)
+                    page.locator('//*[@id="txtLoginPwd"]').fill(login_pw)
+                    logger.info("  ID/PW 자동 입력 완료")
+                except Exception as e:
+                    logger.warning(f"  자동 입력 실패: {e}")
+        
+            logger.info("")
+            logger.info(">>> reCAPTCHA 인증 후 로그인 버튼을 클릭해주세요 <<<")
+            logger.info("")
+        
+            # ep_id 입력창 대기 (로그인 버튼 클릭 후 나타남)
+            try:
+                ep_input = page.locator('//*[@id="ep_id"]')
+                ep_input.wait_for(state="visible", timeout=LOGIN_TIMEOUT * 1000)
+                logger.info("  EP 선택 화면 감지!")
+
+                # ep_id에 아이디 입력 + 확인 버튼 클릭
+                ep_input.fill(login_id)
+                page.locator('xpath=//*[@id="subIdSection"]/div/div/a').click()
+                logger.info("  EP 자동 선택 완료")
+            except PlaywrightTimeout:
+                if "login.aspx" in page.url.lower():
+                    # 로그인 페이지에 그대로 남아 있으면 EP 없이 로그인된 것이 아니라 로그인 미완료
+                    logger.error(f"로그인 대기 시간 초과 ({LOGIN_TIMEOUT}초): reCAPTCHA/로그인 버튼이 완료되지 않았습니다.")
+                    browser.close()
+                    return None
+                logger.info("  EP 선택 없이 바로 로그인됨")
+            except Exception as e:
+                logger.warning(f"  EP 처리 실패: {e}")
+        
+            # 로그인 완료 대기 (URL 변경 감지)
+            try:
+                page.wait_for_url(
+                    lambda url: "login.aspx" not in url.lower(),
+                    timeout=30000  # EP 처리 후 30초 대기
+                )
+                logger.info(f"로그인 완료 감지!")
+                logger.info(f"  리다이렉트 URL: {page.url}")
+            except PlaywrightTimeout:
+                logger.error(f"로그인 타임아웃")
+                browser.close()
+                return None
         
         # 페이지 완전 로딩 대기
         page.wait_for_load_state("networkidle")
@@ -181,10 +208,10 @@ def qsm_login():
             headers = request.headers
             if "authorization" in headers and headers["authorization"].startswith("ey"):
                 auth_token = headers["authorization"]
-                logger.debug(f"  Authorization 캡처: {auth_token[:50]}...")
+                logger.debug(f"  Authorization 캡처 (길이 {len(auth_token)})")
             if "x-sell-cust-no" in headers:
                 sell_cust_no = headers["x-sell-cust-no"]
-                logger.debug(f"  X-SELL-CUST-NO 캡처: {sell_cust_no[:30]}...")
+                logger.debug("  X-SELL-CUST-NO 캡처")
         
         page.on("request", capture_request)
         
@@ -199,7 +226,6 @@ def qsm_login():
         
         if auth_token:
             logger.info(f"  Authorization 토큰 추출 완료!")
-            logger.info(f"    토큰: {auth_token[:60]}...")
         else:
             logger.warning("  Authorization 토큰을 추출하지 못했습니다.")
             # localStorage에서 시도
@@ -209,9 +235,8 @@ def qsm_login():
                 for k, v in storage.items():
                     if v and v.startswith("ey"):
                         auth_token = v
-                        logger.info(f"    localStorage에서 발견: {k} = {v[:50]}...")
+                        logger.info(f"    localStorage에서 발견: {k}")
                         break
-                    logger.debug(f"    {k}: {str(v)[:50]}")
             except Exception as e:
                 logger.warning(f"  localStorage 접근 실패: {e}")
         
@@ -224,8 +249,8 @@ def qsm_login():
         cookies = context.cookies()
         logger.info(f"쿠키 추출: {len(cookies)}개")
         for c in cookies:
-            logger.debug(f"  {c['name']}: {c['value'][:30]}... (domain={c['domain']})")
-        
+            logger.debug(f"  {c['name']} (domain={c['domain']})")
+
         # 현재 페이지 URL, 타이틀 기록
         logger.info(f"  현재 페이지: {page.title()}")
         
@@ -307,6 +332,11 @@ def qsm_login():
         return result
 
 
+def refresh_login():
+    """무인 갱신(프로필 로그인 유지) 먼저 시도하고, 안 되면 사람이 로그인하는 창을 띄운다."""
+    return qsm_login(silent=True) or qsm_login()
+
+
 # ============================================================
 # 세션 로드 (저장된 세션 재사용 또는 신규 로그인)
 # ============================================================
@@ -365,6 +395,9 @@ MAX_RETRY = 3
 BACKOFF_BASE = 2  # 초 단위 지수 백오프: 2, 4, 8, 16...
 MAX_DAYS_PER_REQUEST = 31  # API 요청 최대 기간 (31일 단위)
 
+_relogin_lock = threading.Lock()
+_login_gen = 0  # 재로그인 횟수 (동시 403 시 중복 로그인 방지)
+
 
 def fetch_api(session, url, payload, retry=MAX_RETRY):
     """seller API 공통 조회 함수 (재시도/백오프/세션 갱신 포함).
@@ -378,26 +411,32 @@ def fetch_api(session, url, payload, retry=MAX_RETRY):
     Returns:
         dict (API 응답 JSON) or None
     """
+    global _login_gen
     for attempt in range(retry + 1):
+        gen_before = _login_gen
         try:
             resp = session.post(url, json=payload, timeout=60)
             
             if resp.status_code == 403 and attempt < retry:
                 backoff = BACKOFF_BASE ** (attempt + 1)
                 logger.warning(f"  세션 만료(403). 재로그인 후 재시도... (대기 {backoff}초)")
-                result = qsm_login()
-                if result:
-                    # 세션 갱신
-                    session.cookies.clear()
-                    for c in result["cookies"]:
-                        session.cookies.set(c["name"], c["value"],
-                            domain=c.get("domain",""), path=c.get("path","/"))
-                    session.headers.update(result["headers"])
-                    time.sleep(backoff)
-                    continue
-                else:
-                    logger.error("  재로그인 실패.")
-                    return None
+                # 병렬 워커가 동시에 403을 받아도 로그인 창은 한 번만 띄운다
+                with _relogin_lock:
+                    if _login_gen != gen_before:
+                        pass  # 다른 워커가 이미 재로그인함 (세션 객체 공유)
+                    else:
+                        result = refresh_login()
+                        if not result:
+                            logger.error("  재로그인 실패.")
+                            return None
+                        session.cookies.clear()
+                        for c in result["cookies"]:
+                            session.cookies.set(c["name"], c["value"],
+                                domain=c.get("domain",""), path=c.get("path","/"))
+                        session.headers.update(result["headers"])
+                        _login_gen += 1
+                time.sleep(backoff)
+                continue
             
             if resp.status_code != 200:
                 # 5xx 또는 429 등 일시적 오류는 백오프 후 재시도
@@ -508,7 +547,10 @@ def collect_trade_data(session, start_date, end_date):
     for i, (s, e) in enumerate(periods, 1):
         logger.info(f"  [{i}/{len(periods)}] Trade {s}~{e}")
         items = fetch_trade_date(session, s, e)
-        
+        if items is None:
+            logger.error(f"Trade {s}~{e} 수집 실패 - 부분 데이터로 덮어쓰지 않도록 중단")
+            return None
+
         if items:
             for item in items:
                 row = [item.get(col, "") for col in TRADE_COLUMNS]
@@ -584,7 +626,10 @@ def collect_conversion_data(session, start_date, end_date):
     for i, (s, e) in enumerate(periods, 1):
         logger.info(f"  [{i}/{len(periods)}] Conv {s}~{e}")
         items = fetch_conversion_date(session, s, e)
-        
+        if items is None:
+            logger.error(f"Conv {s}~{e} 수집 실패 - 부분 데이터로 덮어쓰지 않도록 중단")
+            return None
+
         if items:
             for item in items:
                 row = [item.get(col, "") for col in CONVERSION_COLUMNS]
@@ -694,7 +739,9 @@ def _collect_period(session, period):
     
     logger.info(f"[{label}] 데이터 수집 시작 ({start_str}~{end_str})")
     items = fetch_date_goods(session, start_str, end_str)
-    
+    if items is None:
+        raise RuntimeError(f"[{label}] date-goods 조회 실패")
+
     rows = []
     if items:
         for item in items:
@@ -729,12 +776,13 @@ def collect_data(session, start_month=None, end_month=None, max_workers=3):
     logger.info(f"date-goods: 총 {len(periods)}개 기간, 병렬 워커 {max_workers}개")
     
     all_rows = []
+    failed = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_map = {
             executor.submit(_collect_period, session, p): p["label"]
             for p in periods
         }
-        
+
         for future in as_completed(future_map):
             label = future_map[future]
             try:
@@ -743,7 +791,12 @@ def collect_data(session, start_month=None, end_month=None, max_workers=3):
                 logger.info(f"[{label}] → 누적 {len(all_rows)}행")
             except Exception as e:
                 logger.error(f"[{label}] 수집 실패: {e}")
-    
+                failed.append(label)
+
+    if failed:
+        logger.error(f"date-goods 수집 실패 기간: {sorted(failed)} - 부분 데이터로 덮어쓰지 않도록 중단")
+        return None
+
     # 날짜순 정렬
     all_rows.sort(key=lambda r: r[0] if r and r[0] else "")
     
@@ -761,7 +814,7 @@ def load_env_config():
         content = f.read()
     
     m = re.search(r'SHEET_ID\s*=\s*(.+)', content)
-    sheet_id = m.group(1).strip() if m else ""
+    sheet_id = m.group(1).strip().strip('"\'') if m else ""
     
     json_start = content.find('GOOGLE_JSON')
     creds_info = None
@@ -796,6 +849,60 @@ def get_gspread_client():
     
     sh = gc.open_by_key(SHEET_ID)
     return gc, sh
+
+
+# ============================================================
+# 로컬 CSV 저장 (시트와 동일: 전전월 1일 이전 유지 + 이후 덮어쓰기)
+# ============================================================
+# 시트 1행과 동일한 헤더 (raw_data의 M·N열은 시트에서 따로 관리하는 분류/월 열이라 제외)
+RAW_DATA_COLUMNS = [
+    "날짜", "요일", "브랜드", "상품명", "상품코드", "외부상품코드",
+    "수주수량", "취소수량", "순수량", "수주금액", "취소금액", "순수금액",
+]
+TRADE_HEADERS = [
+    "기준연도", "시작일", "종료일", "요일", "주", "월", "주문건수", "취소건수",
+    "주문상품수량", "취소상품수량", "총상품수량", "주문금액", "취소금액", "총금액",
+]
+_CONVERSION_RENAME = {
+    "baseYear": "기준연도", "baseStartDt": "시작일", "baseEndDt": "종료일",
+    "baseWeekdayNo": "요일", "baseWeek": "주", "baseMonth": "월",
+    "mainPv": "홈페이지", "mnMegawariPv": "메가와리", "mnMegapoPv": "메가포",
+    "mnMyinterestPv": "즐겨찾기", "searchPv": "총 검색",
+}
+CONVERSION_HEADERS = [_CONVERSION_RENAME.get(c, c) for c in CONVERSION_COLUMNS]
+
+
+def update_local_csv(save_dir, name, rows, columns, date_idx):
+    """save_dir/name.csv 갱신. 임시 파일에 쓴 뒤 교체하므로 중간 실패 시 기존 파일 유지.
+
+    Args:
+        date_idx: rows에서 날짜(YYYY-MM-DD) 열 위치
+    """
+    yesterday = datetime.now().date() - timedelta(days=1)
+    cutoff_date = (yesterday.replace(day=1) - relativedelta(months=2)).strftime("%Y-%m-%d")
+    path = os.path.join(save_dir, f"{name}.csv")
+
+    kept = []
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.reader(f)
+            next(reader, None)  # 헤더
+            kept = [r for r in reader if len(r) > date_idx and r[date_idx] < cutoff_date]
+
+    new_rows = sorted(rows, key=lambda r: str(r[date_idx]))
+    tmp = path + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(columns)
+            w.writerows(kept)
+            w.writerows(new_rows)
+        os.replace(tmp, path)
+    except Exception as e:
+        logger.error(f"로컬 저장 실패 ({path}): {e}")
+        return False
+    logger.info(f"로컬 저장 완료: {path} (유지 {len(kept)} + 신규 {len(new_rows)}행)")
+    return True
 
 
 def update_spreadsheet_raw_data(data_rows):
@@ -1031,7 +1138,7 @@ if __name__ == "__main__":
     # 1. 세션 로드 (만료 시 자동 로그인)
     session = load_session()
     if not session:
-        result = qsm_login()
+        result = refresh_login()
         if not result:
             print("로그인 실패.")
             sys.exit(1)
@@ -1063,21 +1170,49 @@ if __name__ == "__main__":
     logger.info("="*60)
     conv_rows = collect_conversion_data(session, start_month, end_date)
     
-    # 6. 스프레드시트 업데이트
+    # None = 수집 실패 (빈 리스트는 정상적으로 데이터 없음)
+    datasets = [
+        ("raw_data", data_rows, RAW_DATA_COLUMNS, 0),
+        ("raw_trade", trade_rows, TRADE_HEADERS, 1),
+        ("raw_conversion", conv_rows, CONVERSION_HEADERS, 1),
+    ]
+    failures = [name for name, rows, _, _ in datasets if rows is None]
+
+    # 6. 로컬 CSV 저장 (최초 1회 폴더 선택, 이후 자동)
+    logger.info("\n" + "="*60)
+    logger.info("로컬 CSV 저장")
+    logger.info("="*60)
+    from local_config import get_save_dir
+    save_dir = get_save_dir()
+    if save_dir:
+        logger.info(f"저장 폴더: {save_dir}")
+        for name, rows, columns, date_idx in datasets:
+            if rows and not update_local_csv(save_dir, name, rows, columns, date_idx):
+                failures.append(f"{name}(로컬)")
+    else:
+        logger.warning("저장 폴더 미설정/접근 불가 - 로컬 저장 건너뜀 (change_save_dir.py로 설정)")
+
+    # 7. 스프레드시트 업데이트
     logger.info("\n" + "="*60)
     logger.info("스프레드시트 업데이트 시작")
     logger.info("="*60)
-    
+
     if data_rows:
         logger.info("\n[raw_data] 시트 업데이트...")
-        update_spreadsheet_raw_data(data_rows)
-    
+        if not update_spreadsheet_raw_data(data_rows):
+            failures.append("raw_data(시트)")
+
     if trade_rows:
         logger.info("\n[raw_trade] 시트 업데이트...")
-        update_spreadsheet_date_sheet("raw_trade", trade_rows, TRADE_COLUMNS)
-    
+        if not update_spreadsheet_date_sheet("raw_trade", trade_rows, TRADE_COLUMNS):
+            failures.append("raw_trade(시트)")
+
     if conv_rows:
         logger.info("\n[raw_conversion] 시트 업데이트...")
-        update_spreadsheet_date_sheet("raw_conversion", conv_rows, CONVERSION_COLUMNS)
-    
+        if not update_spreadsheet_date_sheet("raw_conversion", conv_rows, CONVERSION_COLUMNS):
+            failures.append("raw_conversion(시트)")
+
+    if failures:
+        logger.error(f"\n일부 단계 실패: {failures}")
+        sys.exit(1)
     logger.info("\n전체 프로세스 완료!")

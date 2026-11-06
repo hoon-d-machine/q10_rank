@@ -14,6 +14,7 @@
 <!-- 탑바: 왼쪽 로고(메인 링크)만 -->
 <header class="topbar">
   <a class="brand" href="/main" aria-label="DY-AI 메인으로"><span data-logo="flat"></span></a>
+  <button class="logout" id="logout" type="button">로그아웃</button>
 </header>
 
 <main class="scene bg-orange hero">
@@ -50,5 +51,16 @@
 
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="/assets/dy.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="/assets/config.js"></script>
+<script src="/assets/auth.js"></script>
+<script>
+  // 로그인 안 돼 있으면 로그인 화면으로
+  window.dyAuth.requireLogin();
+
+  document.getElementById("logout").addEventListener("click", function () {
+    window.dyAuth.signOut().then(function () { location.replace("/"); });
+  });
+</script>
 </body>
 </html>

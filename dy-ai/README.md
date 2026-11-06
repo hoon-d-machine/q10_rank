@@ -3,8 +3,9 @@
 Cloudflare Workers(정적 자산)로 서빙하는 개인용 사이트. 지금은 UI 단계입니다.
 
 ## 화면
-- `public/index.html` — 로그인 화면 (루트 `/`, 아이디/비밀번호, 인증 연동 전이라 누르면 `/main`으로 이동만 함)
-- `public/main.html` — 메인 (`/main`, 탑바 로고 + 가운데 Q10 수집 버튼(장식용))
+- `public/index.html` — 로그인 화면 (루트 `/`, Supabase Auth 이메일+비밀번호. 아이디만 넣으면 `@LOGIN_EMAIL_DOMAIN` 을 붙임)
+- `public/assets/config.js` — Supabase URL / anon key / 로그인 이메일 도메인 설정
+- `public/main.html` — 메인 (`/main`, 로그인 안 돼 있으면 `/`로 보냄, 탑바 왼쪽 로고 + 오른쪽 로그아웃, 가운데 Q10 수집 버튼(장식용))
 
 ## 로컬 미리보기
 ```
@@ -26,6 +27,6 @@ npx wrangler deploy
 - 3D: CSS 3D 변환만 사용 (의존성 없음). 포인터 틸트·깊이별 패럴랙스, `prefers-reduced-motion` 시 정지
 
 ## 앞으로
-- 로그인: Cloudflare Access 또는 Supabase Auth 연동 (확정 전)
+- 로그인: Supabase Auth 연동 완료 (회원가입 끔, 계정은 대시보드에서 생성)
 - 확장 프로그램 → `/ingest` (전용 토큰, 쓰기 전용) → Supabase
 - 엑셀 내보내기 화면

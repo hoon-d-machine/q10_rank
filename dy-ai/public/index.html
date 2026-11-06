@@ -46,23 +46,39 @@
       </label>
 
       <button class="go" type="submit"><span>로그인</span><i aria-hidden="true">→</i></button>
-      <p class="note">※ 인증 연동 전 화면입니다. 지금은 눌러도 메인 화면으로만 이동해요.</p>
     </form>
   </section>
 </main>
 
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="/assets/dy.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="/assets/config.js"></script>
+<script src="/assets/auth.js"></script>
 <script>
+  // 이미 로그인돼 있으면 바로 메인으로
+  window.dyAuth.getSession().then(function (s) { if (s) location.replace("/main"); });
+
   document.getElementById("login-form").addEventListener("submit", function (e) {
     e.preventDefault();
     var f = e.target;
+    var btn = f.querySelector(".go");
     if (!f.id.value.trim() || !f.password.value) {
       window.dyToast("아이디와 비밀번호를 입력해 주세요");
       return;
     }
-    window.dyToast("로그인 연동 전이라 메인으로 이동합니다");
-    setTimeout(function () { location.href = "/main"; }, 900);
+    btn.disabled = true;
+    window.dyAuth.signIn(f.id.value, f.password.value)
+      .then(function () { location.replace("/main"); })
+      .catch(function (err) {
+        var msg = /invalid login credentials/i.test(err && err.message)
+          ? "아이디 또는 비밀번호가 맞지 않아요"
+          : (err && err.message) || "로그인에 실패했어요";
+        window.dyToast(msg);
+        f.password.value = "";
+        f.password.focus();
+        btn.disabled = false;
+      });
   });
 </script>
 </body>

@@ -38,11 +38,17 @@
 
       <label class="field">
         <span>아이디</span>
-        <input type="text" name="id" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="아이디" required>
+        <input type="text" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="아이디" required>
       </label>
       <label class="field">
         <span>비밀번호</span>
         <input type="password" name="password" autocomplete="current-password" placeholder="••••••••" required>
+      </label>
+
+      <label class="remember">
+        <input type="checkbox" name="remember">
+        <span class="switch" aria-hidden="true"></span>
+        <span>아이디 저장</span>
       </label>
 
       <button class="go" type="submit"><span>로그인</span><i aria-hidden="true">→</i></button>
@@ -59,17 +65,55 @@
   // 이미 로그인돼 있으면 바로 메인으로
   window.dyAuth.getSession().then(function (s) { if (s) location.replace("/main"); });
 
-  document.getElementById("login-form").addEventListener("submit", function (e) {
+  var form = document.getElementById("login-form");
+  var SAVED_ID_KEY = "dy.savedId";
+
+  // 저장된 아이디 불러오기 (브라우저 저장소가 막혀 있어도 로그인은 되게)
+  try {
+    var saved = localStorage.getItem(SAVED_ID_KEY);
+    if (saved) {
+      form.username.value = saved;
+      form.remember.checked = true;
+      form.password.focus();
+    } else {
+      form.username.focus();
+    }
+  } catch (_) { form.username.focus(); }
+
+  function rememberId(id) {
+    try {
+      if (form.remember.checked) localStorage.setItem(SAVED_ID_KEY, id);
+      else localStorage.removeItem(SAVED_ID_KEY);
+    } catch (_) {}
+  }
+
+  // 스위치를 끄면 바로 저장된 아이디 지움
+  form.remember.addEventListener("change", function () {
+    if (!form.remember.checked) rememberId("");
+  });
+
+  // 엔터: 폼 기본 동작으로 submit (아이디 칸에서 엔터 + 비밀번호 비어 있으면 비밀번호 칸으로)
+  form.username.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.isComposing && !form.password.value) {
+      e.preventDefault();
+      form.password.focus();
+    }
+  });
+
+  form.addEventListener("submit", function (e) {
     e.preventDefault();
-    var f = e.target;
+    var f = form;
     var btn = f.querySelector(".go");
-    if (!f.id.value.trim() || !f.password.value) {
+    var id = f.username.value.trim();
+    if (btn.disabled) return;
+    if (!id || !f.password.value) {
       window.dyToast("아이디와 비밀번호를 입력해 주세요");
+      (id ? f.password : f.username).focus();
       return;
     }
     btn.disabled = true;
-    window.dyAuth.signIn(f.id.value, f.password.value)
-      .then(function () { location.replace("/main"); })
+    window.dyAuth.signIn(id, f.password.value)
+      .then(function () { rememberId(id); location.replace("/main"); })
       .catch(function (err) {
         var msg = /invalid login credentials/i.test(err && err.message)
           ? "아이디 또는 비밀번호가 맞지 않아요"

@@ -11,8 +11,9 @@
 </head>
 <body>
 
-<!-- 탑바: 비워두고 Q10 수집 버튼 하나만 (장식용, 아직 동작 없음) -->
+<!-- 탑바: 왼쪽 로고(메인 링크) / 가운데 Q10 수집 버튼 (장식용, 아직 동작 없음) -->
 <header class="topbar">
+  <a class="brand" href="/" aria-label="DY-AI 메인으로"><span data-logo="flat"></span></a>
   <button class="q10-btn" type="button" aria-label="Q10 수집">
     <svg class="q10-art" viewBox="0 0 64 64" aria-hidden="true">
       <!-- 쇼핑백 캐릭터 -->
@@ -28,6 +29,7 @@
     <svg class="spark s1" viewBox="0 0 20 20" aria-hidden="true"><use href="#spark4"/></svg>
     <svg class="spark s2" viewBox="0 0 20 20" aria-hidden="true"><use href="#spark4"/></svg>
   </button>
+  <span class="topbar-r" aria-hidden="true"></span>
 </header>
 
 <main class="scene bg-orange hero">
@@ -42,13 +44,6 @@
   <div class="deco" style="--x:70%;--y:10%;--s:20px" data-depth="44"><svg class="star" style="--delay:-1.2s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
   <div class="deco" style="--x:92%;--y:44%;--s:28px" data-depth="36"><svg class="star" style="--delay:-.6s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
   <div class="deco" style="--x:3%;--y:46%;--s:22px" data-depth="40"><svg class="star" style="--delay:-1.8s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
-
-  <!-- 로고 패치 (파란 러그 위에 로고) -->
-  <div class="stage" data-tilt="12">
-    <div class="patch logo-patch">
-      <div data-logo="3d"></div>
-    </div>
-  </div>
 </main>
 
 <div id="toast" role="status" aria-live="polite"></div>

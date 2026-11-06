@@ -1,12 +1,12 @@
 /* 탑바: 길쭉한 파란 러그 띠 + 노란 스티치 */
 .topbar {
   position: sticky; top: 0; z-index: 10;
-  height: 78px;
+  height: var(--tb);
   display: flex; align-items: center; justify-content: flex-start;
   padding: 0 clamp(16px, 4vw, 40px);
   background: var(--blue);
-  border-bottom: 6px solid var(--yellow);
-  box-shadow: 0 8px 0 rgba(150, 60, 0, .22);
+  border-bottom: 4px solid var(--yellow);
+  box-shadow: 0 5px 0 rgba(150, 60, 0, .2);
 }
 .topbar::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -25,8 +25,8 @@
   position: relative; z-index: 1;
   border: 0; border-radius: 999px;
   background: var(--cream); color: var(--blue);
-  padding: 9px 16px;
-  font: inherit; font-size: 14px; font-weight: 800;
+  padding: 6px 13px;
+  font: inherit; font-size: 12.5px; font-weight: 800;
   cursor: pointer;
   box-shadow: 0 4px 0 rgba(0, 40, 110, .35);
   transition: transform .12s, box-shadow .12s;
@@ -41,8 +41,8 @@
   display: inline-flex; align-items: center; gap: 8px;
   border: 0; border-radius: 999px;
   background: var(--cream); color: var(--blue);
-  padding: 7px 12px 7px 8px;
-  font-size: 14px; font-weight: 800;
+  padding: 5px 10px 5px 6px;
+  font-size: 12.5px; font-weight: 800;
   cursor: pointer;
   box-shadow: 0 4px 0 rgba(0, 40, 110, .35);
   transition: transform .12s, box-shadow .12s;
@@ -54,7 +54,7 @@
 .theme-btn .chev { width: 12px; height: 12px; transition: transform .2s; }
 .theme-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
 
-.sw { display: inline-block; width: 22px; height: 22px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .1); }
+.sw { display: inline-block; width: 18px; height: 18px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 2px rgba(0, 0, 0, .1); }
 .sw-rug { background: conic-gradient(#ff7f21 0 25%, #0072e4 0 50%, #fdc916 0 75%, #eb0104 0); }
 .sw-nature { background: radial-gradient(circle at 30% 28%, #f6fbe9 0 18%, transparent 19%), linear-gradient(140deg, #dbe9c4 0 45%, #11af5d 46% 70%, #0b6b3a 71%); }
 .sw-dark { background: radial-gradient(circle at 50% 50%, #000 0 34%, transparent 36%), conic-gradient(from 30deg, #9ad7ff, #c9a8ff, #ffc6a0, #8ff0d8, #9ad7ff); box-shadow: inset 0 0 0 4px #050505 !important; }
@@ -107,11 +107,11 @@
   background: var(--yellow);
   color: var(--ink);
   box-shadow: 0 5px 0 var(--yellow-d), 0 0 0 4px var(--cream);
-  font-size: 17px; font-weight: 800; letter-spacing: -.01em;
+  font-size: 15px; font-weight: 800; letter-spacing: -.01em;
   cursor: pointer;
   transition: transform .12s, box-shadow .12s, background .12s;
 }
-.q10-art { width: 44px; height: 44px; flex: none; transition: transform .25s cubic-bezier(.3, 1.6, .5, 1); }
+.q10-art { width: 36px; height: 36px; flex: none; transition: transform .25s cubic-bezier(.3, 1.6, .5, 1); }
 /* 쇼핑백 그림 색 (테마별로 변수만 바꿈) */
 .q10-art .bag { fill: var(--bag, #eb0104); stroke: var(--bag-d, #9c0003); }
 .q10-art .handle { stroke: var(--bag-d, #9c0003); }
@@ -137,7 +137,7 @@
   position: relative; z-index: 1;
   justify-self: start;
   display: block;
-  --bw: clamp(104px, 22vw, 176px);
+  --bw: clamp(88px, 18vw, 124px);
   --lift: calc(var(--bw) * -0.075); /* 글자를 탑바 스티치 위쪽 영역의 가운데로 */
   width: var(--bw);
   transform: translateY(var(--lift));
@@ -147,7 +147,7 @@
 .brand:focus-visible { outline: 3px solid var(--cream); outline-offset: 6px; border-radius: 12px; }
 
 /* 메인 히어로 */
-.hero { min-height: calc(100vh - 78px); min-height: calc(100dvh - 78px); }
+.hero { min-height: calc(100vh - var(--tb)); min-height: calc(100dvh - var(--tb)); }
 
 /* 화면 중앙의 Q10 수집 버튼 */
 .center-stage {
@@ -159,17 +159,17 @@
 }
 .center-stage .q10-btn {
   pointer-events: auto;
-  font-size: clamp(20px, 3.2vw, 30px);
-  padding: 10px clamp(26px, 4vw, 40px) 10px 12px;
-  gap: 14px;
+  font-size: clamp(16px, 1.9vw, 20px);
+  padding: 7px clamp(20px, 2.6vw, 28px) 7px 9px;
+  gap: 10px;
   transform: translateZ(30px);
 }
 .center-stage .q10-btn:hover { transform: translateZ(30px) translateY(-3px); }
 .center-stage .q10-btn:active { transform: translateZ(30px) translateY(4px); }
-.center-stage .q10-art { width: clamp(52px, 6.5vw, 72px); height: clamp(52px, 6.5vw, 72px); }
+.center-stage .q10-art { width: clamp(38px, 4.2vw, 48px); height: clamp(38px, 4.2vw, 48px); }
 
 @media (max-width: 520px) {
-  .topbar { height: 68px; padding: 0 12px; }
+  .topbar { padding: 0 14px; }
 }
 
 /* 풀잎·다크 히어로 제목과 숫자 (러그에서는 숨김, 스타일은 themes.css) */

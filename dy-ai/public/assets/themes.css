@@ -695,6 +695,15 @@ html[data-theme="dark"] .note-card { border-top: 1px solid #fff; }
 html[data-theme="nature"] .shot, html[data-theme="dark"] .shot { border-radius: 4px; }
 html[data-theme="nature"] .guide { background: #fbfcf8; }
 
+/* 탑바: 조금 더 낮고 컴팩트하게, 로고는 세로 가운데 */
+html[data-theme="nature"] .topbar, html[data-theme="dark"] .topbar { height: 60px; border-bottom-width: 1px; }
+html[data-theme="nature"] .hero, html[data-theme="dark"] .hero { min-height: calc(100vh - 60px); min-height: calc(100dvh - 60px); }
+html[data-theme="nature"] .guide, html[data-theme="dark"] .guide { scroll-margin-top: 60px; }
+html[data-theme="nature"] .brand, html[data-theme="dark"] .brand { display: flex; align-items: center; transform: none; text-decoration: none; }
+html[data-theme="nature"] .topbar .logo-word, html[data-theme="dark"] .topbar .logo-word { display: block; font-size: 18px; padding: 6px 11px 7px; }
+html[data-theme="nature"] .logout, html[data-theme="nature"] .theme-btn,
+html[data-theme="dark"] .logout, html[data-theme="dark"] .theme-btn { font-size: 13px; }
+
 /* =====================================================================
    전환 · 모션 최소화
    ===================================================================== */

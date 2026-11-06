@@ -7,6 +7,9 @@
 <meta name="robots" content="noindex">
 <meta name="color-scheme" content="light dark">
 <script src="/assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;500;600&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
 <link rel="stylesheet" href="/assets/dy.css">
 <link rel="stylesheet" href="/assets/main.css">
@@ -26,8 +29,8 @@
       </button>
       <div class="theme-menu" id="theme-menu" role="menu" aria-label="화면 테마" hidden>
         <button type="button" role="menuitemradio" aria-checked="true" data-theme-val="rug"><i class="sw sw-rug" aria-hidden="true"></i><span><b>러그</b><small>알록달록 털실 러그</small></span></button>
-        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="nature"><i class="sw sw-nature" aria-hidden="true"></i><span><b>풀잎</b><small>하얀 바탕에 초록 포인트</small></span></button>
-        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="dark"><i class="sw sw-dark" aria-hidden="true"></i><span><b>다크</b><small>차분한 업무용 어두운 화면</small></span></button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="nature"><i class="sw sw-nature" aria-hidden="true"></i><span><b>풀잎</b><small>녹차 잎·돌·햇살, 자연 무드</small></span></button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="dark"><i class="sw sw-dark" aria-hidden="true"></i><span><b>다크</b><small>블랙 &amp; 글래스, 모던</small></span></button>
         <p class="theme-hint">고른 테마는 다음 접속에도 그대로예요</p>
       </div>
     </div>
@@ -50,6 +53,17 @@
   <!-- 화면 중앙: Q10 수집 버튼 (크롬 확장 dy-ai/extension 이 수집 + xlsx 다운로드) -->
   <div class="center-stage" data-tilt="8">
    <div class="stage-stack">
+    <!-- 풀잎·다크 테마에서만 보이는 큰 제목 (러그는 숨김) -->
+    <div class="hero-copy hc-nature">
+      <p class="hero-kicker">DY-AI · Qoo10 Seller Data</p>
+      <h1 class="hero-title">자연스럽게,<br><em>데이터</em>가 모여요</h1>
+      <p class="hero-sub">버튼 한 번이면 Qoo10 판매 통계가 쓰던 엑셀로 들어가요</p>
+    </div>
+    <div class="hero-copy hc-dark">
+      <p class="hero-kicker">DY-AI — Qoo10 seller data</p>
+      <h1 class="hero-title"><span>Qoo10 Data</span><span>Collector</span></h1>
+      <p class="hero-sub">판매자 통계를 모아 원본 엑셀의 3개 시트에 바로 넣어요</p>
+    </div>
     <button class="q10-btn js-collect" type="button" aria-label="Q10 수집">
       <svg class="q10-art" viewBox="0 0 64 64" aria-hidden="true">
         <!-- 쇼핑백 캐릭터 (색은 테마별 CSS: main.css .q10-art) -->
@@ -67,6 +81,11 @@
     </button>
     <p class="ext-pill js-ext-status" data-state="checking"><i aria-hidden="true"></i><span>확장 프로그램 확인 중…</span></p>
     <a class="to-guide" href="#guide">설치 방법 · 설명서 보기 <span aria-hidden="true">↓</span></a>
+    <dl class="hero-stats">
+      <div><dt>3</dt><dd>시트 자동 교체</dd></div>
+      <div><dt>1</dt><dd>클릭으로 수집</dd></div>
+      <div><dt>0</dt><dd>복사 · 붙여넣기</dd></div>
+    </dl>
    </div>
   </div>
 </main>

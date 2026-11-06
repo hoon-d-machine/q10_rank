@@ -87,6 +87,18 @@
     } catch (_) {}
   }
 
+  // 로그인 성공 시 브라우저(크롬 등)에 "비밀번호 저장" 제안을 직접 요청
+  // JS 로그인은 크롬의 자동 감지가 놓칠 때가 있어서 Credential Management API로 명시적으로 알림
+  function offerPasswordSave(id, password) {
+    try {
+      if (!window.PasswordCredential || !navigator.credentials) return Promise.resolve();
+      var cred = new window.PasswordCredential({ id: id, password: password, name: id });
+      return navigator.credentials.store(cred).catch(function () {});
+    } catch (_) {
+      return Promise.resolve();
+    }
+  }
+
   // 스위치를 끄면 바로 저장된 아이디 지움
   form.remember.addEventListener("change", function () {
     if (!form.remember.checked) rememberId("");
@@ -113,7 +125,11 @@
     }
     btn.disabled = true;
     window.dyAuth.signIn(id, f.password.value)
-      .then(function () { rememberId(id); location.replace("/main"); })
+      .then(function () {
+        rememberId(id);
+        return offerPasswordSave(id, f.password.value);
+      })
+      .then(function () { location.replace("/main"); })
       .catch(function (err) {
         var msg = /invalid login credentials/i.test(err && err.message)
           ? "아이디 또는 비밀번호가 맞지 않아요"

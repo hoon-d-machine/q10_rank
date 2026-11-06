@@ -4,9 +4,11 @@ DY-AI 메인의 **Q10 수집** 버튼을 누르면 Qoo10 판매자 통계를 수
 수집 API·기간·컬럼은 `inni_RPA/Qoo10_RPA.py` 와 같습니다.
 
 ## 설치 (개발자 모드)
+DY-AI 메인 아래 설명서에서 zip을 받아 압축을 풀고 아래 순서대로 합니다. (이 폴더를 직접 로드해도 됨)
+
 1. 크롬 주소창에 `chrome://extensions` 입력
 2. 오른쪽 위 **개발자 모드** 켜기
-3. **압축해제된 확장 프로그램을 로드합니다** → 이 폴더(`dy-ai/extension`) 선택
+3. **압축해제된 확장 프로그램 로드** → `dy-ai-q10-extension` 폴더(또는 `dy-ai/extension`) 선택
 4. DY-AI 메인 페이지가 열려 있었다면 새로고침
 
 코드를 고친 뒤에는 `chrome://extensions` 에서 이 확장의 새로고침 아이콘을 누르고, DY-AI 페이지도 새로고침합니다.
@@ -32,3 +34,7 @@ DY-AI 메인의 **Q10 수집** 버튼을 누르면 Qoo10 판매자 통계를 수
 - `xlsx-writer.js` — 의존성 없는 xlsx 생성기
 
 DY-AI 주소가 바뀌면 `manifest.json` 의 `content_scripts.matches` 도 바꿔야 합니다.
+
+## 배포
+`manifest.json` 의 version 을 올리고 `python dy-ai/tools/build_extension.py` → `public/downloads/` 의 zip과 `extension.json` 이 갱신된다.
+메인 화면은 설치된 확장 버전과 `extension.json` 을 비교해, 같으면 다운로드 버튼을 잠근다.

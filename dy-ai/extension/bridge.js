@@ -5,8 +5,11 @@
 (function () {
   "use strict";
 
+  var VERSION = chrome.runtime.getManifest().version;
+
   function toPage(msg) {
     msg.source = "dy-ext";
+    msg.version = VERSION;
     window.postMessage(msg, location.origin);
   }
 

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
 <link rel="stylesheet" href="/assets/dy.css">
 <link rel="stylesheet" href="/assets/main.css">
+<link rel="stylesheet" href="/assets/guide.css">
 </head>
 <body>
 
@@ -31,7 +32,8 @@
   <div class="deco" style="--x:3%;--y:46%;--s:22px" data-depth="40"><svg class="star" style="--delay:-1.8s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
   <!-- 화면 중앙: Q10 수집 버튼 (크롬 확장 dy-ai/extension 이 수집 + xlsx 다운로드) -->
   <div class="center-stage" data-tilt="8">
-    <button class="q10-btn" type="button" aria-label="Q10 수집">
+   <div class="stage-stack">
+    <button class="q10-btn js-collect" type="button" aria-label="Q10 수집">
       <svg class="q10-art" viewBox="0 0 64 64" aria-hidden="true">
         <!-- 쇼핑백 캐릭터 -->
         <path d="M12 24 H52 L48 56 H16 Z" fill="#eb0104" stroke="#9c0003" stroke-width="3" stroke-linejoin="round"/>
@@ -46,14 +48,161 @@
       <svg class="spark s1" viewBox="0 0 20 20" aria-hidden="true"><use href="#spark4"/></svg>
       <svg class="spark s2" viewBox="0 0 20 20" aria-hidden="true"><use href="#spark4"/></svg>
     </button>
+    <p class="ext-pill js-ext-status" data-state="checking"><i aria-hidden="true"></i><span>확장 프로그램 확인 중…</span></p>
+    <a class="to-guide" href="#guide">설치 방법 · 설명서 보기 <span aria-hidden="true">↓</span></a>
+   </div>
   </div>
 </main>
+
+<!-- ===================== 설명서 ===================== -->
+<section class="guide" id="guide" aria-labelledby="guide-title">
+  <div class="guide-inner">
+    <header class="guide-head">
+      <p class="eyebrow">Q10 수집 도우미</p>
+      <h2 id="guide-title">버튼 하나로 Qoo10 통계를<br>엑셀로 받아요</h2>
+      <p class="lead">크롬 확장 프로그램을 <b>한 번만</b> 설치하면, 위의 <b>Q10 수집</b> 버튼이 Qoo10 판매자 통계를 모아 xlsx 파일로 내려받아 줘요.</p>
+    </header>
+
+    <ol class="steps">
+      <!-- 1. 받기 -->
+      <li class="step" style="--c: var(--red)">
+        <span class="num">1</span>
+        <div class="step-body">
+          <h3>확장 프로그램 받기</h3>
+          <p>아래 버튼으로 zip 파일을 받아요. 이미 최신 버전이 설치돼 있으면 버튼이 잠겨요.</p>
+          <div class="dl-row">
+            <a class="dl-btn js-dl" href="/downloads/dy-ai-q10-extension.zip" download>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span class="js-dl-label">확장 프로그램 받기</span>
+            </a>
+            <p class="ext-pill js-ext-status" data-state="checking"><i aria-hidden="true"></i><span>확장 프로그램 확인 중…</span></p>
+          </div>
+        </div>
+      </li>
+
+      <!-- 2. 압축 풀기 -->
+      <li class="step" style="--c: var(--yellow)">
+        <span class="num">2</span>
+        <div class="step-body">
+          <h3>압축 풀기</h3>
+          <p>받은 <code>dy-ai-q10-extension.zip</code> 을 오른쪽 클릭 → <b>압축 풀기</b>. 나온 <code>dy-ai-q10-extension</code> 폴더는 <b>문서</b>처럼 지우지 않을 곳에 두세요.</p>
+          <p class="tip">이 폴더를 지우면 확장 프로그램도 같이 사라져요.</p>
+        </div>
+      </li>
+
+      <!-- 3. 개발자 모드 -->
+      <li class="step" style="--c: var(--green)">
+        <span class="num">3</span>
+        <div class="step-body">
+          <h3>확장 프로그램 페이지에서 개발자 모드 켜기</h3>
+          <p>크롬 주소창에 아래 주소를 붙여 넣고 들어가서, 오른쪽 위 <b>개발자 모드</b> 스위치를 켜요.</p>
+          <button class="copy-btn js-copy" type="button" data-copy="chrome://extensions">
+            <code>chrome://extensions</code><span class="js-copy-label">복사</span>
+          </button>
+        </div>
+        <figure class="shot">
+          <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span>chrome://extensions</span></div>
+          <a href="/assets/guide/step-devmode.png" target="_blank" rel="noopener"><img src="/assets/guide/step-devmode.png" width="1650" height="750" loading="lazy" alt="크롬 확장 프로그램 페이지 오른쪽 위의 개발자 모드 스위치가 강조된 화면"></a>
+        </figure>
+      </li>
+
+      <!-- 4. 로드 -->
+      <li class="step" style="--c: var(--blue)">
+        <span class="num">4</span>
+        <div class="step-body">
+          <h3>‘압축해제된 확장 프로그램 로드’ 누르기</h3>
+          <p>개발자 모드를 켜면 왼쪽 위에 버튼이 생겨요. 눌러서 2번에서 풀어 둔 <code>dy-ai-q10-extension</code> 폴더를 선택해요.</p>
+          <p class="tip">폴더 안으로 들어가지 말고, <code>manifest.json</code> 이 들어 있는 그 폴더 자체를 고르면 돼요.</p>
+        </div>
+        <figure class="shot">
+          <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span>chrome://extensions</span></div>
+          <a href="/assets/guide/step-load.png" target="_blank" rel="noopener"><img src="/assets/guide/step-load.png" width="1650" height="750" loading="lazy" alt="개발자 모드를 켠 뒤 왼쪽 위에 나타난 압축해제된 확장 프로그램 로드 버튼이 강조된 화면"></a>
+        </figure>
+      </li>
+
+      <!-- 5. 확인 -->
+      <li class="step" style="--c: var(--red)">
+        <span class="num">5</span>
+        <div class="step-body">
+          <h3>설치 확인하고 이 페이지 새로고침</h3>
+          <p><b>DY-AI Q10 수집</b> 카드가 보이면 설치 끝! 이 페이지로 돌아와 새로고침하면 위의 상태가 <b>설치됨</b>으로 바뀌어요.</p>
+        </div>
+        <figure class="shot">
+          <div class="shot-bar" aria-hidden="true"><i></i><i></i><i></i><span>chrome://extensions</span></div>
+          <a href="/assets/guide/step-done.png" target="_blank" rel="noopener"><img src="/assets/guide/step-done.png" width="1650" height="750" loading="lazy" alt="설치된 DY-AI Q10 수집 확장 프로그램 카드가 강조된 화면"></a>
+        </figure>
+      </li>
+
+      <!-- 6. 수집 -->
+      <li class="step step-go" style="--c: var(--yellow)">
+        <span class="num">6</span>
+        <div class="step-body">
+          <h3>이제 수집해 볼까요?</h3>
+          <p>버튼을 누르면 Qoo10 판매자 페이지가 새 탭으로 열려요. 로그인이 필요하면 그 탭에서 로그인만 해 주세요. 나머지는 알아서 해요.</p>
+          <div class="go-row">
+            <button class="q10-btn js-collect" type="button" aria-label="Q10 수집">
+              <svg class="q10-art" viewBox="0 0 64 64" aria-hidden="true">
+                <path d="M12 24 H52 L48 56 H16 Z" fill="#eb0104" stroke="#9c0003" stroke-width="3" stroke-linejoin="round"/>
+                <path d="M22 24 V18 a10 10 0 0 1 20 0 V24" fill="none" stroke="#9c0003" stroke-width="3.5" stroke-linecap="round"/>
+                <circle cx="26" cy="38" r="2.8" fill="#f7f8ee"/><circle cx="38" cy="38" r="2.8" fill="#f7f8ee"/>
+                <path d="M26 45 Q32 51 38 45" fill="none" stroke="#f7f8ee" stroke-width="3" stroke-linecap="round"/>
+                <circle cx="52" cy="14" r="10" fill="#0072e4" stroke="#00348a" stroke-width="2.5"/>
+                <path d="M52 9 V19 M47.5 14.5 L52 19 L56.5 14.5" fill="none" stroke="#f7f8ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="label">Q10 수집</span>
+            </button>
+          </div>
+          <ul class="flow">
+            <li><b>열기</b> Qoo10 판매자 페이지 새 탭</li>
+            <li><b>로그인</b> 필요할 때만 직접 (최대 10분 기다려요)</li>
+            <li><b>수집</b> 전전월 1일 ~ 어제</li>
+            <li><b>저장</b> 다운로드 폴더에 <code>Qoo10_RPA_data_날짜_시간.xlsx</code></li>
+          </ul>
+          <table class="sheets">
+            <caption>엑셀 안에 들어 있는 시트</caption>
+            <thead><tr><th scope="col">시트</th><th scope="col">내용</th></tr></thead>
+            <tbody>
+              <tr><td><code>raw_data</code></td><td>일자·품목별 거래 (수주/취소 수량·금액)</td></tr>
+              <tr><td><code>raw_trade</code></td><td>일자별 거래 합계</td></tr>
+              <tr><td><code>raw_conversion</code></td><td>일자별 페이지뷰 · 장바구니 · 구매</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </li>
+    </ol>
+
+    <div class="guide-more">
+      <section class="note-card">
+        <h3>새 버전이 나오면</h3>
+        <p>위 상태 표시가 <b>업데이트 필요</b>로 바뀌어요.</p>
+        <ol>
+          <li>1번 버튼으로 새 zip을 받아 풀고</li>
+          <li>원래 <code>dy-ai-q10-extension</code> 폴더에 <b>덮어쓰기</b></li>
+          <li><code>chrome://extensions</code> 에서 카드의 <b>↻ 새로고침</b></li>
+          <li>이 페이지 새로고침</li>
+        </ol>
+      </section>
+      <section class="note-card">
+        <h3>잘 안 될 때</h3>
+        <dl>
+          <dt>버튼을 눌러도 “설치해 주세요”만 떠요</dt>
+          <dd>확장 프로그램이 켜져 있는지 확인하고 이 페이지를 새로고침해요.</dd>
+          <dt>로그인했는데 로그인 화면이 다시 떠요</dt>
+          <dd>Qoo10 탭을 닫고 Q10 수집을 다시 눌러 주세요. 계속되면 알려 주세요.</dd>
+          <dt>파일이 안 받아져요</dt>
+          <dd>크롬 다운로드 목록(Ctrl+J)을 확인해요. 수집이 하나라도 실패하면 파일을 만들지 않아요.</dd>
+        </dl>
+      </section>
+    </div>
+  </div>
+</section>
 
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="/assets/dy.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="/assets/config.js"></script>
 <script src="/assets/auth.js"></script>
+<script src="/assets/q10.js"></script>
 <script>
   // 로그인 안 돼 있으면 로그인 화면으로
   window.dyAuth.requireLogin();
@@ -61,45 +210,6 @@
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });
   });
-
-  // ===== Q10 수집: 크롬 확장 프로그램(dy-ai/extension)에 요청 =====
-  (function () {
-    var btn = document.querySelector(".q10-btn");
-    var label = btn.querySelector(".label");
-    var extReady = false;
-
-    function setBusy(on) {
-      btn.setAttribute("aria-busy", on ? "true" : "false");
-      label.textContent = on ? "수집 중…" : "Q10 수집";
-    }
-
-    window.addEventListener("message", function (e) {
-      if (e.source !== window || e.origin !== location.origin) return;
-      var d = e.data;
-      if (!d || d.source !== "dy-ext") return;
-      if (d.type === "ready") { extReady = true; return; }
-      if (d.type !== "q10-status") return;
-      // 진행/로그인 안내는 다음 소식까지 유지, 완료·오류는 길게
-      var ms = d.state === "progress" || d.state === "login" ? 0 : (d.state === "busy" ? 2400 : 9000);
-      window.dyToast(d.text, ms);
-      if (d.state === "done" || d.state === "error") setBusy(false);
-      if (d.state === "busy") setBusy(true);
-    });
-    window.postMessage({ source: "dy-ai", type: "ping" }, location.origin);
-
-    btn.addEventListener("click", function () {
-      if (btn.getAttribute("aria-busy") === "true") {
-        window.dyToast("이미 수집 중이에요");
-        return;
-      }
-      if (!extReady) {
-        window.dyToast("'DY-AI Q10 수집' 크롬 확장 프로그램을 설치해 주세요");
-        return;
-      }
-      setBusy(true);
-      window.postMessage({ source: "dy-ai", type: "q10-collect" }, location.origin);
-    });
-  })();
 </script>
 </body>
 </html>

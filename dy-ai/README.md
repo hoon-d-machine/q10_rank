@@ -29,5 +29,7 @@ npx wrangler deploy
 ## 앞으로
 - 로그인: Supabase Auth 연동 완료 (회원가입 끔, 계정은 대시보드에서 생성)
 - Q10 수집 확장 프로그램: `extension/` (설치·동작은 extension/README.md). 수집 결과 Supabase 업로드는 아직
+  - 메인 하단 설명서에서 zip 다운로드. 확장 코드를 고치면 `manifest.json` version 을 올리고 `python dy-ai/tools/build_extension.py` 실행 후 커밋
+  - 설명서 캡처: `public/assets/guide/step-*.png` (Playwright로 chrome://extensions 촬영)
 - 확장 프로그램 → `/ingest` (전용 토큰, 쓰기 전용) → Supabase
 - 엑셀 내보내기 화면

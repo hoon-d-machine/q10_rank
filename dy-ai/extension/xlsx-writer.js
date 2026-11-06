@@ -1,6 +1,10 @@
 /* 의존성 없는 최소 xlsx 생성기 (시트 여러 개, 문자열/숫자, 첫 행 고정 + 굵게)
  * 사용: const bytes = await buildXlsx([{ name, header: [...], rows: [[...], ...] }, ...])  → Uint8Array
  * zip은 CompressionStream(deflate)으로 압축하고, 없는 환경이면 무압축으로 만든다.
+ *
+ * 원본: dy-ai/extension/xlsx-writer.js
+ * dy-ai/public/assets/xlsx-writer.js 는 build_extension.py 가 복사한 사본 (사이트의 원본 파일 덮어쓰기용). 사본은 고치지 말 것.
+ * 다른 스크립트(xlsx-patch.js)가 쓰도록 내부 도구를 self.dyXlsx 로도 내보낸다.
  */
 (function (root) {
   "use strict";
@@ -29,7 +33,15 @@
     return '<c r="' + ref + '"' + st + ' t="inlineStr"><is><t xml:space="preserve">' + esc(v) + "</t></is></c>";
   }
 
-  function sheetXml(header, rows) {
+  // headerStyle: 머리글 셀 스타일 번호 (새 파일은 1 = 굵게, 기존 파일에 끼울 때는 그 파일의 번호)
+  function rowXml(r, row, style) {
+    var cells = "";
+    for (var c = 0; c < row.length; c++) cells += cell(colName(c) + r, row[c], style);
+    return '<row r="' + r + '">' + cells + "</row>";
+  }
+
+  function sheetXml(header, rows, headerStyle) {
+    if (headerStyle === undefined) headerStyle = 1;
     var out = [
       '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
       '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">',
@@ -37,12 +49,7 @@
       "<sheetData>"
     ];
     var all = [header].concat(rows);
-    for (var r = 0; r < all.length; r++) {
-      var row = all[r] || [];
-      var cells = "";
-      for (var c = 0; c < row.length; c++) cells += cell(colName(c) + (r + 1), row[c], r === 0 ? 1 : 0);
-      out.push('<row r="' + (r + 1) + '">' + cells + "</row>");
-    }
+    for (var r = 0; r < all.length; r++) out.push(rowXml(r + 1, all[r] || [], r === 0 ? headerStyle : 0));
     out.push("</sheetData></worksheet>");
     return out.join("");
   }
@@ -72,30 +79,28 @@
     return (c ^ 0xFFFFFFFF) >>> 0;
   }
 
-  // files: [{ name, raw: Uint8Array, comp?: Uint8Array(deflate-raw) }]
-  function zip(files) {
+  // entries: [{ nameBytes, flags, method, crc, size(원래 크기), data(저장할 바이트) }]
+  // 기존 zip에서 옮겨 오는 항목은 압축된 바이트를 그대로 다시 넣는다.
+  function zipEntries(entries) {
     var parts = [], central = [], offset = 0;
     var d = new Date();
     var dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
     var dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
 
-    files.forEach(function (f) {
-      var name = enc.encode(f.name);
-      var raw = f.raw;
-      var data = f.comp || raw;
-      var method = f.comp ? 8 : 0;
-      var crc = crc32(raw);
+    entries.forEach(function (f) {
+      var name = f.nameBytes, data = f.data;
+      var flags = (f.flags == null ? 0x0800 : f.flags) & ~0x0008; // 데이터 디스크립터 없이 헤더에 크기 기록
 
       var lh = new DataView(new ArrayBuffer(30));
       lh.setUint32(0, 0x04034b50, true);
       lh.setUint16(4, 20, true);
-      lh.setUint16(6, 0x0800, true);          // UTF-8 파일명
-      lh.setUint16(8, method, true);          // 0 = stored, 8 = deflate
+      lh.setUint16(6, flags, true);           // 0x0800 = UTF-8 파일명
+      lh.setUint16(8, f.method, true);        // 0 = stored, 8 = deflate
       lh.setUint16(10, dosTime, true);
       lh.setUint16(12, dosDate, true);
-      lh.setUint32(14, crc, true);
+      lh.setUint32(14, f.crc, true);
       lh.setUint32(18, data.length, true);
-      lh.setUint32(22, raw.length, true);
+      lh.setUint32(22, f.size, true);
       lh.setUint16(26, name.length, true);
       lh.setUint16(28, 0, true);
       parts.push(new Uint8Array(lh.buffer), name, data);
@@ -104,13 +109,13 @@
       ch.setUint32(0, 0x02014b50, true);
       ch.setUint16(4, 20, true);
       ch.setUint16(6, 20, true);
-      ch.setUint16(8, 0x0800, true);
-      ch.setUint16(10, method, true);
+      ch.setUint16(8, flags, true);
+      ch.setUint16(10, f.method, true);
       ch.setUint16(12, dosTime, true);
       ch.setUint16(14, dosDate, true);
-      ch.setUint32(16, crc, true);
+      ch.setUint32(16, f.crc, true);
       ch.setUint32(20, data.length, true);
-      ch.setUint32(24, raw.length, true);
+      ch.setUint32(24, f.size, true);
       ch.setUint16(28, name.length, true);
       ch.setUint32(42, offset, true);
       central.push(new Uint8Array(ch.buffer), name);
@@ -121,8 +126,8 @@
     var centralSize = central.reduce(function (s, p) { return s + p.length; }, 0);
     var end = new DataView(new ArrayBuffer(22));
     end.setUint32(0, 0x06054b50, true);
-    end.setUint16(8, files.length, true);
-    end.setUint16(10, files.length, true);
+    end.setUint16(8, entries.length, true);
+    end.setUint16(10, entries.length, true);
     end.setUint32(12, centralSize, true);
     end.setUint32(16, offset, true);
 
@@ -138,13 +143,16 @@
     return new Response(stream).arrayBuffer().then(function (b) { return new Uint8Array(b); });
   }
 
-  // 파일 목록 → zip 바이트 (CompressionStream 있으면 압축, 없으면 무압축)
+  // 이름 + 내용(문자열 또는 Uint8Array) → zip 항목 (CompressionStream 있으면 압축, 없으면 무압축)
+  function makeEntry(name, content) {
+    var raw = typeof content === "string" ? enc.encode(content) : content;
+    var e = { nameBytes: enc.encode(name), flags: 0x0800, method: 0, crc: crc32(raw), size: raw.length, data: raw };
+    if (typeof CompressionStream === "undefined") return Promise.resolve(e);
+    return deflateRaw(raw).then(function (c) { e.method = 8; e.data = c; return e; });
+  }
+
   function packFiles(files) {
-    var entries = files.map(function (f) { return { name: f.name, raw: enc.encode(f.data) }; });
-    if (typeof CompressionStream === "undefined") return Promise.resolve(zip(entries));
-    return Promise.all(entries.map(function (e) {
-      return deflateRaw(e.raw).then(function (c) { e.comp = c; return e; });
-    })).then(zip);
+    return Promise.all(files.map(function (f) { return makeEntry(f.name, f.data); })).then(zipEntries);
   }
 
   // → Promise<Uint8Array>
@@ -200,5 +208,9 @@
   }
 
   root.buildXlsx = buildXlsx;
-  if (typeof module !== "undefined" && module.exports) module.exports = { buildXlsx: buildXlsx };
+  root.dyXlsx = {
+    buildXlsx: buildXlsx, sheetXml: sheetXml, rowXml: rowXml, cell: cell, esc: esc, colName: colName,
+    crc32: crc32, deflateRaw: deflateRaw, makeEntry: makeEntry, zipEntries: zipEntries
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = root.dyXlsx;
 })(typeof self !== "undefined" ? self : this);

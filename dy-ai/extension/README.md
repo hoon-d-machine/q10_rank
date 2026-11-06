@@ -1,6 +1,6 @@
 # DY-AI Q10 수집 (크롬 확장 프로그램)
 
-DY-AI 메인의 **Q10 수집** 버튼을 누르면 Qoo10 판매자 통계를 수집해 xlsx로 자동 다운로드합니다.
+DY-AI 메인의 **Q10 수집** 버튼을 누르면 Qoo10 판매자 통계를 수집해 원본 엑셀(raw 시트 3개)에 덮어쓰거나 새 xlsx로 저장합니다.
 수집 API·기간·컬럼은 `inni_RPA/Qoo10_RPA.py` 와 같습니다.
 
 ## 설치 (개발자 모드)
@@ -17,7 +17,11 @@ DY-AI 메인 아래 설명서에서 zip을 받아 압축을 풀고 아래 순서
 1. 메인의 **Q10 수집** 클릭 → 확장이 `seller.qoo10.jp/ko/trade` 탭을 연다
 2. 로그인 안 돼 있으면 QSM 로그인 화면이 뜬다 → 직접 로그인(reCAPTCHA, EP 선택 포함). 최대 10분 대기
 3. 로그인되면 판매자 페이지 요청에서 `Authorization` / `X-SELL-CUST-NO` 헤더를 잡아 그 탭 안에서 API 호출
-4. 다운로드 폴더에 `Qoo10_RPA_data_YYYYMMDD_HHMM.xlsx` 저장, Qoo10 탭은 닫힘
+4. Qoo10 탭을 닫고 수집 결과를 DY-AI 페이지로 넘김 → 페이지가 저장
+   - 버튼을 누를 때 고른 원본 엑셀에서 raw_data / raw_trade / raw_conversion 만 교체 (전전월 1일 이전 행은 유지, 다른 시트·서식·수식 그대로)
+   - 엑셀에서 열려 있어 저장이 안 되면 [파일을 닫고 다시 시도] [새로운 파일로 저장] [취소] 선택 (다시 시도해도 열려 있으면 반복)
+   - "새 파일로 받기"를 골랐으면 `Qoo10_RPA_data_YYYYMMDD_HHMM.xlsx` 다운로드
+   - DY-AI 탭이 닫혀 있으면 확장이 직접 새 파일로 다운로드
 
 | 시트 | API | 기간 |
 |---|---|---|
@@ -31,7 +35,7 @@ DY-AI 메인 아래 설명서에서 zip을 받아 압축을 풀고 아래 순서
 - `manifest.json` — MV3. DY-AI 사이트(`dy-ai.xogns1381.workers.dev`, 로컬 `localhost:8765`)에서만 연결
 - `bridge.js` — DY-AI 페이지 ↔ 확장 메시지 중계 (`window.postMessage`)
 - `background.js` — 로그인 대기, 토큰 캡처, 수집, 다운로드
-- `xlsx-writer.js` — 의존성 없는 xlsx 생성기
+- `xlsx-writer.js` — 의존성 없는 xlsx 생성기 + zip 도구. 사이트(`public/assets/xlsx-writer.js`)도 이 파일의 사본을 씀 → 고친 뒤 빌드 스크립트 실행
 
 DY-AI 주소가 바뀌면 `manifest.json` 의 `content_scripts.matches` 도 바꿔야 합니다.
 

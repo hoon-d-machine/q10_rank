@@ -1,6 +1,7 @@
 /* DY-AI 메인: Q10 수집 확장 프로그램 연동
  * - 설치 여부/버전 확인 → 상태 표시, 최신이면 다운로드 버튼 잠금
- * - .js-collect 버튼 → 확장에 수집 요청, 진행 상황은 토스트
+ * - .js-collect 버튼 → 저장 대상(원본 엑셀/새 파일) 확인 → 확장에 수집 요청, 진행 상황은 토스트
+ * - 확장이 결과(data)를 넘기면 q10-save.js 가 원본 엑셀에 덮어쓴다
  * 확장(bridge.js)과는 window.postMessage 로만 대화한다.
  */
 (function () {
@@ -9,11 +10,14 @@
   var ZIP_URL = "/downloads/dy-ai-q10-extension.zip";
   var VERSION_URL = "/downloads/extension.json";
   var DETECT_MS = 1200; // 이 시간 안에 확장 응답이 없으면 미설치로 판단
+  var PAGE_SAVE_FROM = "0.3.0"; // 이 버전부터 확장이 결과를 페이지로 넘김 (그 전엔 확장이 직접 다운로드)
 
   var latest = null;      // 사이트에 올라간 최신 버전
   var installed = null;   // 설치된 확장 버전 (구버전은 버전을 안 알려 줘서 "unknown")
   var detected = false;
   var busy = false;
+  var choosing = false;
+  var target = null;      // 이번 수집의 저장 대상 (q10-save.js chooseTarget 결과)
 
   var collectBtns = [].slice.call(document.querySelectorAll(".js-collect"));
   var pills = [].slice.call(document.querySelectorAll(".js-ext-status"));
@@ -96,10 +100,23 @@
     if (installed === null || installed === "unknown") installed = d.version || "unknown";
     if (d.type === "ready") { detected = true; render(); return; }
     if (d.type !== "q10-status") return;
+    if (d.state === "data") {
+      // 수집 결과 → 엑셀 저장 (저장이 끝나야 버튼이 풀림)
+      var t = target || { mode: "download" };
+      target = null;
+      window.dyToast(d.text, 0);
+      window.dyQ10Save.save(d.payload, t)
+        .catch(function (e) {
+          console.error("[DY-AI Q10]", e);
+          window.dyToast("엑셀 저장 중 오류가 났어요: " + (e && e.message || e), 9000);
+        })
+        .then(function () { setBusy(false); });
+      return;
+    }
     // 진행/로그인 안내는 다음 소식까지 유지, 완료·오류는 길게
     var ms = d.state === "progress" || d.state === "login" ? 0 : (d.state === "busy" ? 2400 : 9000);
     window.dyToast(d.text, ms);
-    if (d.state === "done" || d.state === "error") setBusy(false);
+    if (d.state === "done" || d.state === "error") { setBusy(false); target = null; }
     if (d.state === "busy") setBusy(true);
   });
   window.postMessage({ source: "dy-ai", type: "ping" }, location.origin);
@@ -107,15 +124,32 @@
   collectBtns.forEach(function (btn) {
     btn.addEventListener("click", function () {
       if (busy) { window.dyToast("이미 수집 중이에요"); return; }
+      if (choosing) return;
       var s = state();
       if (s === "none" || s === "checking") {
         window.dyToast("먼저 'DY-AI Q10 수집' 확장 프로그램을 설치해 주세요", 4000);
         goGuide();
         return;
       }
+      var pageSave = installed && installed !== "unknown" && cmp(installed, PAGE_SAVE_FROM) >= 0 && window.dyQ10Save;
+      if (!pageSave) {
+        // 구버전 확장: 확장이 새 파일로 바로 다운로드
+        window.dyToast("확장 프로그램 새 버전이 있어요. 지금은 새 파일로 받고, 업데이트하면 원본 엑셀에 바로 저장돼요", 4000);
+        setBusy(true);
+        window.postMessage({ source: "dy-ai", type: "q10-collect" }, location.origin);
+        return;
+      }
       if (s === "old") window.dyToast("확장 프로그램 새 버전이 있어요. 수집은 그대로 진행할게요", 3000);
-      setBusy(true);
-      window.postMessage({ source: "dy-ai", type: "q10-collect" }, location.origin);
+      choosing = true;
+      window.dyQ10Save.chooseTarget()
+        .then(function (t) {
+          if (!t) return;
+          target = t;
+          setBusy(true);
+          window.postMessage({ source: "dy-ai", type: "q10-collect", deliver: "page" }, location.origin);
+        })
+        .catch(function (e) { window.dyToast("저장 위치를 정하지 못했어요: " + (e && e.message || e), 5000); })
+        .then(function () { choosing = false; });
     });
   });
 

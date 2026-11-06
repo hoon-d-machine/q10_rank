@@ -192,8 +192,60 @@ button, input { font: inherit; color: inherit; }
 }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
 
+/* ---------- 확인 창 (dyModal) ---------- */
+.dy-modal {
+  border: 0; padding: 0; background: transparent; color: var(--ink);
+  width: min(460px, calc(100vw - 32px)); max-width: none;
+  max-height: calc(100dvh - 32px); overflow: visible;
+}
+.dy-modal::backdrop { background: rgba(59, 34, 0, .45); backdrop-filter: blur(2px); }
+.dy-modal[open] .dy-modal-box { animation: modal-pop .24s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes modal-pop { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+.dy-modal-box {
+  position: relative;
+  max-height: calc(100dvh - 32px); overflow: auto;
+  background: var(--cream);
+  border: 5px solid var(--yellow); border-radius: 30px;
+  padding: 28px 24px 20px;
+  box-shadow: 0 10px 0 rgba(150, 60, 0, .3), 0 24px 40px rgba(0, 0, 0, .2);
+  text-align: center;
+}
+.dy-modal-icon {
+  display: inline-grid; place-items: center;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--blue); color: var(--cream);
+  box-shadow: 0 4px 0 var(--navy);
+  margin-bottom: 12px;
+}
+.dy-modal.is-warn .dy-modal-icon { background: var(--red); box-shadow: 0 4px 0 #9c0003; }
+.dy-modal-icon svg { width: 30px; height: 30px; }
+.dy-modal h2 { margin: 0 0 12px; font-size: 21px; line-height: 1.35; font-weight: 900; letter-spacing: -.01em; text-wrap: balance; }
+.dy-modal-box p { margin: 0 0 10px; font-size: 15px; line-height: 1.65; color: var(--ink-2); text-wrap: pretty; word-break: keep-all; }
+.dy-modal-file {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: #fff; border: 2.5px dashed rgba(0, 114, 228, .35); border-radius: 16px;
+  padding: 10px 14px; color: var(--navy) !important; font-weight: 800;
+  overflow-wrap: anywhere; word-break: break-all !important;
+}
+.dy-modal-file svg { width: 22px; height: 22px; flex: none; color: var(--blue); }
+.dy-modal-note { font-size: 12.5px !important; opacity: .85; }
+.dy-modal-actions { display: grid; gap: 9px; margin-top: 18px; }
+.dy-modal-btn {
+  border: 0; border-radius: 999px; cursor: pointer;
+  padding: 13px 18px; font-size: 15.5px; font-weight: 800;
+  background: #fff; color: var(--ink);
+  box-shadow: inset 0 0 0 2.5px rgba(59, 34, 0, .14), 0 3px 0 rgba(59, 34, 0, .12);
+  transition: transform .12s, box-shadow .12s, background .12s;
+}
+.dy-modal-btn:hover { transform: translateY(-1px); background: #fffdf0; }
+.dy-modal-btn:active { transform: translateY(2px); }
+.dy-modal-btn:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.dy-modal-btn.is-primary { background: var(--blue); color: var(--cream); box-shadow: 0 5px 0 var(--navy); }
+.dy-modal-btn.is-primary:hover { background: #1a82ee; }
+.dy-modal-btn.is-quiet { background: transparent; box-shadow: none; color: var(--ink-2); padding: 9px; text-decoration: underline; text-underline-offset: 3px; }
+
 /* ---------- 모션 최소화 ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .ltr, .logo-daisy, .deco > .bob, .deco svg, .cube, .q10-btn .spark { animation: none !important; }
+  .ltr, .logo-daisy, .deco > .bob, .deco svg, .cube, .q10-btn .spark, .dy-modal-box, .theme-menu { animation: none !important; }
   .deco { transform: none !important; }
 }

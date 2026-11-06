@@ -5,7 +5,9 @@ Cloudflare Workers(정적 자산)로 서빙하는 개인용 사이트. 지금은
 ## 화면
 - `public/index.html` — 로그인 화면 (루트 `/`, Supabase Auth 이메일+비밀번호. 아이디만 넣으면 `@LOGIN_EMAIL_DOMAIN` 을 붙임)
 - `public/assets/config.js` — Supabase URL / anon key / 로그인 이메일 도메인 설정
-- `public/main.html` — 메인 (`/main`, 로그인 안 돼 있으면 `/`로 보냄, 탑바 왼쪽 로고 + 오른쪽 로그아웃, 가운데 Q10 수집 버튼 → 크롬 확장이 수집 후 xlsx 다운로드)
+- `public/main.html` — 메인 (`/main`, 로그인 안 돼 있으면 `/`로 보냄, 탑바 왼쪽 로고 + 오른쪽 테마 선택·로그아웃, 가운데 Q10 수집 버튼 → 크롬 확장이 수집 → 원본 엑셀의 raw 시트 3개 덮어쓰기 또는 새 파일)
+- 테마 3종: 러그(기본) / 풀잎(하양+초록) / 다크(업무용). `assets/theme.js` 가 `<html data-theme>` 와 localStorage(`dy.theme`)를 관리하고, 덮어쓰기 스타일은 `assets/themes.css`, 테마별 SVG 그림은 `assets/dy.js`
+- 원본 엑셀 덮어쓰기: `assets/q10-save.js`(파일 고르기·권한·실패 시 다시 시도/새 파일/취소) + `assets/xlsx-patch.js`(대상 시트만 교체, 전전월 1일 이전 행 유지). `assets/xlsx-writer.js` 는 `extension/xlsx-writer.js` 의 사본(빌드 스크립트가 복사)
 
 ## 로컬 미리보기
 ```

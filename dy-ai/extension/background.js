@@ -4,7 +4,8 @@
  *   2. 로그인 안 돼 있으면 QSM 로그인 화면에서 사람이 로그인할 때까지 기다린다
  *   3. 페이지가 보내는 API 요청에서 Authorization / X-SELL-CUST-NO 헤더를 잡는다
  *   4. 그 탭 안에서(같은 출처라 쿠키·Origin 그대로) API를 호출해 수집한다
- *   5. xlsx(raw_data / raw_trade / raw_conversion)를 만들어 자동 다운로드
+ *   5. 결과를 DY-AI 페이지로 넘긴다 → 페이지가 원본 엑셀의 시트를 덮어쓰거나 새 파일로 저장
+ *      (페이지가 없으면/구버전 페이지면 여기서 xlsx 를 만들어 다운로드)
  */
 importScripts("xlsx-writer.js");
 
@@ -65,7 +66,7 @@ var CONVERSION_HEADERS = CONVERSION_COLUMNS.map(function (c) { return CONVERSION
 // ============================================================
 // 상태
 // ============================================================
-var job = null; // { dyTabId, tabId, token, custNo }
+var job = null; // { dyTabId, tabId, token, custNo, deliver }
 
 function UserError(msg) { this.message = msg; }
 
@@ -93,7 +94,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender) {
     chrome.tabs.sendMessage(sender.tab.id, { type: "q10-status", state: "busy", text: "이미 수집 중이에요. 끝날 때까지 기다려 주세요." }).catch(function () {});
     return;
   }
-  run(sender.tab.id);
+  run(sender.tab.id, msg.deliver === "page" ? "page" : "download");
 });
 
 // ============================================================
@@ -321,8 +322,18 @@ async function downloadXlsx(filename, sheets) {
 // ============================================================
 // 실행
 // ============================================================
-async function run(dyTabId) {
-  job = { dyTabId: dyTabId, tabId: null, token: null, custNo: null };
+// 수집 결과를 DY-AI 페이지로 보낸다. 페이지가 받았다고 답하면 true
+async function deliverToPage(payload) {
+  try {
+    var ack = await chrome.tabs.sendMessage(job.dyTabId, { type: "q10-status", state: "data", text: "수집 완료! 엑셀에 저장하는 중…", payload: payload });
+    return !!(ack && ack.ok);
+  } catch (e) {
+    return false;
+  }
+}
+
+async function run(dyTabId, deliver) {
+  job = { dyTabId: dyTabId, tabId: null, token: null, custNo: null, deliver: deliver };
   // 수집 중 서비스 워커가 잠들지 않도록 주기적으로 확장 API 호출
   var keepAlive = setInterval(function () { chrome.runtime.getPlatformInfo(function () {}); }, 20000);
 
@@ -341,17 +352,27 @@ async function run(dyTabId) {
     var tradeRows = await collectDaily(range, TRADE_API_URL, TRADE_COLUMNS, "", 2, "일자별 거래", warnings);
     var convRows = await collectDaily(range, CONVERSION_API_URL, CONVERSION_COLUMNS, "N0G", 3, "페이지뷰", warnings);
 
-    status("progress", "엑셀 파일 만드는 중…");
     var now = new Date();
     var stamp = ymd(now).replace(/-/g, "") + "_" + String(now.getHours()).padStart(2, "0") + String(now.getMinutes()).padStart(2, "0");
     var filename = "Qoo10_RPA_data_" + stamp + ".xlsx";
-    await downloadXlsx(filename, [
-      { name: "raw_data", header: RAW_DATA_COLUMNS, rows: dataRows },
-      { name: "raw_trade", header: TRADE_HEADERS, rows: tradeRows },
-      { name: "raw_conversion", header: CONVERSION_HEADERS, rows: convRows }
-    ]);
-
+    // dateIdx: 기존 파일에서 남길 행을 고를 날짜 열 (Qoo10_RPA.py 와 동일)
+    var sheets = [
+      { name: "raw_data", header: RAW_DATA_COLUMNS, rows: dataRows, dateIdx: 0 },
+      { name: "raw_trade", header: TRADE_HEADERS, rows: tradeRows, dateIdx: 1 },
+      { name: "raw_conversion", header: CONVERSION_HEADERS, rows: convRows, dateIdx: 1 }
+    ];
     chrome.tabs.remove(job.tabId).catch(function () {});
+
+    if (job.deliver === "page") {
+      var delivered = await deliverToPage({
+        sheets: sheets, cutoff: ymd(range.start), start: ymd(range.start), end: ymd(range.end),
+        filename: filename, warnings: warnings
+      });
+      if (delivered) return; // 저장·완료 안내는 페이지가 한다
+    }
+
+    status("progress", "엑셀 파일 만드는 중…");
+    await downloadXlsx(filename, sheets);
     var summary = filename + " 다운로드 완료 (" + ymd(range.start) + " ~ " + ymd(range.end) +
       ", 품목별 " + dataRows.length + "행 · 거래 " + tradeRows.length + "행 · 페이지뷰 " + convRows.length + "행)";
     if (warnings.length) summary += " ⚠ 일부 누락 가능: " + warnings.join(", ");

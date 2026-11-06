@@ -5,17 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DY-AI</title>
 <meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<script src="/assets/theme.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
 <link rel="stylesheet" href="/assets/dy.css">
 <link rel="stylesheet" href="/assets/main.css">
 <link rel="stylesheet" href="/assets/guide.css">
+<link rel="stylesheet" href="/assets/themes.css">
 </head>
 <body>
 
-<!-- 탑바: 왼쪽 로고(메인 링크)만 -->
+<!-- 탑바: 왼쪽 로고(메인 링크), 오른쪽 테마 선택 + 로그아웃 -->
 <header class="topbar">
   <a class="brand" href="/main" aria-label="DY-AI 메인으로"><span data-logo="flat"></span></a>
-  <button class="logout" id="logout" type="button">로그아웃</button>
+  <div class="top-actions">
+    <div class="theme-pick" data-theme-pick>
+      <button class="theme-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu" title="화면 테마 바꾸기">
+        <i class="sw sw-rug" aria-hidden="true"></i><span class="theme-label">테마</span><span class="theme-name">러그</span>
+        <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="theme-menu" id="theme-menu" role="menu" aria-label="화면 테마" hidden>
+        <button type="button" role="menuitemradio" aria-checked="true" data-theme-val="rug"><i class="sw sw-rug" aria-hidden="true"></i><span><b>러그</b><small>알록달록 털실 러그</small></span></button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="nature"><i class="sw sw-nature" aria-hidden="true"></i><span><b>풀잎</b><small>하얀 바탕에 초록 포인트</small></span></button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="dark"><i class="sw sw-dark" aria-hidden="true"></i><span><b>다크</b><small>차분한 업무용 어두운 화면</small></span></button>
+        <p class="theme-hint">고른 테마는 다음 접속에도 그대로예요</p>
+      </div>
+    </div>
+    <button class="logout" id="logout" type="button">로그아웃</button>
+  </div>
 </header>
 
 <main class="scene bg-orange hero">
@@ -35,14 +52,14 @@
    <div class="stage-stack">
     <button class="q10-btn js-collect" type="button" aria-label="Q10 수집">
       <svg class="q10-art" viewBox="0 0 64 64" aria-hidden="true">
-        <!-- 쇼핑백 캐릭터 -->
-        <path d="M12 24 H52 L48 56 H16 Z" fill="#eb0104" stroke="#9c0003" stroke-width="3" stroke-linejoin="round"/>
-        <path d="M22 24 V18 a10 10 0 0 1 20 0 V24" fill="none" stroke="#9c0003" stroke-width="3.5" stroke-linecap="round"/>
-        <circle cx="26" cy="38" r="2.8" fill="#f7f8ee"/><circle cx="38" cy="38" r="2.8" fill="#f7f8ee"/>
-        <path d="M26 45 Q32 51 38 45" fill="none" stroke="#f7f8ee" stroke-width="3" stroke-linecap="round"/>
+        <!-- 쇼핑백 캐릭터 (색은 테마별 CSS: main.css .q10-art) -->
+        <path class="bag" d="M12 24 H52 L48 56 H16 Z" stroke-width="3" stroke-linejoin="round"/>
+        <path class="handle" d="M22 24 V18 a10 10 0 0 1 20 0 V24" fill="none" stroke-width="3.5" stroke-linecap="round"/>
+        <circle class="eye" cx="26" cy="38" r="2.8"/><circle class="eye" cx="38" cy="38" r="2.8"/>
+        <path class="smile" d="M26 45 Q32 51 38 45" fill="none" stroke-width="3" stroke-linecap="round"/>
         <!-- 내려받기 화살표 배지 -->
-        <circle cx="52" cy="14" r="10" fill="#0072e4" stroke="#00348a" stroke-width="2.5"/>
-        <path d="M52 9 V19 M47.5 14.5 L52 19 L56.5 14.5" fill="none" stroke="#f7f8ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle class="badge" cx="52" cy="14" r="10" stroke-width="2.5"/>
+        <path class="arrow" d="M52 9 V19 M47.5 14.5 L52 19 L56.5 14.5" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <span class="label">Q10 수집</span>
       <svg class="spark s1" viewBox="0 0 20 20" aria-hidden="true"><use href="#spark4"/></svg>
@@ -60,7 +77,7 @@
     <header class="guide-head">
       <p class="eyebrow">Q10 수집 도우미</p>
       <h2 id="guide-title">버튼 하나로 Qoo10 통계를<br>엑셀로 받아요</h2>
-      <p class="lead">크롬 확장 프로그램을 <b>한 번만</b> 설치하면, 위의 <b>Q10 수집</b> 버튼이 Qoo10 판매자 통계를 모아 xlsx 파일로 내려받아 줘요.</p>
+      <p class="lead">크롬 확장 프로그램을 <b>한 번만</b> 설치하면, 위의 <b>Q10 수집</b> 버튼이 Qoo10 판매자 통계를 모아 쓰던 엑셀 파일에 바로 넣어 줘요.</p>
     </header>
 
     <ol class="steps">
@@ -138,28 +155,28 @@
         <span class="num">6</span>
         <div class="step-body">
           <h3>이제 수집해 볼까요?</h3>
-          <p>버튼을 누르면 Qoo10 판매자 페이지가 새 탭으로 열려요. 로그인이 필요하면 그 탭에서 로그인만 해 주세요. 나머지는 알아서 해요.</p>
+          <p>처음 한 번은 데이터를 넣을 <b>원본 엑셀 파일</b>을 골라요. 다음부터는 “이 파일에 덮어쓸까요?” 확인만 하면 Qoo10 판매자 페이지가 새 탭으로 열려요. 로그인이 필요하면 그 탭에서 로그인만 해 주세요.</p>
           <div class="go-row">
             <button class="q10-btn js-collect" type="button" aria-label="Q10 수집">
               <svg class="q10-art" viewBox="0 0 64 64" aria-hidden="true">
-                <path d="M12 24 H52 L48 56 H16 Z" fill="#eb0104" stroke="#9c0003" stroke-width="3" stroke-linejoin="round"/>
-                <path d="M22 24 V18 a10 10 0 0 1 20 0 V24" fill="none" stroke="#9c0003" stroke-width="3.5" stroke-linecap="round"/>
-                <circle cx="26" cy="38" r="2.8" fill="#f7f8ee"/><circle cx="38" cy="38" r="2.8" fill="#f7f8ee"/>
-                <path d="M26 45 Q32 51 38 45" fill="none" stroke="#f7f8ee" stroke-width="3" stroke-linecap="round"/>
-                <circle cx="52" cy="14" r="10" fill="#0072e4" stroke="#00348a" stroke-width="2.5"/>
-                <path d="M52 9 V19 M47.5 14.5 L52 19 L56.5 14.5" fill="none" stroke="#f7f8ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                <path class="bag" d="M12 24 H52 L48 56 H16 Z" stroke-width="3" stroke-linejoin="round"/>
+                <path class="handle" d="M22 24 V18 a10 10 0 0 1 20 0 V24" fill="none" stroke-width="3.5" stroke-linecap="round"/>
+                <circle class="eye" cx="26" cy="38" r="2.8"/><circle class="eye" cx="38" cy="38" r="2.8"/>
+                <path class="smile" d="M26 45 Q32 51 38 45" fill="none" stroke-width="3" stroke-linecap="round"/>
+                <circle class="badge" cx="52" cy="14" r="10" stroke-width="2.5"/>
+                <path class="arrow" d="M52 9 V19 M47.5 14.5 L52 19 L56.5 14.5" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <span class="label">Q10 수집</span>
             </button>
           </div>
           <ul class="flow">
-            <li><b>열기</b> Qoo10 판매자 페이지 새 탭</li>
+            <li><b>파일</b> 처음 한 번 원본 엑셀 고르기, 다음부턴 확인만</li>
             <li><b>로그인</b> 필요할 때만 직접 (최대 10분 기다려요)</li>
             <li><b>수집</b> 전전월 1일 ~ 어제</li>
-            <li><b>저장</b> 다운로드 폴더에 <code>Qoo10_RPA_data_날짜_시간.xlsx</code></li>
+            <li><b>저장</b> 원본의 아래 3개 시트만 교체 (전전월 1일 이전 행은 그대로)</li>
           </ul>
           <table class="sheets">
-            <caption>엑셀 안에 들어 있는 시트</caption>
+            <caption>바뀌는 시트 (다른 시트·서식·수식은 그대로)</caption>
             <thead><tr><th scope="col">시트</th><th scope="col">내용</th></tr></thead>
             <tbody>
               <tr><td><code>raw_data</code></td><td>일자·품목별 거래 (수주/취소 수량·금액)</td></tr>
@@ -189,7 +206,11 @@
           <dd>확장 프로그램이 켜져 있는지 확인하고 이 페이지를 새로고침해요.</dd>
           <dt>로그인했는데 로그인 화면이 다시 떠요</dt>
           <dd>Qoo10 탭을 닫고 Q10 수집을 다시 눌러 주세요. 계속되면 알려 주세요.</dd>
-          <dt>파일이 안 받아져요</dt>
+          <dt>“파일이 열려 있어서 저장하지 못했어요”</dt>
+          <dd>엑셀에서 그 파일을 닫고 <b>다시 시도</b>를 눌러요. 급하면 <b>새로운 파일로 저장</b>을 골라도 돼요.</dd>
+          <dt>다른 엑셀 파일에 넣고 싶어요</dt>
+          <dd>Q10 수집을 누른 뒤 확인 창에서 <b>다른 파일 고르기</b>를 눌러요.</dd>
+          <dt>새 파일로 받았는데 안 보여요</dt>
           <dd>크롬 다운로드 목록(Ctrl+J)을 확인해요. 수집이 하나라도 실패하면 파일을 만들지 않아요.</dd>
         </dl>
       </section>
@@ -202,6 +223,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="/assets/config.js"></script>
 <script src="/assets/auth.js"></script>
+<script src="/assets/xlsx-writer.js"></script>
+<script src="/assets/xlsx-patch.js"></script>
+<script src="/assets/q10-save.js"></script>
 <script src="/assets/q10.js"></script>
 <script>
   // 로그인 안 돼 있으면 로그인 화면으로

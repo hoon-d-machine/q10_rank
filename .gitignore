@@ -10,3 +10,6 @@ logs/
 
 local_config.json
 browser_profile/
+
+# wrangler 로컬 개발 임시 파일
+.wrangler/

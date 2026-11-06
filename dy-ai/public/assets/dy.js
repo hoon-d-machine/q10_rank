@@ -4,16 +4,26 @@
 
   var SPRITE =
     '<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">' +
-    // 데이지 (흰 꽃잎 + 노란 웃는 얼굴)
+    // 데이지 (크림 꽃잎 + 노란 웃는 얼굴, 털실 느낌이라 외곽선은 얇게)
     '<symbol id="daisy" viewBox="0 0 100 100">' +
-    '<g fill="#fff" stroke="#111" stroke-width="3.5" stroke-linejoin="round">' +
+    '<g fill="#fbfbf3" stroke="#e6e2c8" stroke-width="2" stroke-linejoin="round">' +
     [0, 45, 90, 135, 180, 225, 270, 315].map(function (a) {
-      return '<ellipse cx="50" cy="19" rx="13" ry="19" transform="rotate(' + a + ' 50 50)"/>';
+      return '<ellipse cx="50" cy="19" rx="13.5" ry="19" transform="rotate(' + a + ' 50 50)"/>';
     }).join("") +
     '</g>' +
-    '<circle cx="50" cy="50" r="19" fill="#ffd21f" stroke="#111" stroke-width="3.5"/>' +
-    '<circle cx="43" cy="47" r="2.6" fill="#111"/><circle cx="57" cy="47" r="2.6" fill="#111"/>' +
-    '<path d="M42 56 Q50 63 58 56" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round"/>' +
+    '<circle cx="50" cy="50" r="19.5" fill="#fdc916" stroke="#e0a800" stroke-width="2"/>' +
+    '<circle cx="43" cy="47" r="2.6" fill="#3b2200"/><circle cx="57" cy="47" r="2.6" fill="#3b2200"/>' +
+    '<path d="M42 56 Q50 63 58 56" fill="none" stroke="#3b2200" stroke-width="3" stroke-linecap="round"/>' +
+    '</symbol>' +
+    // 반짝이 (4각 별)
+    '<symbol id="spark4" viewBox="0 0 20 20"><path d="M10 0 L12.4 7.6 L20 10 L12.4 12.4 L10 20 L7.6 12.4 L0 10 L7.6 7.6 Z" fill="#fbfbf3"/></symbol>' +
+    // 무지개 (빨강·노랑·초록 아치 + 초록 언덕)
+    '<symbol id="rainbow" viewBox="-40 -140 1080 600">' +
+    '<path d="M-20 420 A500 500 0 0 1 1020 420" fill="none" stroke="#eb0104" stroke-width="64"/>' +
+    '<path d="M44 420 A436 436 0 0 1 956 420" fill="none" stroke="#fdc916" stroke-width="64"/>' +
+    '<path d="M108 420 A372 372 0 0 1 892 420" fill="none" stroke="#06ac78" stroke-width="64"/>' +
+    '<path d="M172 420 A308 308 0 0 1 828 420" fill="none" stroke="#0072e4" stroke-width="64"/>' +
+    '<ellipse cx="500" cy="440" rx="330" ry="120" fill="#06ac78"/>' +
     '</symbol>' +
     // 로고 글자 경로 (D Y - A I)
     '<symbol id="dy-logo" viewBox="0 0 520 135">' + logoGroups(false) + '</symbol>' +
@@ -22,11 +32,11 @@
 
   function logoGroups(inkOnly) {
     var L = [
-      { x: 14,  c: "#1b8fe0", d: "M18 22 H44 C86 22 90 108 44 108 H18 Z" },                         // D
-      { x: 124, c: "#f0646a", d: "M14 22 L50 66 L86 22 M50 66 V108" },                              // Y
-      { x: 226, c: "#ffd21f", d: "M20 66 H64" },                                                    // -
-      { x: 292, c: "#7b4fd6", d: "M12 108 L50 22 L88 108 M27 82 H73" },                             // A
-      { x: 404, c: "#0e64b8", d: "M30 22 H70 M30 108 H70 M50 22 V108" }                             // I
+      { x: 14,  c: "#f7f8ee", d: "M18 22 H44 C86 22 90 108 44 108 H18 Z" },                         // D
+      { x: 124, c: "#fdc916", d: "M14 22 L50 66 L86 22 M50 66 V108" },                              // Y
+      { x: 226, c: "#eb0104", d: "M20 66 H64" },                                                    // -
+      { x: 292, c: "#06ac78", d: "M12 108 L50 22 L88 108 M27 82 H73" },                             // A
+      { x: 404, c: "#f7f8ee", d: "M30 22 H70 M30 108 H70 M50 22 V108" }                             // I
     ];
     var out = L.map(function (l, i) {
       // 위치(transform 속성)와 애니메이션(CSS transform)을 다른 그룹으로 분리

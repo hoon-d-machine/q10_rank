@@ -10,21 +10,29 @@
 <link rel="stylesheet" href="/assets/login.css">
 </head>
 <body>
-<main class="scene grid-blue login-scene">
+<main class="scene bg-orange login-scene">
+
+  <!-- 아래쪽 무지개 -->
+  <div class="rainbow" data-depth="8"><svg viewBox="-40 -140 1080 600" aria-hidden="true"><use href="#rainbow"/></svg></div>
 
   <!-- 배경 3D 오브제 (포인터에 따라 깊이별로 움직임) -->
   <div class="deco" style="--x:6%;--y:12%;--s:120px" data-depth="26"><div class="bob" style="--d:7s"><svg class="daisy" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
   <div class="deco" style="--x:84%;--y:8%;--s:84px" data-depth="40"><div class="bob" style="--d:6s;--delay:-2s"><svg class="daisy" style="--sp:18s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
-  <div class="deco" style="--x:78%;--y:66%;--s:150px" data-depth="18"><div class="bob" style="--d:8s;--delay:-4s"><svg class="daisy" style="--sp:30s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
-  <div class="deco" style="--x:10%;--y:70%;--s:70px" data-depth="46"><div class="bob" style="--d:5.5s;--delay:-1s"><svg class="daisy" style="--sp:14s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
+  <div class="deco" style="--x:80%;--y:56%;--s:130px" data-depth="18"><div class="bob" style="--d:8s;--delay:-4s"><svg class="daisy" style="--sp:30s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
+  <div class="deco" style="--x:9%;--y:62%;--s:76px" data-depth="46"><div class="bob" style="--d:5.5s;--delay:-1s"><svg class="daisy" style="--sp:14s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
 
-  <div class="deco" style="--x:18%;--y:38%;--s:86px" data-depth="34"><div class="bob" style="--d:9s"><div class="cube" style="--s:86px"><i>D</i><i>Y</i><i>A</i><i>I</i><i>✿</i><i>★</i></div></div></div>
-  <div class="deco" style="--x:70%;--y:30%;--s:64px" data-depth="52"><div class="bob" style="--d:7.5s;--delay:-3s"><div class="cube" style="--s:64px;--cs:11s"><i>A</i><i>I</i><i>D</i><i>Y</i><i>★</i><i>✿</i></div></div></div>
+  <div class="deco" style="--x:19%;--y:36%;--s:86px" data-depth="34"><div class="bob" style="--d:9s"><div class="cube" style="--s:86px"><i>D</i><i>Y</i><i>A</i><i>I</i><i>✿</i><i>★</i></div></div></div>
+  <div class="deco" style="--x:72%;--y:28%;--s:64px" data-depth="52"><div class="bob" style="--d:7.5s;--delay:-3s"><div class="cube" style="--s:64px;--cs:11s"><i>A</i><i>I</i><i>D</i><i>Y</i><i>★</i><i>✿</i></div></div></div>
 
-  <!-- 로그인 카드 -->
+  <div class="deco" style="--x:30%;--y:10%;--s:26px" data-depth="30"><svg class="star" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
+  <div class="deco" style="--x:66%;--y:14%;--s:20px" data-depth="44"><svg class="star" style="--delay:-1.2s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
+  <div class="deco" style="--x:90%;--y:38%;--s:28px" data-depth="36"><svg class="star" style="--delay:-.6s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
+  <div class="deco" style="--x:4%;--y:44%;--s:22px" data-depth="40"><svg class="star" style="--delay:-1.8s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
+
+  <!-- 로그인 카드 (러그 패치) -->
   <section class="card-wrap" data-tilt="9">
     <div class="card-back" aria-hidden="true"></div>
-    <form class="card" id="login-form" novalidate>
+    <form class="card patch" id="login-form" novalidate>
       <div class="card-logo" data-logo="flat"></div>
       <p class="hello">오늘도 반가워요</p>
 

@@ -1,19 +1,20 @@
-/* DY-AI — pop / pixel-grid / daisy. 팔레트는 wiggle-wiggle.com 의 배너·강조색에서 가져옴 */
+/* DY-AI — 귀여운 털실 러그 무드. 팔레트는 wiggle-wiggle.com 러그 제품 사진에서 추출 */
 :root {
-  --ink: #111;
-  --ink-2: #555;
-  --paper: #fff;
-  --mist: #eef6fc;
-  --blue: #1b8fe0;
-  --blue-d: #0e64b8;
-  --blue-l: #8fd0f7;
-  --coral: #f0646a;
-  --red: #dd0035;
-  --yellow: #ffd21f;
-  --purple: #7b4fd6;
-  --line: 3px solid var(--ink);
-  --hard: 8px 8px 0 var(--ink);
+  --orange: #ff7f21;
+  --orange-d: #e0620a;
+  --blue: #0072e4;
+  --blue-l: #5fb0ff;
+  --navy: #00348a;
+  --yellow: #fdc916;
+  --yellow-d: #c99400;
+  --red: #eb0104;
+  --green: #06ac78;
+  --cream: #f7f8ee;
+  --ink: #3b2200;
+  --ink-2: #7a4a1c;
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Malgun Gothic", sans-serif;
+  /* 털 질감 (회색 노이즈를 overlay 로 겹침) */
+  --fuzz: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
 * { box-sizing: border-box; }
@@ -21,26 +22,35 @@ html, body { height: 100%; margin: 0; }
 body {
   font-family: var(--font);
   color: var(--ink);
-  background: var(--paper);
+  background: var(--orange);
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 button, input { font: inherit; color: inherit; }
 
-/* ---------- 픽셀 격자 배경 ---------- */
-.grid-blue {
-  background-color: var(--blue);
-  background-image:
-    linear-gradient(rgba(255,255,255,.28) 2px, transparent 2px),
-    linear-gradient(90deg, rgba(255,255,255,.28) 2px, transparent 2px);
-  background-size: 56px 56px;
+/* 주황 털 바탕 */
+.bg-orange { background: var(--orange); position: relative; }
+.bg-orange::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: var(--fuzz); opacity: .30; mix-blend-mode: overlay; z-index: 0;
 }
-.grid-mist {
-  background-color: var(--mist);
-  background-image:
-    linear-gradient(rgba(27,143,224,.14) 2px, transparent 2px),
-    linear-gradient(90deg, rgba(27,143,224,.14) 2px, transparent 2px);
-  background-size: 56px 56px;
+
+/* 러그 패치: 파란 털 + 노란 테두리 + 안쪽 스티치 */
+.patch {
+  position: relative;
+  background: var(--blue);
+  border: 6px solid var(--yellow);
+  border-radius: 30px;
+  box-shadow: 0 10px 0 rgba(150, 60, 0, .28), 0 22px 30px rgba(150, 60, 0, .22);
+  color: var(--cream);
+}
+.patch::before { /* 털 질감 */
+  content: ""; position: absolute; inset: 0; border-radius: 24px; pointer-events: none;
+  background-image: var(--fuzz); opacity: .38; mix-blend-mode: overlay;
+}
+.patch::after { /* 스티치 */
+  content: ""; position: absolute; inset: 8px; border-radius: 20px; pointer-events: none;
+  border: 2.5px dashed rgba(255, 255, 255, .55);
 }
 
 /* ---------- 3D 장면 ---------- */
@@ -50,13 +60,16 @@ button, input { font: inherit; color: inherit; }
   perspective-origin: 50% 40%;
   overflow: hidden;
 }
+.scene > * { position: relative; z-index: 1; }
+.scene > .deco { position: absolute; }
+.scene > .rainbow { position: absolute; }
 .deco {
-  position: absolute;
   left: var(--x); top: var(--y);
   width: var(--s); height: var(--s);
   pointer-events: none;
   transform-style: preserve-3d;
   will-change: transform;
+  z-index: 1;
 }
 .deco > .bob {
   width: 100%; height: 100%;
@@ -64,15 +77,34 @@ button, input { font: inherit; color: inherit; }
   animation-delay: var(--delay, 0s);
   transform-style: preserve-3d;
 }
-.deco svg.daisy { width: 100%; height: 100%; display: block; animation: spin2d var(--sp, 24s) linear infinite; filter: drop-shadow(4px 5px 0 rgba(17,17,17,.9)); }
+.deco svg.daisy {
+  width: 100%; height: 100%; display: block;
+  animation: spin2d var(--sp, 24s) linear infinite;
+  filter: drop-shadow(0 7px 0 rgba(150, 60, 0, .30));
+}
+.deco svg.star { width: 100%; height: 100%; display: block; animation: twinkle 2.6s ease-in-out infinite; animation-delay: var(--delay, 0s); }
 
 @keyframes bob {
   0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50% { transform: translateY(-22px) rotate(4deg); }
+  50% { transform: translateY(-20px) rotate(4deg); }
 }
 @keyframes spin2d { to { transform: rotate(360deg); } }
+@keyframes twinkle {
+  0%, 100% { transform: scale(.55) rotate(0); opacity: .55; }
+  50% { transform: scale(1.1) rotate(45deg); opacity: 1; }
+}
 
-/* 큐브 */
+/* 무지개 (아래쪽 장식) */
+.rainbow {
+  /* 가운데 정렬은 transform 대신 여백으로 (포인터 시차가 transform 을 쓰므로) */
+  --w: min(112vw, 1000px);
+  left: 50%; bottom: -2px;
+  width: var(--w); margin-left: calc(var(--w) / -2);
+  pointer-events: none; z-index: 0;
+}
+.rainbow svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* 큐브 (털실 쿠션 느낌) */
 .cube {
   --h: calc(var(--s) / 2);
   position: relative;
@@ -82,20 +114,21 @@ button, input { font: inherit; color: inherit; }
 }
 .cube i {
   position: absolute; inset: 0;
-  border: var(--line);
-  border-radius: 12px;
+  border-radius: 16px;
   display: grid; place-items: center;
   font-style: normal; font-weight: 900;
-  font-size: calc(var(--s) * .42);
-  color: var(--ink);
-  backface-visibility: visible;
+  font-size: calc(var(--s) * .44);
+  color: var(--cream);
+  box-shadow: inset 0 0 0 4px rgba(255, 255, 255, .35);
+  overflow: hidden;
 }
-.cube i:nth-child(1) { background: var(--yellow); transform: translateZ(var(--h)); }
-.cube i:nth-child(2) { background: var(--coral);  transform: rotateY(90deg)  translateZ(var(--h)); }
-.cube i:nth-child(3) { background: var(--blue-l); transform: rotateY(180deg) translateZ(var(--h)); }
-.cube i:nth-child(4) { background: var(--purple); transform: rotateY(-90deg) translateZ(var(--h)); color: #fff; }
-.cube i:nth-child(5) { background: #fff;          transform: rotateX(90deg)  translateZ(var(--h)); }
-.cube i:nth-child(6) { background: var(--red);    transform: rotateX(-90deg) translateZ(var(--h)); color: #fff; }
+.cube i::before { content: ""; position: absolute; inset: 0; background-image: var(--fuzz); opacity: .38; mix-blend-mode: overlay; }
+.cube i:nth-child(1) { background: var(--yellow); color: var(--ink); transform: translateZ(var(--h)); }
+.cube i:nth-child(2) { background: var(--red);    transform: rotateY(90deg)  translateZ(var(--h)); }
+.cube i:nth-child(3) { background: var(--blue);   transform: rotateY(180deg) translateZ(var(--h)); }
+.cube i:nth-child(4) { background: var(--green);  transform: rotateY(-90deg) translateZ(var(--h)); }
+.cube i:nth-child(5) { background: var(--cream);  color: var(--orange); transform: rotateX(90deg)  translateZ(var(--h)); }
+.cube i:nth-child(6) { background: var(--blue-l); transform: rotateX(-90deg) translateZ(var(--h)); }
 @keyframes cube-spin {
   from { transform: rotateX(-24deg) rotateY(0deg); }
   to   { transform: rotateX(-24deg) rotateY(360deg); }
@@ -109,9 +142,8 @@ button, input { font: inherit; color: inherit; }
   animation: hop 2.6s ease-in-out infinite;
   animation-delay: calc(var(--i) * .13s);
 }
-.ltr .ink { fill: none; stroke: var(--ink); stroke-width: 34; stroke-linecap: round; stroke-linejoin: round; }
-.ltr .col { fill: none; stroke: var(--c); stroke-width: 19; stroke-linecap: round; stroke-linejoin: round; }
-.ink-only .ltr .ink { stroke: var(--ink); }
+.ltr .ink { fill: none; stroke: var(--navy); stroke-width: 34; stroke-linecap: round; stroke-linejoin: round; }
+.ltr .col { fill: none; stroke: var(--c); stroke-width: 20; stroke-linecap: round; stroke-linejoin: round; }
 @keyframes hop {
   0%, 62%, 100% { transform: translateY(0) scale(1, 1); }
   14% { transform: translateY(5px) scale(1.07, .9); }
@@ -122,25 +154,25 @@ button, input { font: inherit; color: inherit; }
 /* 로고 3D 압출 */
 .logo3d {
   position: relative;
-  width: min(86vw, 640px);
+  width: min(78vw, 560px);
   aspect-ratio: 520 / 135;
   transform-style: preserve-3d;
   margin-inline: auto;
 }
 .logo3d > .layer { position: absolute; inset: 0; }
 .logo3d > .layer svg { width: 100%; height: 100%; }
-.logo3d > .layer:nth-child(1) { transform: translateZ(-42px); }
-.logo3d > .layer:nth-child(2) { transform: translateZ(-34px); }
-.logo3d > .layer:nth-child(3) { transform: translateZ(-26px); }
-.logo3d > .layer:nth-child(4) { transform: translateZ(-18px); }
-.logo3d > .layer:nth-child(5) { transform: translateZ(-9px); }
+.logo3d > .layer:nth-child(1) { transform: translateZ(-30px); }
+.logo3d > .layer:nth-child(2) { transform: translateZ(-24px); }
+.logo3d > .layer:nth-child(3) { transform: translateZ(-18px); }
+.logo3d > .layer:nth-child(4) { transform: translateZ(-12px); }
+.logo3d > .layer:nth-child(5) { transform: translateZ(-6px); }
 .logo3d > .layer.front { transform: translateZ(0); }
 
 /* ---------- 토스트 (alert 대신) ---------- */
 #toast {
   position: fixed; left: 50%; bottom: 28px;
   transform: translate(-50%, 24px);
-  background: var(--ink); color: #fff;
+  background: var(--ink); color: var(--cream);
   padding: 12px 20px; border-radius: 999px;
   font-weight: 700; font-size: 14px;
   opacity: 0; pointer-events: none;
@@ -151,6 +183,6 @@ button, input { font: inherit; color: inherit; }
 
 /* ---------- 모션 최소화 ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .ltr, .logo-daisy, .deco > .bob, .deco svg.daisy, .cube, .q10-btn .spark { animation: none !important; }
+  .ltr, .logo-daisy, .deco > .bob, .deco svg, .cube, .q10-btn .spark { animation: none !important; }
   .deco { transform: none !important; }
 }

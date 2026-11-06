@@ -1165,6 +1165,92 @@ def update_spreadsheet_date_sheet(sheet_name, data_rows, columns, cutoff_days=62
 
 
 # ============================================================
+# Supabase 업데이트 (전전월 1일 이후 구간을 RPC 함수로 한 트랜잭션 교체)
+# ============================================================
+def _snake(s):
+    return re.sub(r"([A-Z])", lambda x: "_" + x.group(1).lower(), s)
+
+
+_GOODS_DB_COLS = ["base_date", "weekday", "brand_nm", "gd_nm", "gd_no", "outer_gd_no",
+                  "buy_cnt", "cancel_cnt", "net_cnt", "buy_bpv", "cancel_bpv", "net_bpv"]
+# 시트명: (RPC 함수, DB 열 목록, 텍스트 열, 날짜 열 위치)
+SUPABASE_TARGETS = {
+    "raw_data": ("inni_replace_sales_goods", _GOODS_DB_COLS,
+                 {"weekday", "brand_nm", "gd_nm", "gd_no", "outer_gd_no"}, 0),
+    "raw_trade": ("inni_replace_sales_daily", [_snake(c) for c in TRADE_COLUMNS], set(), 1),
+    "raw_conversion": ("inni_replace_pageview_daily", [_snake(c) for c in CONVERSION_COLUMNS], set(), 1),
+}
+_DATE_COLS = ("base_date", "base_start_dt", "base_end_dt")
+
+
+def _to_num(v):
+    s = str(v).replace(",", "").strip()
+    if s == "":
+        return None
+    f = float(s)
+    return int(f) if f == int(f) else f
+
+
+def update_supabase(name, rows, p_from=None):
+    """rows(시트와 같은 형태의 리스트)를 DB 형식으로 바꿔 p_from 이후 구간을 교체.
+    SUPABASE_URL/SUPABASE_KEY가 env에 없으면 건너뛴다(True 반환)."""
+    with open(get_env_path(), "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    def _get(k):
+        mm = re.search(rf"^{k}\s*=\s*(.+)$", content, re.M)
+        return mm.group(1).strip().strip("\"'") if mm else ""
+    
+    url, key = _get("SUPABASE_URL").rstrip("/"), _get("SUPABASE_KEY")
+    if not url or not key:
+        logger.warning("SUPABASE_URL/SUPABASE_KEY 없음 - Supabase 업데이트 건너뜀")
+        return True
+    
+    fn, cols, text_cols, _ = SUPABASE_TARGETS[name]
+    if p_from is None:
+        yesterday = datetime.now().date() - timedelta(days=1)
+        p_from = (yesterday.replace(day=1) - relativedelta(months=2)).strftime("%Y-%m-%d")
+    
+    payload = []
+    try:
+        for r in rows:
+            r = list(r) + [""] * (len(cols) - len(r))
+            d = {}
+            for i, c in enumerate(cols):
+                v = r[i]
+                if c in _DATE_COLS:
+                    d[c] = str(v).strip() or None
+                elif c in text_cols:
+                    d[c] = str(v) if v not in ("", None) else None
+                else:
+                    d[c] = _to_num(v) if v is not None else None
+            payload.append(d)
+    except (ValueError, TypeError) as e:
+        logger.error(f"[{name}] Supabase 변환 실패: {e}")
+        return False
+    
+    headers = {"apikey": key, "Authorization": "Bearer " + key, "Content-Type": "application/json"}
+    for attempt in range(3):
+        try:
+            resp = requests.post(f"{url}/rest/v1/rpc/{fn}", headers=headers,
+                                 json={"p_from": p_from, "p_rows": payload}, timeout=120)
+            if resp.status_code == 200:
+                n = resp.json()
+                logger.info(f"Supabase [{name}] {p_from} 이후 교체 완료: {n}행")
+                if n != len(payload):
+                    logger.error(f"[{name}] 입력 {len(payload)}행 != 반영 {n}행")
+                    return False
+                return True
+            logger.warning(f"[{name}] Supabase 응답 {resp.status_code}: {resp.text[:200]}")
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"[{name}] Supabase 요청 오류: {e}")
+        if attempt < 2:
+            time.sleep(2 ** (attempt + 1))  # 교체 함수는 재실행해도 결과가 같음
+    logger.error(f"[{name}] Supabase 업데이트 실패")
+    return False
+
+
+# ============================================================
 # 메인 실행
 # ============================================================
 if __name__ == "__main__":
@@ -1244,6 +1330,14 @@ if __name__ == "__main__":
         if not update_spreadsheet_date_sheet("raw_conversion", conv_rows, CONVERSION_COLUMNS):
             failures.append("raw_conversion(시트)")
 
+    # 8. Supabase 업데이트 (수집 성공한 데이터셋만)
+    logger.info("\n" + "="*60)
+    logger.info("Supabase 업데이트 시작")
+    logger.info("="*60)
+    for name, rows, _, _ in datasets:
+        if rows and not update_supabase(name, rows):
+            failures.append(f"{name}(Supabase)")
+    
     if failures:
         logger.error(f"\n일부 단계 실패: {failures}")
         sys.exit(1)

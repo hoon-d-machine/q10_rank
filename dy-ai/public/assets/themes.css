@@ -1,7 +1,7 @@
 /* DY-AI 테마 덮어쓰기
  * 기본(러그)은 dy.css / main.css / guide.css / login.css 그대로.
  * html[data-theme="nature"]  풀잎: 녹차 잎·거친 돌·잎 그림자·햇살의 실사 무드 + 모던 타이포, 포인트 #11af5d
- * html[data-theme="dark"]    다크: 블랙 + 유리 큐브·버블, 아주 큰 얇은 대문자 제목, 흰 알약 버튼
+ * html[data-theme="dark"]    다크: 해 질 녘 사진 같은 배경, 여백 넓은 에디토리얼 레이아웃, 작은 각진 버튼
  * 배경 장면(.theme-scene 뒤쪽, .theme-front 앞쪽)은 dy.js 가 테마에 맞춰 끼워 넣음. 전환·저장은 theme.js
  */
 
@@ -347,62 +347,24 @@ html[data-theme="dark"] body { background: #000; color: var(--text); }
 html[data-theme="dark"] .bg-orange { background: #000; }
 html[data-theme="dark"] .bg-orange::before { display: none; }
 
-/* --- 장면: 은은한 빛 + 유리 큐브·버블 --- */
-.d-glow {
+/* --- 장면: 해 질 녘 하늘 · 흐린 능선 · 필름 입자 (사진처럼) --- */
+.d-sky {
   inset: 0;
+  background: linear-gradient(180deg, #050608 0%, #0a0c12 38%, #17141a 64%, #241a1a 76%, #0b0a0c 100%);
+}
+.d-glow {
+  inset: 0; mix-blend-mode: screen;
   background:
-    radial-gradient(55% 45% at 50% 58%, rgba(120, 110, 255, .11), transparent 70%),
-    radial-gradient(35% 30% at 82% 12%, rgba(255, 170, 130, .07), transparent 70%),
-    radial-gradient(30% 30% at 10% 30%, rgba(120, 200, 255, .06), transparent 70%);
+    radial-gradient(48% 26% at 64% 74%, rgba(255, 176, 120, .32), transparent 70%),
+    radial-gradient(80% 40% at 60% 78%, rgba(170, 82, 60, .28), transparent 72%),
+    radial-gradient(30% 12% at 66% 73%, rgba(255, 214, 170, .22), transparent 70%);
+  animation: dusk 12s ease-in-out infinite;
 }
-.d-obj .drift { perspective: 700px; }
-.gcube {
-  --h: calc(var(--s) / 2);
-  position: relative; width: 100%; height: 100%;
-  transform-style: preserve-3d;
-  animation: gspin var(--cs, 24s) linear infinite;
-}
-.gcube i { /* 모서리가 날카로운 투명 유리 + 면을 가로지르는 빛줄기 */
-  position: absolute; inset: 0;
-  background:
-    linear-gradient(118deg, transparent 30%, rgba(255, 255, 255, .16) 44%, transparent 52%),
-    linear-gradient(160deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .01) 55%, rgba(190, 170, 255, .06));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .34), inset 0 0 calc(var(--s) * .25) rgba(170, 190, 255, .07);
-}
-.gcube i:nth-child(1) { transform: translateZ(var(--h)); }
-.gcube i:nth-child(2) { transform: rotateY(90deg) translateZ(var(--h)); }
-.gcube i:nth-child(3) { transform: rotateY(180deg) translateZ(var(--h)); }
-.gcube i:nth-child(4) { transform: rotateY(-90deg) translateZ(var(--h)); }
-.gcube i:nth-child(5) { transform: rotateX(90deg) translateZ(var(--h)); }
-.gcube i:nth-child(6) { transform: rotateX(-90deg) translateZ(var(--h)); }
-@keyframes gspin {
-  from { transform: rotateX(-28deg) rotateY(0deg) rotateZ(0deg); }
-  to   { transform: rotateX(-28deg) rotateY(360deg) rotateZ(0deg); }
-}
-.bubble {
-  display: block; position: relative; width: 100%; height: 100%; border-radius: 50%;
-  background:
-    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .5) 0, rgba(255, 255, 255, .1) 16%, rgba(255, 255, 255, 0) 38%),
-    radial-gradient(circle at 70% 78%, rgba(150, 180, 255, .2), transparent 46%),
-    rgba(255, 255, 255, .025);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, .2),
-    inset -10px -14px 30px rgba(255, 170, 130, .2),
-    inset 12px 10px 34px rgba(130, 180, 255, .26),
-    0 30px 60px rgba(0, 0, 0, .6);
-  backdrop-filter: blur(5px) saturate(1.4) brightness(1.2);
-}
-.bubble::before {
-  content: ""; position: absolute; inset: 0; border-radius: 50%;
-  background: var(--iri);
-  -webkit-mask: radial-gradient(closest-side, transparent 86%, #000 95%, transparent 100%);
-  mask: radial-gradient(closest-side, transparent 86%, #000 95%, transparent 100%);
-  opacity: .75; animation: spin2d 14s linear infinite;
-}
-.bubble::after {
-  content: ""; position: absolute; left: 20%; top: 13%; width: 28%; height: 14%; border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, .9), transparent); transform: rotate(-32deg);
-}
+@keyframes dusk { 50% { opacity: .78; } }
+.d-ridge { left: -2%; right: -2%; bottom: 0; height: 34%; }
+.d-ridge svg { width: 100%; height: 100%; display: block; }
+.d-grain { inset: 0; background-image: var(--fuzz); opacity: .22; mix-blend-mode: overlay; }
+.d-vignette { inset: 0; background: radial-gradient(ellipse 80% 75% at 55% 50%, transparent 45%, rgba(0, 0, 0, .7) 100%); }
 
 /* --- 히어로 글: 아주 큰 얇은 대문자 --- */
 html[data-theme="dark"] .hero-kicker { font-size: 12px; font-weight: 400; letter-spacing: .32em; text-transform: uppercase; color: var(--muted); }
@@ -705,6 +667,121 @@ html[data-theme="nature"] .logout, html[data-theme="nature"] .theme-btn,
 html[data-theme="dark"] .logout, html[data-theme="dark"] .theme-btn { font-size: 13px; }
 
 /* =====================================================================
+   다크 에디토리얼: 레퍼런스처럼 여백 넓게, 글씨 작게, 왼쪽 제목 · 오른쪽 설명
+   ===================================================================== */
+html[data-theme="dark"] .logo-word, html[data-theme="dark"] .topbar .logo-word, html[data-theme="dark"] .card-logo .logo-word {
+  background: none; color: #fff; padding: 0; font-size: 19px;
+}
+html[data-theme="dark"] .card-logo .logo-word { font-size: 30px; }
+html[data-theme="dark"] .topbar { background: rgba(5, 6, 8, .55); border-bottom-color: rgba(255, 255, 255, .06); }
+
+/* 히어로: 2단 그리드 (hero-copy 를 풀어서 각 줄을 칸에 배치) */
+html[data-theme="dark"] .center-stage { padding: 0 clamp(20px, 6vw, 96px); }
+html[data-theme="dark"] .stage-stack {
+  display: grid; width: min(1120px, 100%);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  column-gap: clamp(32px, 9vw, 140px); row-gap: 0;
+  align-items: start; justify-items: start; text-align: left;
+}
+html[data-theme="dark"] .hero-copy.hc-dark { display: contents; }
+html[data-theme="dark"] .hc-dark .hero-title {
+  grid-column: 1; grid-row: 1 / span 6; position: relative;
+  font-family: var(--font); text-transform: none;
+  font-size: clamp(28px, 3.8vw, 50px); font-weight: 300; line-height: 1.38; letter-spacing: -.03em; color: #f1f1f1;
+  padding-left: .7em; word-break: keep-all;
+}
+html[data-theme="dark"] .hc-dark .hero-title::before {
+  content: "\2018"; position: absolute; left: 0; top: -.15em;
+  font-size: .9em; color: rgba(255, 255, 255, .7);
+}
+html[data-theme="dark"] .hc-dark .hero-kicker {
+  grid-column: 2; margin: 10px 0 12px;
+  font-size: 13px; font-weight: 600; letter-spacing: .01em; text-transform: none; color: #fff;
+}
+html[data-theme="dark"] .hc-dark .hero-sub {
+  grid-column: 2; margin: 0 0 26px; max-width: 30em;
+  font-size: 13px; line-height: 1.85; font-weight: 300; color: rgba(255, 255, 255, .55); text-wrap: pretty;
+}
+html[data-theme="dark"] .center-stage .q10-btn,
+html[data-theme="dark"] .center-stage .ext-pill,
+html[data-theme="dark"] .center-stage .to-guide { grid-column: 2; transform: none; }
+html[data-theme="dark"] .center-stage .ext-pill { margin-top: 16px; font-size: 12px; }
+html[data-theme="dark"] .center-stage .to-guide { margin-top: 10px; font-size: 12px; padding: 2px 0; }
+html[data-theme="dark"] .hero-stats { display: none; }
+
+/* 버튼: 작고 각지게 */
+html[data-theme="dark"] .q10-btn, html[data-theme="dark"] .center-stage .q10-btn {
+  border-radius: 0; padding: 10px 18px; font-size: 13px; font-weight: 500; gap: 10px;
+  background: #f1f1f1; color: #000; box-shadow: none;
+}
+html[data-theme="dark"] .q10-btn:hover, html[data-theme="dark"] .center-stage .q10-btn:hover { background: #fff; transform: none; box-shadow: none; }
+html[data-theme="dark"] .q10-btn:active, html[data-theme="dark"] .center-stage .q10-btn:active { transform: translateY(1px); }
+html[data-theme="dark"] .dl-btn, html[data-theme="dark"] .go, html[data-theme="dark"] .dy-modal-btn { border-radius: 0; }
+html[data-theme="dark"] .dl-btn { padding: 10px 18px; font-size: 13px; gap: 8px; }
+html[data-theme="dark"] .dl-btn svg { width: 16px; height: 16px; }
+html[data-theme="dark"] .go { padding: 12px 18px; font-size: 14px; }
+html[data-theme="dark"] .dy-modal-btn { padding: 10px 16px; font-size: 13.5px; }
+html[data-theme="dark"] .field input { border-radius: 0; }
+html[data-theme="dark"] .card.patch { border-radius: 0; background: rgba(8, 8, 10, .62); }
+
+/* 설명서: 작은 소제목 + 넓은 여백 */
+html[data-theme="dark"] .guide { padding: 120px 24px 140px; background: #050506; }
+html[data-theme="dark"] .guide-inner { max-width: 960px; }
+html[data-theme="dark"] .guide-head { margin-bottom: 64px; }
+html[data-theme="dark"] .guide-head::before { content: none; }
+html[data-theme="dark"] .eyebrow { margin-bottom: 18px; font-size: 13px; font-weight: 600; letter-spacing: .01em; color: #fff; }
+html[data-theme="dark"] .guide-head h2 { font-size: clamp(22px, 2.6vw, 30px); line-height: 1.45; margin-bottom: 14px; }
+html[data-theme="dark"] .lead { font-size: 13.5px; line-height: 1.85; max-width: 34em; }
+html[data-theme="dark"] .step:not(.step-go), html[data-theme="dark"] .step-go {
+  padding: 40px 0; gap: 4px 28px; grid-template-columns: 64px minmax(0, 1fr);
+  background: none; border: 0; border-radius: 0; box-shadow: none; margin: 0;
+  border-top: 1px solid rgba(255, 255, 255, .12);
+}
+html[data-theme="dark"] .num { width: 64px; height: auto; margin: 0; }
+html[data-theme="dark"] .num::after { font-family: var(--display); font-size: 13px; font-weight: 400; letter-spacing: .04em; color: rgba(255, 255, 255, .45); margin-top: 3px; }
+html[data-theme="dark"] .step h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+html[data-theme="dark"] .step p { font-size: 13.5px; line-height: 1.85; }
+html[data-theme="dark"] .step-go .num::after { color: rgba(255, 255, 255, .45); }
+html[data-theme="dark"] .step-go h3, html[data-theme="dark"] .step-go p b { color: #fff; }
+html[data-theme="dark"] .step-go p { color: var(--muted); }
+html[data-theme="dark"] .step-go code { background: rgba(255, 255, 255, .08); color: #e8e8e8; }
+html[data-theme="dark"] .step-go .q10-btn { background: #f1f1f1; color: #000; box-shadow: none; }
+html[data-theme="dark"] .step-go .q10-btn:hover { background: #fff; box-shadow: none; }
+html[data-theme="dark"] .go-row { margin: 22px 0 30px; }
+html[data-theme="dark"] .flow li { color: var(--muted); border-top-color: rgba(255, 255, 255, .1); font-size: 13px; }
+html[data-theme="dark"] .flow b { color: #fff; font-weight: 600; }
+html[data-theme="dark"] .sheets { border: 0; color: #e8e8e8; font-size: 13px; }
+html[data-theme="dark"] .sheets caption { color: var(--muted); font-size: 12px; }
+html[data-theme="dark"] .sheets th { background: none; color: var(--muted); font-size: 12px; border-bottom: 1px solid rgba(255, 255, 255, .14); }
+html[data-theme="dark"] .sheets th, html[data-theme="dark"] .sheets td { padding: 10px 0; }
+html[data-theme="dark"] .sheets tr + tr td,
+html[data-theme="dark"] .sheets tbody tr:first-child td { border-top-color: rgba(255, 255, 255, .08); }
+html[data-theme="dark"] .shot { margin-top: 18px; }
+html[data-theme="dark"] .guide-more { margin-top: 90px; gap: 56px; }
+html[data-theme="dark"] .note-card { border-top: 1px solid rgba(255, 255, 255, .5); font-size: 13.5px; line-height: 1.85; }
+html[data-theme="dark"] .note-card h3 { font-size: 13px; font-weight: 600; margin-bottom: 14px; }
+html[data-theme="dark"] .tip { font-size: 12.5px !important; }
+
+@media (max-width: 760px) {
+  html[data-theme="dark"] .stage-stack { grid-template-columns: minmax(0, 1fr); }
+  html[data-theme="dark"] .hc-dark .hero-title { grid-row: auto; margin-bottom: 34px; }
+  html[data-theme="dark"] .hc-dark .hero-kicker, html[data-theme="dark"] .hc-dark .hero-sub,
+  html[data-theme="dark"] .center-stage .q10-btn, html[data-theme="dark"] .center-stage .ext-pill,
+  html[data-theme="dark"] .center-stage .to-guide { grid-column: 1; }
+  html[data-theme="dark"] .step:not(.step-go), html[data-theme="dark"] .step-go { grid-template-columns: 40px minmax(0, 1fr); gap: 4px 14px; }
+  html[data-theme="dark"] .num { width: 40px; }
+  html[data-theme="dark"] .guide { padding: 90px 20px 110px; }
+}
+
+/* 풀잎 버튼도 한 단계 작게 */
+html[data-theme="nature"] .center-stage .q10-btn { padding: 13px 26px; font-size: 16px; }
+html[data-theme="nature"] .q10-btn { padding: 11px 20px; font-size: 14.5px; }
+html[data-theme="nature"] .dl-btn { padding: 11px 18px; font-size: 14px; gap: 8px; }
+html[data-theme="nature"] .dl-btn svg { width: 17px; height: 17px; }
+html[data-theme="nature"] .go { padding: 12px 18px; font-size: 15px; }
+html[data-theme="nature"] .dy-modal-btn { padding: 11px 16px; font-size: 14.5px; }
+
+/* =====================================================================
    전환 · 모션 최소화
    ===================================================================== */
 @media (prefers-reduced-motion: no-preference) {
@@ -714,6 +791,7 @@ html[data-theme="dark"] .logout, html[data-theme="dark"] .theme-btn { font-size:
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .drift, .n-sway, .n-sun, .n-ring svg, .gcube, .bubble::before { animation: none !important; }
-  .n-leaf, .n-drop, .d-obj, .n-shade, .n-ring, .n-stone { transform: none !important; }
+  .drift, .n-sway, .n-sun, .n-ring svg, .d-glow { animation: none !important; }
+  .n-leaf, .n-drop, .d-ridge, .n-shade, .n-ring, .n-stone { transform: none !important; }
 }
+html[data-theme="dark"] .hc-dark .hero-title, html[data-theme="dark"] .hc-dark .hero-sub, html[data-theme="dark"] .hc-dark .hero-kicker { text-align: left; }

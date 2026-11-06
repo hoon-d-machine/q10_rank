@@ -100,22 +100,17 @@
     leaf("84%", "70%", "190px", 60, "13s", "-58deg", "-5s", "n-blur") +
     leaf("-4%", "2%", "150px", 54, "12s", "142deg", "0s", "n-blur");
 
-  // ----- 다크: 검정 + 유리 큐브·버블 -----
-  function gobj(x, y, s, depth, d, delay, inner) {
-    return '<div class="d-obj" style="--x:' + x + ";--y:" + y + ";--s:" + s + '" data-depth="' + depth + '">' +
-      '<div class="drift" style="--d:' + d + ";--delay:" + delay + '">' + inner + "</div></div>";
-  }
-  function gcube(cs) {
-    return '<div class="gcube" style="--cs:' + cs + '"><i></i><i></i><i></i><i></i><i></i><i></i></div>';
-  }
-  var BUBBLE = '<i class="bubble"></i>';
-  var DARK_BACK = '<div class="d-glow"></div>';
-  var DARK_FRONT =
-    gobj("74%", "8%", "clamp(96px, 13vw, 190px)", 40, "12s", "0s", gcube("26s")) +
-    gobj("4%", "14%", "clamp(84px, 11vw, 168px)", 30, "14s", "-2s", BUBBLE) +
-    gobj("83%", "60%", "clamp(54px, 7vw, 104px)", 48, "9s", "-6s", BUBBLE) +
-    gobj("63%", "34%", "clamp(24px, 2.8vw, 40px)", 64, "7s", "-1s", BUBBLE) +
-    gobj("29%", "74%", "clamp(18px, 2.2vw, 30px)", 70, "8s", "-3s", BUBBLE);
+  // ----- 다크: 해 질 녘 하늘 + 흐린 능선 + 필름 입자 (사진처럼, 도형 없음) -----
+  var DARK_BACK =
+    '<div class="d-sky"></div><div class="d-glow"></div>' +
+    '<div class="d-ridge" data-depth="6"><svg viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs><filter id="dr-b" x="-5%" y="-30%" width="110%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>' +
+    '<filter id="dr-b2" x="-5%" y="-30%" width="110%" height="160%"><feGaussianBlur stdDeviation="3"/></filter></defs>' +
+    '<path d="M0 300 V150 C140 128 230 96 360 112 C470 126 540 84 660 92 C790 100 860 140 980 132 C1080 125 1140 108 1200 112 V300 Z" fill="#14151b" filter="url(#dr-b)"/>' +
+    '<path d="M0 300 V214 C160 196 300 170 450 186 C600 202 700 176 840 184 C980 192 1090 214 1200 206 V300 Z" fill="#060608" filter="url(#dr-b2)"/>' +
+    "</svg></div>" +
+    '<div class="d-grain"></div><div class="d-vignette"></div>';
+  var DARK_FRONT = "";
 
   var SCENES = {
     nature: { back: NATURE_BACK, front: NATURE_FRONT },

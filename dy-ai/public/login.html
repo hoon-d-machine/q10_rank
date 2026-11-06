@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DY-AI 로그인</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+<link rel="stylesheet" href="/assets/dy.css">
+<link rel="stylesheet" href="/assets/login.css">
+</head>
+<body>
+<main class="scene grid-blue login-scene">
+
+  <!-- 배경 3D 오브제 (포인터에 따라 깊이별로 움직임) -->
+  <div class="deco" style="--x:6%;--y:12%;--s:120px" data-depth="26"><div class="bob" style="--d:7s"><svg class="daisy" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
+  <div class="deco" style="--x:84%;--y:8%;--s:84px" data-depth="40"><div class="bob" style="--d:6s;--delay:-2s"><svg class="daisy" style="--sp:18s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
+  <div class="deco" style="--x:78%;--y:66%;--s:150px" data-depth="18"><div class="bob" style="--d:8s;--delay:-4s"><svg class="daisy" style="--sp:30s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
+  <div class="deco" style="--x:10%;--y:70%;--s:70px" data-depth="46"><div class="bob" style="--d:5.5s;--delay:-1s"><svg class="daisy" style="--sp:14s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
+
+  <div class="deco" style="--x:18%;--y:38%;--s:86px" data-depth="34"><div class="bob" style="--d:9s"><div class="cube" style="--s:86px"><i>D</i><i>Y</i><i>A</i><i>I</i><i>✿</i><i>★</i></div></div></div>
+  <div class="deco" style="--x:70%;--y:30%;--s:64px" data-depth="52"><div class="bob" style="--d:7.5s;--delay:-3s"><div class="cube" style="--s:64px;--cs:11s"><i>A</i><i>I</i><i>D</i><i>Y</i><i>★</i><i>✿</i></div></div></div>
+
+  <!-- 로그인 카드 -->
+  <section class="card-wrap" data-tilt="9">
+    <div class="card-back" aria-hidden="true"></div>
+    <form class="card" id="login-form" novalidate>
+      <div class="card-logo" data-logo="flat"></div>
+      <p class="hello">오늘도 반가워요</p>
+
+      <label class="field">
+        <span>이메일</span>
+        <input type="email" name="email" autocomplete="username" placeholder="you@example.com" required>
+      </label>
+      <label class="field">
+        <span>비밀번호</span>
+        <input type="password" name="password" autocomplete="current-password" placeholder="••••••••" required>
+      </label>
+
+      <button class="go" type="submit"><span>로그인</span><i aria-hidden="true">→</i></button>
+      <p class="note">※ 인증 연동 전 화면입니다. 지금은 눌러도 메인 화면으로만 이동해요.</p>
+    </form>
+  </section>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/assets/dy.js"></script>
+<script>
+  document.getElementById("login-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var f = e.target;
+    if (!f.email.value.trim() || !f.password.value) {
+      window.dyToast("이메일과 비밀번호를 입력해 주세요");
+      return;
+    }
+    window.dyToast("로그인 연동 전이라 메인으로 이동합니다");
+    setTimeout(function () { location.href = "/"; }, 900);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+/* DY-AI — pop / pixel-grid / daisy. 팔레트는 wiggle-wiggle.com 의 배너·강조색에서 가져옴 */
+:root {
+  --ink: #111;
+  --ink-2: #555;
+  --paper: #fff;
+  --mist: #eef6fc;
+  --blue: #1b8fe0;
+  --blue-d: #0e64b8;
+  --blue-l: #8fd0f7;
+  --coral: #f0646a;
+  --red: #dd0035;
+  --yellow: #ffd21f;
+  --purple: #7b4fd6;
+  --line: 3px solid var(--ink);
+  --hard: 8px 8px 0 var(--ink);
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Malgun Gothic", sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button, input { font: inherit; color: inherit; }
+
+/* ---------- 픽셀 격자 배경 ---------- */
+.grid-blue {
+  background-color: var(--blue);
+  background-image:
+    linear-gradient(rgba(255,255,255,.28) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255,255,255,.28) 2px, transparent 2px);
+  background-size: 56px 56px;
+}
+.grid-mist {
+  background-color: var(--mist);
+  background-image:
+    linear-gradient(rgba(27,143,224,.14) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(27,143,224,.14) 2px, transparent 2px);
+  background-size: 56px 56px;
+}
+
+/* ---------- 3D 장면 ---------- */
+.scene {
+  position: relative;
+  perspective: 1100px;
+  perspective-origin: 50% 40%;
+  overflow: hidden;
+}
+.deco {
+  position: absolute;
+  left: var(--x); top: var(--y);
+  width: var(--s); height: var(--s);
+  pointer-events: none;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.deco > .bob {
+  width: 100%; height: 100%;
+  animation: bob var(--d, 7s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  transform-style: preserve-3d;
+}
+.deco svg.daisy { width: 100%; height: 100%; display: block; animation: spin2d var(--sp, 24s) linear infinite; filter: drop-shadow(4px 5px 0 rgba(17,17,17,.9)); }
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-22px) rotate(4deg); }
+}
+@keyframes spin2d { to { transform: rotate(360deg); } }
+
+/* 큐브 */
+.cube {
+  --h: calc(var(--s) / 2);
+  position: relative;
+  width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  animation: cube-spin var(--cs, 16s) linear infinite;
+}
+.cube i {
+  position: absolute; inset: 0;
+  border: var(--line);
+  border-radius: 12px;
+  display: grid; place-items: center;
+  font-style: normal; font-weight: 900;
+  font-size: calc(var(--s) * .42);
+  color: var(--ink);
+  backface-visibility: visible;
+}
+.cube i:nth-child(1) { background: var(--yellow); transform: translateZ(var(--h)); }
+.cube i:nth-child(2) { background: var(--coral);  transform: rotateY(90deg)  translateZ(var(--h)); }
+.cube i:nth-child(3) { background: var(--blue-l); transform: rotateY(180deg) translateZ(var(--h)); }
+.cube i:nth-child(4) { background: var(--purple); transform: rotateY(-90deg) translateZ(var(--h)); color: #fff; }
+.cube i:nth-child(5) { background: #fff;          transform: rotateX(90deg)  translateZ(var(--h)); }
+.cube i:nth-child(6) { background: var(--red);    transform: rotateX(-90deg) translateZ(var(--h)); color: #fff; }
+@keyframes cube-spin {
+  from { transform: rotateX(-24deg) rotateY(0deg); }
+  to   { transform: rotateX(-24deg) rotateY(360deg); }
+}
+
+/* ---------- 로고 ---------- */
+.logo-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ltr {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: hop 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * .13s);
+}
+.ltr .ink { fill: none; stroke: var(--ink); stroke-width: 34; stroke-linecap: round; stroke-linejoin: round; }
+.ltr .col { fill: none; stroke: var(--c); stroke-width: 19; stroke-linecap: round; stroke-linejoin: round; }
+.ink-only .ltr .ink { stroke: var(--ink); }
+@keyframes hop {
+  0%, 62%, 100% { transform: translateY(0) scale(1, 1); }
+  14% { transform: translateY(5px) scale(1.07, .9); }
+  38% { transform: translateY(-18px) scale(.95, 1.08); }
+}
+.logo-daisy { transform-box: fill-box; transform-origin: 50% 50%; animation: spin2d 9s linear infinite; }
+
+/* 로고 3D 압출 */
+.logo3d {
+  position: relative;
+  width: min(86vw, 640px);
+  aspect-ratio: 520 / 135;
+  transform-style: preserve-3d;
+  margin-inline: auto;
+}
+.logo3d > .layer { position: absolute; inset: 0; }
+.logo3d > .layer svg { width: 100%; height: 100%; }
+.logo3d > .layer:nth-child(1) { transform: translateZ(-42px); }
+.logo3d > .layer:nth-child(2) { transform: translateZ(-34px); }
+.logo3d > .layer:nth-child(3) { transform: translateZ(-26px); }
+.logo3d > .layer:nth-child(4) { transform: translateZ(-18px); }
+.logo3d > .layer:nth-child(5) { transform: translateZ(-9px); }
+.logo3d > .layer.front { transform: translateZ(0); }
+
+/* ---------- 토스트 (alert 대신) ---------- */
+#toast {
+  position: fixed; left: 50%; bottom: 28px;
+  transform: translate(-50%, 24px);
+  background: var(--ink); color: #fff;
+  padding: 12px 20px; border-radius: 999px;
+  font-weight: 700; font-size: 14px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  z-index: 50;
+}
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- 모션 최소화 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ltr, .logo-daisy, .deco > .bob, .deco svg.daisy, .cube, .q10-btn .spark { animation: none !important; }
+  .deco { transform: none !important; }
+}

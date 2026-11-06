@@ -1,0 +1,59 @@
+.login-scene { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; }
+
+.card-wrap { position: relative; z-index: 2; width: min(100%, 420px); transform-style: preserve-3d; will-change: transform; }
+
+.card {
+  position: relative;
+  background: var(--paper);
+  border: var(--line);
+  border-radius: 28px;
+  padding: 30px 28px 24px;
+  display: grid; gap: 16px;
+  transform: translateZ(30px);
+}
+.card-back { /* 카드 뒤 겹침: 입체감 */
+  position: absolute; inset: 0;
+  border: var(--line); border-radius: 28px;
+  background: var(--yellow);
+  transform: translateZ(-10px) translate(16px, 16px);
+}
+
+.card-logo { width: 78%; margin: 4px auto 0; }
+.hello { margin: 0; text-align: center; font-weight: 700; color: var(--ink-2); }
+
+.field { display: grid; gap: 6px; font-weight: 800; font-size: 13px; }
+.field input {
+  width: 100%;
+  border: 2.5px solid var(--ink); border-radius: 14px;
+  padding: 13px 14px;
+  font-size: 16px; font-weight: 600;
+  background: var(--mist);
+  outline: none;
+  transition: box-shadow .15s, background .15s, transform .15s;
+}
+.field input::placeholder { color: rgba(17,17,17,.35); }
+.field input:focus { background: #fff; box-shadow: 4px 4px 0 var(--blue); transform: translate(-2px, -2px); }
+
+.go {
+  margin-top: 4px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  border: var(--line); border-radius: 999px;
+  background: var(--ink); color: #fff;
+  padding: 15px 22px;
+  font-size: 17px; font-weight: 800;
+  cursor: pointer;
+  box-shadow: 5px 5px 0 var(--coral);
+  transition: transform .12s, box-shadow .12s, background .12s, color .12s;
+}
+.go i { font-style: normal; transition: transform .2s; }
+.go:hover { background: var(--yellow); color: var(--ink); transform: translate(-2px, -2px); box-shadow: 8px 8px 0 var(--ink); }
+.go:hover i { transform: translateX(5px); }
+.go:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.go:focus-visible, .field input:focus-visible { outline: 3px solid var(--purple); outline-offset: 3px; }
+
+.note { margin: 0; text-align: center; font-size: 12px; color: var(--ink-2); }
+
+@media (max-width: 520px) {
+  .card { padding: 24px 20px 20px; border-radius: 24px; }
+  .deco { opacity: .85; }
+}

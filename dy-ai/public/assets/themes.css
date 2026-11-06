@@ -782,6 +782,11 @@ html[data-theme="nature"] .dl-btn svg { width: 17px; height: 17px; }
 html[data-theme="nature"] .go { padding: 12px 18px; font-size: 15px; }
 html[data-theme="nature"] .dy-modal-btn { padding: 11px 16px; font-size: 14.5px; }
 
+/* 캡처 강조: 풀잎은 초록 링, 다크는 검은 가는 선 (캡처가 밝은 화면이라) */
+html[data-theme="nature"] .shot-hl { outline: 2px solid #11af5d; outline-offset: 4px; box-shadow: 0 0 0 7px rgba(17, 175, 93, .16); border-radius: 8px; }
+html[data-theme="dark"] .shot-hl { outline: 1.5px solid #111; outline-offset: 4px; box-shadow: 0 0 0 7px rgba(0, 0, 0, .08); border-radius: 6px; }
+html[data-theme="dark"] .shot img { opacity: 1; }
+
 /* =====================================================================
    전환 · 모션 최소화
    ===================================================================== */

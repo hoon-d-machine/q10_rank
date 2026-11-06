@@ -114,6 +114,7 @@
 /* 스크린샷 (브라우저 창 모양 액자) */
 .shot {
   grid-column: 1 / -1;
+  width: 100%; max-width: 640px;
   margin: 18px 0 0;
   border-radius: 16px; overflow: hidden;
   background: #fff;
@@ -133,7 +134,7 @@
   background: #fff; border-radius: 999px; padding: 2px 12px;
   font-size: 12px; color: #6b6450; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.shot img { display: block; width: 100%; height: auto; aspect-ratio: 900 / 440; object-fit: cover; object-position: top left; }
+.shot img { display: block; width: 100%; height: auto; } /* 640px 화면을 2배로 찍은 캡처: 원래 크기(최대 640px)로 보여 선명함 */
 
 /* 넓은 화면: 스크린샷은 설명 아래, 본문과 같은 왼쪽 선에 맞춰 넓게 */
 @media (min-width: 640px) {
@@ -220,7 +221,14 @@
 .sheets th, .sheets td { text-align: left; padding: 10px 14px; vertical-align: top; }
 .sheets th { font-size: 12.5px; background: rgba(0, 30, 90, .25); }
 .sheets code { white-space: nowrap; word-break: normal; }
-.shot a { display: block; cursor: zoom-in; }
+.shot a { display: block; cursor: zoom-in; position: relative; }
+/* 캡처 위 강조 표시 (테마마다 색이 다름: themes.css) */
+.shot-hl {
+  position: absolute; pointer-events: none;
+  border-radius: 10px;
+  outline: 3px solid #eb0104; outline-offset: 4px;
+  box-shadow: 0 0 0 9px rgba(253, 201, 22, .5);
+}
 .shot a:focus-visible { outline: 3px solid var(--blue); outline-offset: -3px; }
 .sheets tr + tr td, .sheets tbody tr:first-child td { border-top: 1px solid rgba(255, 255, 255, .14); }
 

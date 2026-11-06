@@ -13,3 +13,6 @@ browser_profile/
 
 # wrangler 로컬 개발 임시 파일
 .wrangler/
+
+# wrangler 로컬 비밀값
+.dev.vars

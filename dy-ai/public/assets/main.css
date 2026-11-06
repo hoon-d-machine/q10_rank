@@ -174,3 +174,19 @@
 
 /* 풀잎·다크 히어로 제목과 숫자 (러그에서는 숨김, 스타일은 themes.css) */
 .hero-copy, .hero-stats { display: none; }
+
+/* 탑바 메뉴: 수집기 · 로그 */
+.top-nav { position: relative; z-index: 1; display: flex; align-items: center; gap: 4px; margin-left: clamp(14px, 3vw, 32px); }
+.top-nav a {
+  padding: 5px 11px; border-radius: 999px;
+  color: var(--cream); text-decoration: none;
+  font-size: 13px; font-weight: 800;
+  transition: background .15s, color .15s;
+}
+.top-nav a:hover { background: rgba(255, 255, 255, .16); }
+.top-nav a[aria-current="page"] { background: var(--cream); color: var(--blue); box-shadow: 0 3px 0 rgba(0, 40, 110, .35); }
+.top-nav a:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+@media (max-width: 420px) {
+  .top-nav { margin-left: 10px; gap: 0; }
+  .top-nav a { padding: 5px 8px; font-size: 12.5px; }
+}

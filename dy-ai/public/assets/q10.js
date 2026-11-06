@@ -101,24 +101,85 @@
     if (d.type === "ready") { detected = true; render(); return; }
     if (d.type !== "q10-status") return;
     if (d.state === "data") {
-      // 수집 결과 → 엑셀 저장 (저장이 끝나야 버튼이 풀림)
+      // 수집 결과 → 엑셀 저장 → DB·구글 시트 (끝나야 버튼이 풀림)
       var t = target || { mode: "download" };
+      var r = run;
       target = null;
+      run = null;
       window.dyToast(d.text, 0);
-      window.dyQ10Save.save(d.payload, t)
-        .catch(function (e) {
-          console.error("[DY-AI Q10]", e);
-          window.dyToast("엑셀 저장 중 오류가 났어요: " + (e && e.message || e), 9000);
-        })
-        .then(function () { setBusy(false); });
+      afterCollect(d.payload, t, r).then(function () { setBusy(false); });
       return;
     }
     // 진행/로그인 안내는 다음 소식까지 유지, 완료·오류는 길게
     var ms = d.state === "progress" || d.state === "login" ? 0 : (d.state === "busy" ? 2400 : 9000);
     window.dyToast(d.text, ms);
-    if (d.state === "done" || d.state === "error") { setBusy(false); target = null; }
+    if (run) {
+      var lv = { login: "warn", error: "error", done: "ok", busy: "warn" }[d.state] || "info";
+      run.step(d.state === "login" ? "로그인" : "수집", lv, d.text);
+      if (d.state === "done") run.end("ok", d.text);
+      if (d.state === "error") run.end("error", d.text);
+      if (d.state === "busy") { run.end("cancel", d.text); run = null; }
+    }
+    if (d.state === "done" || d.state === "error") { setBusy(false); target = null; run = null; }
     if (d.state === "busy") setBusy(true);
   });
+
+  // ---------- 수집 뒤: 엑셀 → DB·시트, 단계마다 로그 ----------
+  var run = null; // 이번 수집 건의 로그 (q10-log.js)
+
+  function count(p) {
+    return p.sheets.map(function (s) { return s.name + " " + s.rows.length.toLocaleString("ko-KR") + "행"; }).join(" · ");
+  }
+
+  async function afterCollect(p, t, r) {
+    var L = r || (window.dyLog ? window.dyLog.start({ start: p.start, end: p.end }) : null);
+    var log = L || { step: function () {}, end: function () {}, period: function () {} };
+    log.period(p.start, p.end);
+    log.step("수집", "ok", "수집 완료 (" + p.start + " ~ " + p.end + ") " + count(p),
+      p.warnings && p.warnings.length ? { warnings: p.warnings } : null);
+    if (p.warnings && p.warnings.length) log.step("수집", "warn", "경고 " + p.warnings.length + "건: " + p.warnings.join(" / "));
+
+    // 1) 엑셀
+    var saved = false;
+    log.step("엑셀 저장", "info", t.mode === "file" ? "원본 파일에 덮어쓰기: " + t.handle.name : "새 파일로 받기");
+    try {
+      saved = await window.dyQ10Save.save(p, t);
+      log.step("엑셀 저장", saved ? "ok" : "warn", saved ? "저장 완료" : "저장 안 함 (취소)");
+    } catch (e) {
+      console.error("[DY-AI Q10]", e);
+      log.step("엑셀 저장", "error", (e && e.message) || String(e));
+      window.dyToast("엑셀 저장 중 오류가 났어요: " + (e && e.message || e), 9000);
+    }
+
+    // 2) DB · 구글 시트 (실패하면 다시 시도 가능)
+    if (!window.dyQ10Sync) { log.end(saved ? "ok" : "partial", "엑셀만 저장"); return; }
+    for (;;) {
+      window.dyToast("DB · 구글 시트 업데이트 중…", 0);
+      var res = await window.dyQ10Sync.run(p, log);
+      var bad = res.parts.filter(function (x) { return !x.ok; });
+      var line = "엑셀 " + (saved ? "✓" : "✕") + " · DB " + (bad.some(function (x) { return x.target === "DB"; }) ? "✕" : "✓") +
+        " · 시트 " + (bad.some(function (x) { return x.target === "시트"; }) ? "✕" : "✓");
+      if (!bad.length) {
+        log.end(saved ? "ok" : "partial", line + " (" + p.start + " ~ " + p.end + ")");
+        window.dyToast("저장 완료 — " + line + " (" + p.start + " ~ " + p.end + ")", 9000);
+        return;
+      }
+      window.dyToast("일부를 업데이트하지 못했어요 — " + line, 0);
+      var v = await window.dyModal({
+        tone: "warn",
+        title: "DB · 구글 시트 일부를 업데이트하지 못했어요",
+        body: bad.map(function (x) { return x.target + " " + x.name + ": " + x.message; })
+          .concat([{ note: "엑셀 저장은 따로 끝났어요. 다시 시도하면 실패한 곳까지 같은 데이터로 다시 교체해요." }]),
+        actions: [{ label: "다시 시도", value: "retry", kind: "primary" }, { label: "닫기", value: null, kind: "quiet" }]
+      });
+      if (v !== "retry") {
+        log.end("partial", line + " (" + p.start + " ~ " + p.end + ")");
+        window.dyToast("일부 실패 — " + line + ". 자세한 내용은 로그 메뉴에서 볼 수 있어요", 9000);
+        return;
+      }
+      log.step("재시도", "info", "DB · 시트 다시 시도");
+    }
+  }
   window.postMessage({ source: "dy-ai", type: "ping" }, location.origin);
 
   collectBtns.forEach(function (btn) {
@@ -135,6 +196,8 @@
       if (!pageSave) {
         // 구버전 확장: 확장이 새 파일로 바로 다운로드
         window.dyToast("확장 프로그램 새 버전이 있어요. 지금은 새 파일로 받고, 업데이트하면 원본 엑셀에 바로 저장돼요", 4000);
+        run = window.dyLog ? window.dyLog.start({}) : null;
+        if (run) run.step("시작", "warn", "구버전 확장(" + installed + "): 확장이 새 파일로 직접 다운로드 (DB·시트 업데이트 없음)");
         setBusy(true);
         window.postMessage({ source: "dy-ai", type: "q10-collect" }, location.origin);
         return;
@@ -145,6 +208,8 @@
         .then(function (t) {
           if (!t) return;
           target = t;
+          run = window.dyLog ? window.dyLog.start({}) : null;
+          if (run) run.step("시작", "info", "저장 대상: " + (t.mode === "file" ? "원본 파일 " + t.handle.name : "새 파일로 받기") + " · 확장 v" + installed);
           setBusy(true);
           window.postMessage({ source: "dy-ai", type: "q10-collect", deliver: "page" }, location.origin);
         })

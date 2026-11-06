@@ -1,9 +1,18 @@
 {
   "name": "dy-ai",
   "compatibility_date": "2026-10-01",
+  // /api/* 만 Worker(src/worker.js: 구글 시트 프록시)가 처리하고 나머지는 public/ 정적 파일
+  "main": "src/worker.js",
   "assets": {
     "directory": "./public",
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    "not_found_handling": "404-page"
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
+  },
+  // 공개값만. secret 은 wrangler secret put 으로: GOOGLE_SA_JSON, SHEET_ID
+  "vars": {
+    "SUPABASE_URL": "https://dlgyvqcfastqguudzcob.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_gpElJE3Ag9JVB_9z2wWwqA_2kheALPF"
   }
 }

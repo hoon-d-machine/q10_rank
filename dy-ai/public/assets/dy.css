@@ -182,7 +182,9 @@ button, input { font: inherit; color: inherit; }
   position: fixed; left: 50%; bottom: 28px;
   transform: translate(-50%, 24px);
   background: var(--ink); color: var(--cream);
-  padding: 12px 20px; border-radius: 999px;
+  padding: 12px 20px; border-radius: 22px;
+  width: max-content; max-width: min(640px, calc(100vw - 32px));
+  text-align: center; line-height: 1.45; word-break: keep-all; overflow-wrap: anywhere;
   font-weight: 700; font-size: 14px;
   opacity: 0; pointer-events: none;
   transition: opacity .25s, transform .25s;

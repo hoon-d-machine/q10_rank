@@ -29,7 +29,7 @@
   <div class="deco" style="--x:70%;--y:10%;--s:20px" data-depth="44"><svg class="star" style="--delay:-1.2s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
   <div class="deco" style="--x:92%;--y:44%;--s:28px" data-depth="36"><svg class="star" style="--delay:-.6s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
   <div class="deco" style="--x:3%;--y:46%;--s:22px" data-depth="40"><svg class="star" style="--delay:-1.8s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
-  <!-- 화면 중앙: Q10 수집 버튼 (장식용, 아직 동작 없음) -->
+  <!-- 화면 중앙: Q10 수집 버튼 (크롬 확장 dy-ai/extension 이 수집 + xlsx 다운로드) -->
   <div class="center-stage" data-tilt="8">
     <button class="q10-btn" type="button" aria-label="Q10 수집">
       <svg class="q10-art" viewBox="0 0 64 64" aria-hidden="true">
@@ -61,6 +61,45 @@
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });
   });
+
+  // ===== Q10 수집: 크롬 확장 프로그램(dy-ai/extension)에 요청 =====
+  (function () {
+    var btn = document.querySelector(".q10-btn");
+    var label = btn.querySelector(".label");
+    var extReady = false;
+
+    function setBusy(on) {
+      btn.setAttribute("aria-busy", on ? "true" : "false");
+      label.textContent = on ? "수집 중…" : "Q10 수집";
+    }
+
+    window.addEventListener("message", function (e) {
+      if (e.source !== window || e.origin !== location.origin) return;
+      var d = e.data;
+      if (!d || d.source !== "dy-ext") return;
+      if (d.type === "ready") { extReady = true; return; }
+      if (d.type !== "q10-status") return;
+      // 진행/로그인 안내는 다음 소식까지 유지, 완료·오류는 길게
+      var ms = d.state === "progress" || d.state === "login" ? 0 : (d.state === "busy" ? 2400 : 9000);
+      window.dyToast(d.text, ms);
+      if (d.state === "done" || d.state === "error") setBusy(false);
+      if (d.state === "busy") setBusy(true);
+    });
+    window.postMessage({ source: "dy-ai", type: "ping" }, location.origin);
+
+    btn.addEventListener("click", function () {
+      if (btn.getAttribute("aria-busy") === "true") {
+        window.dyToast("이미 수집 중이에요");
+        return;
+      }
+      if (!extReady) {
+        window.dyToast("'DY-AI Q10 수집' 크롬 확장 프로그램을 설치해 주세요");
+        return;
+      }
+      setBusy(true);
+      window.postMessage({ source: "dy-ai", type: "q10-collect" }, location.origin);
+    });
+  })();
 </script>
 </body>
 </html>

@@ -5,7 +5,7 @@ Cloudflare Workers(정적 자산)로 서빙하는 개인용 사이트. 지금은
 ## 화면
 - `public/index.html` — 로그인 화면 (루트 `/`, Supabase Auth 이메일+비밀번호. 아이디만 넣으면 `@LOGIN_EMAIL_DOMAIN` 을 붙임)
 - `public/assets/config.js` — Supabase URL / anon key / 로그인 이메일 도메인 설정
-- `public/main.html` — 메인 (`/main`, 로그인 안 돼 있으면 `/`로 보냄, 탑바 왼쪽 로고 + 오른쪽 로그아웃, 가운데 Q10 수집 버튼(장식용))
+- `public/main.html` — 메인 (`/main`, 로그인 안 돼 있으면 `/`로 보냄, 탑바 왼쪽 로고 + 오른쪽 로그아웃, 가운데 Q10 수집 버튼 → 크롬 확장이 수집 후 xlsx 다운로드)
 
 ## 로컬 미리보기
 ```
@@ -28,5 +28,6 @@ npx wrangler deploy
 
 ## 앞으로
 - 로그인: Supabase Auth 연동 완료 (회원가입 끔, 계정은 대시보드에서 생성)
+- Q10 수집 확장 프로그램: `extension/` (설치·동작은 extension/README.md). 수집 결과 Supabase 업로드는 아직
 - 확장 프로그램 → `/ingest` (전용 토큰, 쓰기 전용) → Supabase
 - 엑셀 내보내기 화면

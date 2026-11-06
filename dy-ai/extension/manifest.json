@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "DY-AI Q10 수집",
+  "version": "0.1.0",
+  "description": "DY-AI 메인의 'Q10 수집' 버튼으로 Qoo10 판매자 통계(일자/품목별 거래, 일자별 거래, 페이지뷰)를 수집해 xlsx로 내려받습니다.",
+  "background": { "service_worker": "background.js" },
+  "permissions": ["tabs", "scripting", "webRequest", "downloads"],
+  "host_permissions": [
+    "https://qsm.qoo10.jp/*",
+    "https://seller.qoo10.jp/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://dy-ai.xogns1381.workers.dev/*",
+        "http://localhost:8765/*",
+        "http://127.0.0.1:8765/*"
+      ],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

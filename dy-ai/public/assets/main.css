@@ -51,6 +51,10 @@
 .q10-btn:hover .q10-art { transform: rotate(-10deg) scale(1.12); }
 .q10-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--yellow-d), 0 0 0 4px var(--cream); }
 .q10-btn:focus-visible { outline: 3px solid var(--cream); outline-offset: 6px; }
+.q10-btn[aria-busy="true"] { cursor: progress; }
+.q10-btn[aria-busy="true"] .q10-art { animation: q10-wiggle .9s ease-in-out infinite; }
+@keyframes q10-wiggle { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) { .q10-btn[aria-busy="true"] .q10-art { animation: none; } }
 
 .q10-btn .spark { position: absolute; width: 16px; height: 16px; animation: twinkle 2.2s ease-in-out infinite; }
 .q10-btn .s1 { left: -10px; top: -12px; }

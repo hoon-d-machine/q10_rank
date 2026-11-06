@@ -103,11 +103,13 @@
   // ----- 토스트 -----
   var toast = document.getElementById("toast");
   var timer;
-  window.dyToast = function (msg) {
+  // ms: 표시 시간 (기본 2.4초, 0이면 다음 토스트가 올 때까지 유지)
+  window.dyToast = function (msg, ms) {
     if (!toast) return;
     toast.textContent = msg;
     toast.classList.add("on");
     clearTimeout(timer);
-    timer = setTimeout(function () { toast.classList.remove("on"); }, 2400);
+    if (ms === 0) return;
+    timer = setTimeout(function () { toast.classList.remove("on"); }, ms || 2400);
   };
 })();

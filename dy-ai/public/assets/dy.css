@@ -144,6 +144,7 @@ button, input { font: inherit; color: inherit; }
 }
 
 /* ---------- 로고 ---------- */
+.logo-word { display: none; }
 .logo-svg { display: block; width: 100%; height: auto; overflow: visible; }
 .ltr {
   transform-box: fill-box;

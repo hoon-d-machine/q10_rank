@@ -112,7 +112,6 @@
   var DARK_BACK = '<div class="d-glow"></div>';
   var DARK_FRONT =
     gobj("74%", "8%", "clamp(96px, 13vw, 190px)", 40, "12s", "0s", gcube("26s")) +
-    gobj("10%", "60%", "clamp(60px, 7.5vw, 112px)", 56, "10s", "-4s", gcube("20s")) +
     gobj("4%", "14%", "clamp(84px, 11vw, 168px)", 30, "14s", "-2s", BUBBLE) +
     gobj("83%", "60%", "clamp(54px, 7vw, 104px)", 48, "9s", "-6s", BUBBLE) +
     gobj("63%", "34%", "clamp(24px, 2.8vw, 40px)", 64, "7s", "-1s", BUBBLE) +
@@ -283,7 +282,8 @@
     } else {
       el.setAttribute("role", "img");
       el.setAttribute("aria-label", "DY-AI");
-      el.innerHTML = svg("dy-logo");
+      // 풀잎·다크는 svg 대신 굵은 워드마크 박스(.logo-word)를 보여 줌 (themes.css)
+      el.innerHTML = svg("dy-logo") + '<span class="logo-word" aria-hidden="true">dy-ai</span>';
     }
   });
 

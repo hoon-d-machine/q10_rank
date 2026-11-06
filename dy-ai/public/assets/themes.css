@@ -362,14 +362,12 @@ html[data-theme="dark"] .bg-orange::before { display: none; }
   transform-style: preserve-3d;
   animation: gspin var(--cs, 24s) linear infinite;
 }
-.gcube i {
-  position: absolute; inset: 0; border-radius: 22%;
-  background: linear-gradient(135deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, .02) 42%, rgba(170, 150, 255, .1) 70%, rgba(255, 185, 145, .16));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3), inset 0 0 calc(var(--s) * .2) rgba(170, 195, 255, .22);
-}
-.gcube i::after {
-  content: ""; position: absolute; left: 12%; top: 10%; width: 40%; height: 16%; border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 255, 255, .5), transparent); transform: rotate(-20deg);
+.gcube i { /* 모서리가 날카로운 투명 유리 + 면을 가로지르는 빛줄기 */
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(118deg, transparent 30%, rgba(255, 255, 255, .16) 44%, transparent 52%),
+    linear-gradient(160deg, rgba(255, 255, 255, .07), rgba(255, 255, 255, .01) 55%, rgba(190, 170, 255, .06));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .34), inset 0 0 calc(var(--s) * .25) rgba(170, 190, 255, .07);
 }
 .gcube i:nth-child(1) { transform: translateZ(var(--h)); }
 .gcube i:nth-child(2) { transform: rotateY(90deg) translateZ(var(--h)); }
@@ -378,8 +376,8 @@ html[data-theme="dark"] .bg-orange::before { display: none; }
 .gcube i:nth-child(5) { transform: rotateX(90deg) translateZ(var(--h)); }
 .gcube i:nth-child(6) { transform: rotateX(-90deg) translateZ(var(--h)); }
 @keyframes gspin {
-  from { transform: rotateX(-24deg) rotateY(0deg) rotateZ(10deg); }
-  to   { transform: rotateX(-24deg) rotateY(360deg) rotateZ(10deg); }
+  from { transform: rotateX(-28deg) rotateY(0deg) rotateZ(0deg); }
+  to   { transform: rotateX(-28deg) rotateY(360deg) rotateZ(0deg); }
 }
 .bubble {
   display: block; position: relative; width: 100%; height: 100%; border-radius: 50%;
@@ -608,6 +606,94 @@ html[data-theme="dark"] .go:hover { background: #fff; transform: translateY(-1px
 html[data-theme="dark"] .go:active { transform: translateY(1px); box-shadow: none; }
 html[data-theme="dark"] .go:focus-visible,
 html[data-theme="dark"] .field input:focus-visible { outline: 1px solid #fff; outline-offset: 3px; }
+
+/* =====================================================================
+   풀잎·다크 단순화: 굵은 워드마크 로고, 버튼처럼 보이는 요소 줄이기, 귀여운 그림 빼기
+   ===================================================================== */
+html[data-theme="nature"] .logo-svg, html[data-theme="dark"] .logo-svg { display: none; }
+html[data-theme="nature"] .logo-word, html[data-theme="dark"] .logo-word {
+  display: inline-block;
+  font-family: var(--display); font-weight: 800; text-transform: lowercase;
+  font-size: 22px; line-height: 1; letter-spacing: -.01em;
+  padding: 8px 14px 10px;
+}
+html[data-theme="nature"] .logo-word { background: #11af5d; color: #fff; }
+html[data-theme="dark"] .logo-word { background: #f2f2f2; color: #000; }
+html[data-theme="nature"] .brand, html[data-theme="dark"] .brand { width: auto; }
+html[data-theme="nature"] .card-logo, html[data-theme="dark"] .card-logo { width: auto; text-align: center; }
+html[data-theme="nature"] .card-logo .logo-word, html[data-theme="dark"] .card-logo .logo-word { font-size: 34px; padding: 12px 22px 15px; }
+
+/* 쇼핑백 캐릭터 대신 글자 + 화살표 */
+html[data-theme="nature"] .q10-art, html[data-theme="dark"] .q10-art { display: none; }
+html[data-theme="nature"] .q10-btn, html[data-theme="dark"] .q10-btn { gap: 14px; padding: 16px 30px; font-size: 17px; }
+html[data-theme="nature"] .center-stage .q10-btn, html[data-theme="dark"] .center-stage .q10-btn { padding: 20px 40px; font-size: clamp(18px, 2vw, 21px); }
+html[data-theme="nature"] .q10-btn::after, html[data-theme="dark"] .q10-btn::after { content: "→"; font-weight: 400; transition: transform .2s; }
+html[data-theme="nature"] .q10-btn:hover::after, html[data-theme="dark"] .q10-btn:hover::after { transform: translateX(4px); }
+html[data-theme="nature"] .q10-btn, html[data-theme="nature"] .dl-btn, html[data-theme="nature"] .go,
+html[data-theme="nature"] .dy-modal-btn { border-radius: 2px; }
+
+/* 탑바: 테두리 버튼 대신 글자 */
+html[data-theme="nature"] .logout, html[data-theme="nature"] .theme-btn,
+html[data-theme="dark"] .logout, html[data-theme="dark"] .theme-btn,
+html[data-theme="nature"] .logout:hover, html[data-theme="nature"] .theme-btn:hover,
+html[data-theme="dark"] .logout:hover, html[data-theme="dark"] .theme-btn:hover {
+  background: transparent; box-shadow: none; padding: 6px 4px; transform: none;
+}
+html[data-theme="nature"] .logout:hover, html[data-theme="nature"] .theme-btn:hover .theme-name,
+html[data-theme="dark"] .logout:hover, html[data-theme="dark"] .theme-btn:hover .theme-name { text-decoration: underline; text-underline-offset: 4px; }
+html[data-theme="nature"] .top-actions, html[data-theme="dark"] .top-actions { gap: 18px; }
+html[data-theme="nature"] .theme-btn .sw, html[data-theme="dark"] .theme-btn .sw { width: 14px; height: 14px; }
+
+/* 상태 표시: 알약 대신 점 + 글자 */
+html[data-theme="nature"] .ext-pill, html[data-theme="dark"] .ext-pill {
+  background: none; border: 0; box-shadow: none; backdrop-filter: none; padding: 0;
+}
+
+/* 6단계 흐름·안내: 칩과 상자 대신 선으로 */
+html[data-theme="nature"] .flow, html[data-theme="dark"] .flow { gap: 0 28px; }
+html[data-theme="nature"] .flow li, html[data-theme="dark"] .flow li {
+  background: none; border: 0; border-radius: 0; backdrop-filter: none; padding: 11px 0;
+  border-top: 1px solid rgba(255, 255, 255, .22);
+}
+html[data-theme="dark"] .flow li { border-top-color: rgba(0, 0, 0, .12); }
+html[data-theme="nature"] .flow b, html[data-theme="dark"] .flow b {
+  background: none; padding: 0; border-radius: 0; margin-right: 10px; font-weight: 700;
+}
+html[data-theme="nature"] .flow b { color: #fff; }
+html[data-theme="dark"] .flow b { color: #000; }
+html[data-theme="nature"] .tip, html[data-theme="dark"] .tip {
+  background: none; border: 0; border-radius: 0; padding: 2px 0 2px 14px;
+}
+html[data-theme="nature"] .tip { box-shadow: inset 2px 0 0 var(--leaf); }
+html[data-theme="dark"] .tip { box-shadow: inset 1px 0 0 rgba(255, 255, 255, .5); }
+html[data-theme="nature"] .tip::before, html[data-theme="dark"] .tip::before { display: none; }
+html[data-theme="nature"] .copy-btn, html[data-theme="dark"] .copy-btn {
+  background: none; box-shadow: none; padding: 4px 0; gap: 10px; border-radius: 0;
+}
+html[data-theme="nature"] .copy-btn:hover, html[data-theme="dark"] .copy-btn:hover { background: none; box-shadow: none; transform: none; }
+html[data-theme="nature"] .copy-btn code { color: var(--deep) !important; font-size: 16px !important; }
+html[data-theme="nature"] .copy-btn span, html[data-theme="dark"] .copy-btn span {
+  background: none; padding: 0; border-radius: 0; font-weight: 600;
+  text-decoration: underline; text-underline-offset: 4px;
+}
+html[data-theme="nature"] .copy-btn span { color: var(--leaf); }
+html[data-theme="dark"] .copy-btn span { color: #fff; }
+
+/* 단계·안내 카드: 상자 대신 위쪽 선으로 나눈 목록 (6단계만 강조 블록) */
+html[data-theme="nature"] .steps, html[data-theme="dark"] .steps { gap: 0; }
+html[data-theme="nature"] .step:not(.step-go), html[data-theme="dark"] .step:not(.step-go) {
+  background: none; border: 0; border-radius: 0; box-shadow: none; padding: 34px 0;
+}
+html[data-theme="nature"] .step:not(.step-go) { border-top: 1px solid rgba(14, 59, 36, .14); }
+html[data-theme="dark"] .step:not(.step-go) { border-top: 1px solid rgba(255, 255, 255, .16); }
+html[data-theme="nature"] .step-go, html[data-theme="dark"] .step-go { border-radius: 4px; margin-top: 12px; }
+html[data-theme="nature"] .note-card, html[data-theme="dark"] .note-card {
+  background: none; border: 0; border-radius: 0; box-shadow: none; padding: 22px 0 0;
+}
+html[data-theme="nature"] .note-card { border-top: 2px solid var(--deep); }
+html[data-theme="dark"] .note-card { border-top: 1px solid #fff; }
+html[data-theme="nature"] .shot, html[data-theme="dark"] .shot { border-radius: 4px; }
+html[data-theme="nature"] .guide { background: #fbfcf8; }
 
 /* =====================================================================
    전환 · 모션 최소화

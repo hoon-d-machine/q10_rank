@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DY-AI</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+<link rel="stylesheet" href="/assets/dy.css">
+<link rel="stylesheet" href="/assets/main.css">
+</head>
+<body>
+
+<!-- 탑바: 왼쪽 로고(메인 링크)만 -->
+<header class="topbar">
+  <a class="brand" href="/main" aria-label="DY-AI 메인으로"><span data-logo="flat"></span></a>
+</header>
+
+<main class="scene bg-orange hero">
+  <div class="rainbow" data-depth="8"><svg viewBox="-40 -140 1080 600" aria-hidden="true"><use href="#rainbow"/></svg></div>
+
+  <div class="deco" style="--x:5%;--y:22%;--s:110px" data-depth="22"><div class="bob" style="--d:7s"><svg class="daisy" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
+  <div class="deco" style="--x:86%;--y:14%;--s:90px" data-depth="38"><div class="bob" style="--d:6s;--delay:-2s"><svg class="daisy" style="--sp:18s" viewBox="0 0 100 100"><use href="#daisy"/></svg></div></div>
+  <div class="deco" style="--x:14%;--y:56%;--s:72px" data-depth="44"><div class="bob" style="--d:9s"><div class="cube" style="--s:72px"><i>D</i><i>Y</i><i>A</i><i>I</i><i>✿</i><i>★</i></div></div></div>
+  <div class="deco" style="--x:79%;--y:52%;--s:58px" data-depth="50"><div class="bob" style="--d:7.5s;--delay:-3s"><div class="cube" style="--s:58px;--cs:11s"><i>A</i><i>I</i><i>D</i><i>Y</i><i>★</i><i>✿</i></div></div></div>
+
+  <div class="deco" style="--x:28%;--y:12%;--s:26px" data-depth="30"><svg class="star" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
+  <div class="deco" style="--x:70%;--y:10%;--s:20px" data-depth="44"><svg class="star" style="--delay:-1.2s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
+  <div class="deco" style="--x:92%;--y:44%;--s:28px" data-depth="36"><svg class="star" style="--delay:-.6s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
+  <div class="deco" style="--x:3%;--y:46%;--s:22px" data-depth="40"><svg class="star" style="--delay:-1.8s" viewBox="0 0 20 20"><use href="#spark4"/></svg></div>
+  <!-- 화면 중앙: Q10 수집 버튼 (장식용, 아직 동작 없음) -->
+  <div class="center-stage" data-tilt="8">
+    <button class="q10-btn" type="button" aria-label="Q10 수집">
+      <svg class="q10-art" viewBox="0 0 64 64" aria-hidden="true">
+        <!-- 쇼핑백 캐릭터 -->
+        <path d="M12 24 H52 L48 56 H16 Z" fill="#eb0104" stroke="#9c0003" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M22 24 V18 a10 10 0 0 1 20 0 V24" fill="none" stroke="#9c0003" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="26" cy="38" r="2.8" fill="#f7f8ee"/><circle cx="38" cy="38" r="2.8" fill="#f7f8ee"/>
+        <path d="M26 45 Q32 51 38 45" fill="none" stroke="#f7f8ee" stroke-width="3" stroke-linecap="round"/>
+        <!-- 내려받기 화살표 배지 -->
+        <circle cx="52" cy="14" r="10" fill="#0072e4" stroke="#00348a" stroke-width="2.5"/>
+        <path d="M52 9 V19 M47.5 14.5 L52 19 L56.5 14.5" fill="none" stroke="#f7f8ee" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="label">Q10 수집</span>
+      <svg class="spark s1" viewBox="0 0 20 20" aria-hidden="true"><use href="#spark4"/></svg>
+      <svg class="spark s2" viewBox="0 0 20 20" aria-hidden="true"><use href="#spark4"/></svg>
+    </button>
+  </div>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/assets/dy.js"></script>
+</body>
+</html>

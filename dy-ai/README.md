@@ -3,14 +3,14 @@
 Cloudflare Workers(정적 자산)로 서빙하는 개인용 사이트. 지금은 UI 단계입니다.
 
 ## 화면
-- `public/login.html` — 로그인 (인증 연동 전, 누르면 메인으로 이동만 함)
-- `public/index.html` — 메인 (움직이는 3D 로고 + 탑바의 Q10 수집 버튼, 버튼은 장식용)
+- `public/index.html` — 로그인 화면 (루트 `/`, 아이디/비밀번호, 인증 연동 전이라 누르면 `/main`으로 이동만 함)
+- `public/main.html` — 메인 (`/main`, 탑바 로고 + 가운데 Q10 수집 버튼(장식용))
 
 ## 로컬 미리보기
 ```
 cd dy-ai/public
 python -m http.server 8765
-# http://localhost:8765/login.html , http://localhost:8765/
+# http://localhost:8765/ (로그인) , http://localhost:8765/main.html (메인)
 ```
 
 ## 배포 (Cloudflare 계정 필요)

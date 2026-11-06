@@ -1,10 +1,18 @@
 {
   "manifest_version": 3,
   "name": "DY-AI Q10 수집",
-  "version": "0.3.0",
-  "description": "DY-AI 메인의 'Q10 수집' 버튼으로 Qoo10 판매자 통계(일자/품목별 거래, 일자별 거래, 페이지뷰)를 수집해 원본 엑셀에 덮어쓰거나 xlsx로 내려받습니다.",
-  "background": { "service_worker": "background.js" },
-  "permissions": ["tabs", "scripting", "webRequest", "downloads"],
+  "version": "0.4.0",
+  "description": "DY-AI 메인의 'Q10 수집' 버튼으로 Qoo10 판매자 통계(일자/품목별 거래, 일자별 거래, 페이지뷰)를 수집해 원본 엑셀에 덮어쓰거나 xlsx로 내려받습니다. Qoo10 로그인 창 아이디·비밀번호 자동 입력.",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "tabs",
+    "scripting",
+    "webRequest",
+    "downloads",
+    "storage"
+  ],
   "host_permissions": [
     "https://qsm.qoo10.jp/*",
     "https://seller.qoo10.jp/*"
@@ -16,8 +24,23 @@
         "http://localhost:8765/*",
         "http://127.0.0.1:8765/*"
       ],
-      "js": ["bridge.js"],
+      "js": [
+        "bridge.js"
+      ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://qsm.qoo10.jp/*"
+      ],
+      "js": [
+        "qsm-login.js"
+      ],
+      "run_at": "document_idle"
     }
-  ]
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
 }

@@ -15,7 +15,7 @@ DY-AI 메인 아래 설명서에서 zip을 받아 압축을 풀고 아래 순서
 
 ## 동작
 1. 메인의 **Q10 수집** 클릭 → 확장이 `seller.qoo10.jp/ko/trade` 탭을 연다
-2. 로그인 안 돼 있으면 QSM 로그인 화면이 뜬다 → 직접 로그인(reCAPTCHA, EP 선택 포함). 최대 10분 대기
+2. 로그인 안 돼 있으면 QSM 로그인 화면이 뜬다. 확장 설정(옵션 화면, DY-AI 6단계 'Qoo10 로그인 정보 설정')에 저장한 아이디·비밀번호를 자동 입력하고(`qsm-login.js`, 수집 중 확장이 연 탭에서만), reCAPTCHA·로그인 버튼은 직접. 로그인 뒤 `#ep_id` 아이디 확인 화면은 자동 입력 + 확인 클릭. 최대 10분 대기
 3. 로그인되면 판매자 페이지 요청에서 `Authorization` / `X-SELL-CUST-NO` 헤더를 잡아 그 탭 안에서 API 호출
 4. Qoo10 탭을 닫고 수집 결과를 DY-AI 페이지로 넘김 → 페이지가 저장
    - 버튼을 누를 때 고른 원본 엑셀에서 raw_data / raw_trade / raw_conversion 만 교체 (전전월 1일 이전 행은 유지, 다른 시트·서식·수식 그대로)
@@ -35,6 +35,8 @@ DY-AI 메인 아래 설명서에서 zip을 받아 압축을 풀고 아래 순서
 - `manifest.json` — MV3. DY-AI 사이트(`dy-ai.xogns1381.workers.dev`, 로컬 `localhost:8765`)에서만 연결
 - `bridge.js` — DY-AI 페이지 ↔ 확장 메시지 중계 (`window.postMessage`)
 - `background.js` — 로그인 대기, 토큰 캡처, 수집, 다운로드
+- `qsm-login.js` — QSM 로그인 창 자동 입력 (Qoo10_RPA.py qsm_login 과 같은 칸)
+- `options.html` / `options.js` — Qoo10 로그인 정보 저장 (chrome.storage.local, 이 PC에만)
 - `xlsx-writer.js` — 의존성 없는 xlsx 생성기 + zip 도구. 사이트(`public/assets/xlsx-writer.js`)도 이 파일의 사본을 씀 → 고친 뒤 빌드 스크립트 실행
 
 DY-AI 주소가 바뀌면 `manifest.json` 의 `content_scripts.matches` 도 바꿔야 합니다.

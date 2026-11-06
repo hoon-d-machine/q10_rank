@@ -97,6 +97,34 @@ chrome.runtime.onMessage.addListener(function (msg, sender) {
   run(sender.tab.id, msg.deliver === "page" ? "page" : "download");
 });
 
+// ---------- QSM 로그인 자동 입력 (qsm-login.js) · 설정 화면 ----------
+chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+  if (!msg) return;
+  if (msg.type === "qsm-autofill") {
+    // 수집 중에 확장이 연 탭에만 로그인 정보를 줌
+    if (!job || !sender.tab || sender.tab.id !== job.tabId) { sendResponse(null); return; }
+    chrome.storage.local.get("qsmLogin").then(function (o) {
+      var v = o.qsmLogin;
+      sendResponse(v && v.id && v.auto !== false ? { id: v.id, pw: v.pw || "", ep: v.ep || "" } : null);
+    }, function () { sendResponse(null); });
+    return true; // 비동기 응답
+  }
+  if (msg.type === "qsm-autofill-done") {
+    if (!job || !sender.tab || sender.tab.id !== job.tabId) return;
+    var text = {
+      "login": "아이디·비밀번호를 자동으로 넣었어요. reCAPTCHA 확인 후 로그인 버튼을 눌러 주세요.",
+      "login-id": "아이디를 자동으로 넣었어요. 비밀번호와 reCAPTCHA 확인 후 로그인 버튼을 눌러 주세요.",
+      "ep": "로그인 뒤 아이디 확인 화면을 자동으로 넘겼어요.",
+      "ep-nobutton": "아이디 확인 칸은 채웠는데 확인 버튼을 찾지 못했어요. 직접 눌러 주세요."
+    }[msg.what];
+    if (text) status(msg.what === "ep" ? "progress" : "login", text);
+    return;
+  }
+  if (msg.type === "open-options") {
+    chrome.runtime.openOptionsPage();
+  }
+});
+
 // ============================================================
 // 날짜 / 기간
 // ============================================================
@@ -220,7 +248,10 @@ async function waitForAuth() {
       sellerSince = 0;
       if (!loginNotified) {
         loginNotified = true;
-        status("login", "Qoo10 로그인 창에서 로그인해 주세요. 로그인이 끝나면 자동으로 수집을 시작해요.");
+        var saved = (await chrome.storage.local.get("qsmLogin").catch(function () { return {}; })).qsmLogin;
+        status("login", saved && saved.id && saved.auto !== false
+          ? "Qoo10 로그인 창을 열었어요. 아이디·비밀번호는 자동으로 들어가요. 로그인이 끝나면 자동으로 수집을 시작해요."
+          : "Qoo10 로그인 창에서 로그인해 주세요. (설명서의 '로그인 정보 설정'에 저장하면 아이디·비밀번호를 자동으로 넣어 줘요)");
         chrome.tabs.update(job.tabId, { active: true }).catch(function () {});
         if (tab.windowId != null) chrome.windows.update(tab.windowId, { focused: true }).catch(function () {});
       }
@@ -254,12 +285,18 @@ async function waitForAuth() {
 // ============================================================
 // 수집 (Qoo10_RPA.py 의 collect_data / collect_trade_data / collect_conversion_data)
 // ============================================================
-function listOf(body, label, warnings) {
+// 경고 기준 (Qoo10_RPA.py 와 같음): totalCnt 가 요청 크기(9999)보다 크면 일부만 받았을 수 있음.
+// 일자별 API 의 totalCnt 는 행 수가 아니라 합계(주문 수·페이지뷰 등)라서 받은 행 수와 비교하면 안 됨.
+// 대신 일자별은 받은 행 수가 기간의 날짜 수보다 적으면 경고.
+var PAGE_SIZE = 9999;
+function listOf(body, label, warnings, days) {
   var items = (body && body.datas) || [];
   var total = (body && body.totalCnt) || 0;
-  if (items.length < total) warnings.push(label + " " + items.length + "/" + total + "건만 받음");
+  if (total > PAGE_SIZE) warnings.push(label + " 결과가 " + total + "건이라 " + PAGE_SIZE + "건까지만 받았을 수 있음");
+  if (days && items.length < days) warnings.push(label + " " + days + "일 중 " + items.length + "일치만 받음");
   return items;
 }
+function daysBetween(s, e) { return Math.round((new Date(e) - new Date(s)) / 86400000) + 1; }
 
 async function collectDateGoods(range, warnings) {
   var periods = monthPeriods(range.start, range.end);
@@ -295,7 +332,7 @@ async function collectDaily(range, url, columns, sortCd, step, label, warnings) 
       dateType: "D", startDt: p.start, endDt: p.end, from: 0, page: 0, size: 9999,
       gdNos: [], gdlcCds: [], sortCd: sortCd, sortType: "Desc"
     });
-    listOf(body, label + " " + p.start, warnings).forEach(function (it) {
+    listOf(body, label + " " + p.start + "~" + p.end, warnings, daysBetween(p.start, p.end)).forEach(function (it) {
       rows.push(columns.map(function (c) { var v = it[c]; return v === undefined || v === null ? "" : v; }));
     });
     if (i < periods.length - 1) await sleep(1000); // API 부하 방지

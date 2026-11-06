@@ -18,7 +18,8 @@
     if (e.source !== window || e.origin !== location.origin) return;
     var d = e.data;
     if (!d || d.source !== "dy-ai") return;
-    if (d.type === "ping") { toPage({ type: "ready" }); return; }
+    if (d.type === "ping") { ready(); return; }
+    if (d.type === "open-options") { chrome.runtime.sendMessage({ type: "open-options" }).catch(function () {}); return; }
     if (d.type === "q10-collect") {
       chrome.runtime.sendMessage({ type: "q10-collect", deliver: d.deliver }).catch(function () {
         toPage({ type: "q10-status", state: "error", text: "확장 프로그램과 연결하지 못했어요. 확장 프로그램을 새로고침한 뒤 이 페이지도 새로고침해 주세요." });
@@ -33,6 +34,13 @@
     }
   });
 
-  // 설치돼 있음을 페이지에 알림 (페이지 스크립트가 먼저/나중에 로드돼도 되게 ping에도 응답)
-  toPage({ type: "ready" });
+  // 설치돼 있음 + Qoo10 자동 로그인 설정 여부를 페이지에 알림 (ping 에도 응답)
+  function ready() {
+    chrome.storage.local.get("qsmLogin").then(function (o) {
+      var v = o.qsmLogin;
+      toPage({ type: "ready", autoLogin: !!(v && v.id && v.auto !== false) });
+    }, function () { toPage({ type: "ready" }); });
+  }
+  chrome.storage.onChanged.addListener(function (ch, area) { if (area === "local" && ch.qsmLogin) ready(); });
+  ready();
 })();

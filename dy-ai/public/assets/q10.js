@@ -18,6 +18,10 @@
   var busy = false;
   var choosing = false;
   var target = null;      // 이번 수집의 저장 대상 (q10-save.js chooseTarget 결과)
+  var autoLogin = null;   // 확장에 Qoo10 로그인 정보가 저장돼 있는지 (0.4.0+)
+  var AUTOLOGIN_FROM = "0.4.0";
+  var autoEl = document.querySelector(".js-autologin");
+  var optBtn = document.querySelector(".js-options");
 
   var collectBtns = [].slice.call(document.querySelectorAll(".js-collect"));
   var pills = [].slice.call(document.querySelectorAll(".js-ext-status"));
@@ -54,6 +58,15 @@
       p.setAttribute("data-state", s);
       p.querySelector("span").textContent = text;
     });
+
+    if (autoEl) {
+      var canAuto = installed && installed !== "unknown" && cmp(installed, AUTOLOGIN_FROM) >= 0;
+      autoEl.setAttribute("data-state", s === "checking" ? "checking" : !installed || installed === null ? "none" : !canAuto ? "old" : autoLogin ? "ok" : "off");
+      autoEl.textContent = s === "checking" ? "확인 중…"
+        : installed === null ? "확장 프로그램을 먼저 설치해 주세요"
+        : !canAuto ? "확장 프로그램 v" + AUTOLOGIN_FROM + "부터 쓸 수 있어요 (업데이트 필요)"
+        : autoLogin ? "자동 입력 켜짐" : "아직 설정 안 됨";
+    }
 
     if (dlBtn) {
       var v = latest ? " v" + latest : "";
@@ -98,7 +111,7 @@
     var d = e.data;
     if (!d || d.source !== "dy-ext") return;
     if (installed === null || installed === "unknown") installed = d.version || "unknown";
-    if (d.type === "ready") { detected = true; render(); return; }
+    if (d.type === "ready") { detected = true; if ("autoLogin" in d) autoLogin = !!d.autoLogin; render(); return; }
     if (d.type !== "q10-status") return;
     if (d.state === "data") {
       // 수집 결과 → 엑셀 저장 → DB·구글 시트 (끝나야 버튼이 풀림)
@@ -216,6 +229,17 @@
         .catch(function (e) { window.dyToast("저장 위치를 정하지 못했어요: " + (e && e.message || e), 5000); })
         .then(function () { choosing = false; });
     });
+  });
+
+  // ---------- Qoo10 로그인 정보 설정 (확장 설정 화면 열기) ----------
+  if (optBtn) optBtn.addEventListener("click", function () {
+    if (installed === null) { window.dyToast("먼저 확장 프로그램을 설치해 주세요", 3000); goGuide(); return; }
+    if (installed === "unknown" || cmp(installed, AUTOLOGIN_FROM) < 0) {
+      window.dyToast("확장 프로그램을 v" + AUTOLOGIN_FROM + " 이상으로 업데이트하면 설정할 수 있어요 (1번에서 새 버전 받기)", 5000);
+      return;
+    }
+    window.postMessage({ source: "dy-ai", type: "open-options" }, location.origin);
+    window.dyToast("새 탭에서 Qoo10 아이디·비밀번호를 저장해 주세요", 3000);
   });
 
   // ---------- 주소 복사 ----------

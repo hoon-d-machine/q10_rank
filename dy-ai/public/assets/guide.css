@@ -262,3 +262,21 @@
   .ext-pill[data-state="checking"] i { animation: none; }
   .to-guide span, .dl-btn, .copy-btn { transition: none; }
 }
+
+/* 6단계: Qoo10 로그인 정보 설정 버튼 + 상태 */
+.autologin { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 16px 0 10px; }
+.opt-btn {
+  border: 0; cursor: pointer; border-radius: 999px; padding: 8px 14px;
+  font-size: 13px; font-weight: 800; color: var(--blue); background: var(--cream);
+  box-shadow: 0 3px 0 rgba(0, 30, 90, .35);
+}
+.opt-btn:hover { transform: translateY(-1px); }
+.opt-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 30, 90, .35); }
+.opt-btn:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
+.autologin-state { font-size: 12.5px; font-weight: 700; color: rgba(247, 248, 238, .85); }
+.autologin-state::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #b9b29a; vertical-align: 1px; }
+.autologin-state[data-state="ok"]::before { background: #3be0a0; }
+.autologin-state[data-state="old"]::before, .autologin-state[data-state="off"]::before { background: var(--yellow); }
+.autologin-state[data-state="none"]::before { background: var(--red); }
+.step-go .tip { background: rgba(255, 255, 255, .14); color: var(--cream); }
+.step-go .tip::before { color: var(--yellow); }

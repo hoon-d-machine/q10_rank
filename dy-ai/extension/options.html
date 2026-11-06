@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DY-AI Q10 수집 · Qoo10 로그인 정보</title>
+<style>
+  :root { color-scheme: light dark; --fg: #1b1f1d; --muted: #5f6b64; --line: #d9e0dc; --bg: #f7f9f8; --card: #fff; --accent: #11af5d; --err: #d93a3f; }
+  @media (prefers-color-scheme: dark) { :root { --fg: #eef1ef; --muted: #9aa69f; --line: #2c332f; --bg: #0d0f0e; --card: #151917; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.6 "Pretendard Variable", Pretendard, system-ui, "Malgun Gothic", sans-serif; }
+  main { max-width: 520px; margin: 64px auto; padding: 0 20px; }
+  h1 { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  .lead { margin: 0 0 28px; color: var(--muted); }
+  form { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; display: grid; gap: 16px; }
+  label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+  label small { font-weight: 400; color: var(--muted); }
+  input[type=text], input[type=password] {
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: transparent; color: inherit; font: inherit; font-size: 15px;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  .check { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  button { border: 0; border-radius: 8px; padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+  .save { background: var(--accent); color: #fff; }
+  .clear { background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #msg { min-height: 1.6em; margin: 0; font-size: 13px; color: var(--muted); }
+  #msg.ok { color: var(--accent); } #msg.err { color: var(--err); }
+  .note { margin: 18px 0 0; font-size: 12.5px; color: var(--muted); }
+  .note li { margin: 3px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Qoo10 로그인 정보</h1>
+  <p class="lead">Q10 수집 중에 Qoo10 로그인 창이 뜨면 아이디·비밀번호를 자동으로 넣고, 로그인 뒤 아이디 확인 화면도 자동으로 넘겨요. reCAPTCHA와 로그인 버튼만 직접 눌러 주세요.</p>
+  <form id="f" autocomplete="off">
+    <label>Qoo10 (QSM) 아이디
+      <input type="text" name="id" spellcheck="false" autocapitalize="none" required>
+    </label>
+    <label>비밀번호 <small>비워 두면 아이디만 넣어요</small>
+      <input type="password" name="pw" autocomplete="new-password">
+    </label>
+    <label>로그인 뒤 확인 화면 아이디 <small>비워 두면 위 아이디를 그대로 써요</small>
+      <input type="text" name="ep" spellcheck="false" autocapitalize="none">
+    </label>
+    <label class="check"><input type="checkbox" name="auto" checked> 수집할 때 자동으로 입력</label>
+    <div class="row">
+      <button class="save" type="submit">저장</button>
+      <button class="clear" type="button" id="clear">지우기</button>
+    </div>
+    <p id="msg" role="status" aria-live="polite"></p>
+  </form>
+  <ul class="note">
+    <li>이 PC의 크롬(이 확장 프로그램 저장소)에만 저장돼요. DY-AI 서버로는 보내지 않아요.</li>
+    <li>DY-AI 수집으로 열린 Qoo10 창에서만 입력해요. 직접 연 Qoo10 창에는 넣지 않아요.</li>
+  </ul>
+</main>
+<script src="options.js"></script>
+</body>
+</html>

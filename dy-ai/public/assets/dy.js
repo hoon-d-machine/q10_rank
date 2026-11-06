@@ -26,8 +26,8 @@
     '<ellipse cx="500" cy="440" rx="330" ry="120" fill="#06ac78"/>' +
     '</symbol>' +
     // 로고 글자 경로 (D Y - A I)
-    '<symbol id="dy-logo" viewBox="0 0 520 135">' + logoGroups(false) + '</symbol>' +
-    '<symbol id="dy-logo-ink" viewBox="0 0 520 135" class="ink-only">' + logoGroups(true) + '</symbol>' +
+    '<symbol id="dy-logo" viewBox="-10 -30 540 170">' + logoGroups(false) + '</symbol>' +
+    '<symbol id="dy-logo-ink" viewBox="-10 -30 540 170" class="ink-only">' + logoGroups(true) + '</symbol>' +
     '</svg>';
 
   function logoGroups(inkOnly) {
@@ -57,7 +57,7 @@
   // 로고 마크업 헬퍼: <div data-logo="3d|flat">
   document.querySelectorAll("[data-logo]").forEach(function (el) {
     var svg = function (id) {
-      return '<svg viewBox="0 0 520 135" class="logo-svg" aria-hidden="true"><use href="#' + id + '"/></svg>';
+      return '<svg viewBox="-10 -30 540 170" class="logo-svg" aria-hidden="true"><use href="#' + id + '"/></svg>';
     };
     if (el.dataset.logo === "3d") {
       el.classList.add("logo3d");

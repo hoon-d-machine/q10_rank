@@ -112,9 +112,18 @@ button, input { font: inherit; color: inherit; }
   transform-style: preserve-3d;
   animation: cube-spin var(--cs, 16s) linear infinite;
 }
+/* 안쪽 심지: 면 사이 틈으로 속이 비치지 않게 서로 수직인 판 3장을 채운다 (자기 배경 + ::before + ::after) */
+.cube { background: linear-gradient(#a34400, #a34400) center / calc(100% - 12px) calc(100% - 12px) no-repeat; }
+.cube::before, .cube::after {
+  content: ""; position: absolute; inset: 6px; /* 면과 같은 평면에 닿지 않게 안쪽으로 */
+  background: #a34400;
+}
+.cube::before { transform: rotateY(90deg); }
+.cube::after  { transform: rotateX(90deg); }
 .cube i {
-  position: absolute; inset: 0;
-  border-radius: 16px;
+  position: absolute; inset: -1px; /* 면끼리 살짝 겹쳐 모서리 틈을 없앰 */
+  backface-visibility: hidden;
+  border-radius: 6px;
   display: grid; place-items: center;
   font-style: normal; font-weight: 900;
   font-size: calc(var(--s) * .44);
@@ -155,7 +164,7 @@ button, input { font: inherit; color: inherit; }
 .logo3d {
   position: relative;
   width: min(78vw, 560px);
-  aspect-ratio: 520 / 135;
+  aspect-ratio: 540 / 170;
   transform-style: preserve-3d;
   margin-inline: auto;
 }

@@ -87,3 +87,7 @@
   .card { padding: 28px 22px 22px; }
   .deco { opacity: .9; }
 }
+
+/* 오른쪽 위 테마 선택 */
+.login-theme { position: fixed; top: 14px; right: clamp(14px, 3vw, 32px); z-index: 20; }
+.login-theme .theme-name { display: inline; } /* 로그인 화면은 자리가 넉넉해서 휴대폰에서도 테마 이름 표시 */

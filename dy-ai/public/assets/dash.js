@@ -718,7 +718,14 @@
     var w = isNew ? { type: "trend", metric: "net_sales", compare: "none", grain: "auto", chart: "line", w: 6, range: "dash" } : clone(cur.config.widgets[i]);
     var dlg = el("dialog", "dash-dialog");
     var form = el("form"); form.method = "dialog";
-    form.appendChild(el("h2", null, isNew ? "위젯 추가" : "위젯 설정"));
+    var hd = el("div", "dash-dialog-head");
+    hd.appendChild(el("h2", null, isNew ? "위젯 추가" : "위젯 설정"));
+    if (window.dyHelp) {
+      var hb = el("button", "dash-help-link", "설정 도움말"); hb.type = "button";
+      hb.addEventListener("click", function () { window.dyHelp.open("widget"); });
+      hd.appendChild(hb);
+    }
+    form.appendChild(hd);
     var fields = el("div", "dash-fields");
     form.appendChild(fields);
 

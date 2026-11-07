@@ -114,7 +114,7 @@ html[data-theme="nature"] .help-steps li::before { border-radius: 3px; font-weig
 html[data-theme="dark"] .help-steps li::before { border-radius: 0; background: transparent; color: var(--h-text); box-shadow: inset 0 0 0 1px var(--h-line); font-weight: 500; }
 .help-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 4px 0 8px; }
 .help-table th, .help-table td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--h-line); }
-.help-table th { width: 110px; white-space: nowrap; font-weight: 700; color: var(--h-text); }
+.help-table th { width: 130px; min-width: 7em; font-weight: 700; color: var(--h-text); word-break: keep-all; }
 .help-table td { color: var(--h-muted); }
 .help-note { margin-top: 14px !important; font-size: 12.5px; padding: 10px 12px; border-radius: 10px; background: var(--h-soft); }
 html[data-theme="nature"] .help-note, html[data-theme="dark"] .help-note { border-radius: 0; }
@@ -147,4 +147,17 @@ html[data-theme="nature"] .help-note, html[data-theme="dark"] .help-note { borde
   html[data-theme="dark"] .topbar .logo-word { font-size: 15px; }
   html[data-theme="nature"] .logout, html[data-theme="nature"] .theme-btn, html[data-theme="nature"] .help-btn,
   html[data-theme="dark"] .logout, html[data-theme="dark"] .theme-btn, html[data-theme="dark"] .help-btn { padding: 6px 3px; font-size: 12px; }
+}
+
+.help-table thead th { font-size: 12px; color: var(--h-muted); font-weight: 600; border-bottom-width: 1.5px; }
+.help-recipes tbody th { width: 34%; white-space: normal; }
+.help-panel dd + dt { margin-top: 14px; }
+
+@media (max-width: 640px) {
+  /* 좁은 화면: 이름 위, 설명 아래로 */
+  .help-table tbody tr { display: block; padding: 8px 0; border-bottom: 1px solid var(--h-line); }
+  .help-table tbody th, .help-table tbody td { display: block; width: auto; padding: 0 2px; border: 0; }
+  .help-table tbody th { margin-bottom: 2px; }
+  .help-table thead { display: none; }
+  .help-recipes tbody th { width: auto; }
 }

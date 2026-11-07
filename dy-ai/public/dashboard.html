@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DY-AI 대시보드</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<script src="/assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;500;600;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+<link rel="stylesheet" href="/assets/dy.css">
+<link rel="stylesheet" href="/assets/main.css">
+<link rel="stylesheet" href="/assets/themes.css">
+<link rel="stylesheet" href="/assets/logs.css">
+<link rel="stylesheet" href="/assets/dash.css">
+</head>
+<body class="logs-body">
+
+<!-- 탑바: 왼쪽 로고 + 메뉴(수집기·대시보드·로그), 오른쪽 테마 선택 + 로그아웃 -->
+<header class="topbar">
+  <a class="brand" href="/main" aria-label="DY-AI 메인으로"><span data-logo="flat"></span></a>
+  <nav class="top-nav" aria-label="메뉴">
+    <a href="/main">수집기</a>
+    <a href="/dashboard" aria-current="page">대시보드</a>
+    <a href="/logs">로그</a>
+  </nav>
+  <div class="top-actions">
+    <div class="theme-pick" data-theme-pick>
+      <button class="theme-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu" title="화면 테마 바꾸기">
+        <i class="sw sw-rug" aria-hidden="true"></i><span class="theme-label">테마</span><span class="theme-name">러그</span>
+        <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="theme-menu" id="theme-menu" role="menu" aria-label="화면 테마" hidden>
+        <button type="button" role="menuitemradio" aria-checked="true" data-theme-val="rug"><i class="sw sw-rug" aria-hidden="true"></i><span><b>러그</b><small>알록달록 털실 러그</small></span></button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="nature"><i class="sw sw-nature" aria-hidden="true"></i><span><b>풀잎</b><small>녹차 잎·돌·햇살, 자연 무드</small></span></button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="dark"><i class="sw sw-dark" aria-hidden="true"></i><span><b>다크</b><small>해 질 녘 사진, 에디토리얼</small></span></button>
+        <p class="theme-hint">고른 테마는 다음 접속에도 그대로예요</p>
+      </div>
+    </div>
+    <button class="logout" id="logout" type="button">로그아웃</button>
+  </div>
+</header>
+
+<main class="logs-page dash-page">
+  <div class="dash-inner">
+    <header class="logs-head dash-head">
+      <p class="logs-eyebrow">Dashboard</p>
+      <h1>대시보드</h1>
+      <p class="logs-lead js-bounds">데이터 범위 확인 중…</p>
+    </header>
+
+    <div class="dash-bar" role="toolbar" aria-label="대시보드 설정">
+      <label class="dash-bar-item"><span>대시보드</span><select class="js-pick"></select></label>
+      <label class="dash-bar-item"><span>기간</span><select class="js-range"></select></label>
+      <span class="dash-bar-item dash-dates"><input class="js-from" type="date" aria-label="시작일" hidden><input class="js-to" type="date" aria-label="종료일" hidden><small class="js-range-note"></small></span>
+      <span class="dash-bar-gap"></span>
+      <button class="dash-btn js-reload" type="button" title="DB 에서 다시 불러오기">새로고침</button>
+      <button class="dash-btn js-edit" type="button" aria-pressed="false">편집</button>
+      <button class="dash-btn js-add" type="button" hidden>+ 위젯 추가</button>
+      <button class="dash-btn js-del" type="button" hidden>삭제</button>
+      <button class="dash-btn js-saveas" type="button" hidden>다른 이름으로 저장</button>
+      <button class="dash-btn is-primary js-save" type="button" hidden>저장</button>
+    </div>
+    <p class="dash-owner"><span class="js-owner"></span> <span class="dash-dirty js-dirty" hidden>· 저장 안 된 변경 있음</span></p>
+    <p class="dash-msg js-msg" role="alert" hidden></p>
+
+    <div class="dash-grid js-grid" aria-live="polite"></div>
+  </div>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/assets/dy.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="/assets/config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/assets/dash-core.js"></script>
+<script src="/assets/dash.js"></script>
+<script>
+  document.getElementById("logout").addEventListener("click", function () {
+    window.dyAuth.signOut().then(function () { location.replace("/"); });
+  });
+</script>
+</body>
+</html>

@@ -10,6 +10,8 @@ Cloudflare Workers(정적 자산)로 서빙하는 개인용 사이트. 지금은
 - 원본 엑셀 덮어쓰기: `assets/q10-save.js`(파일 고르기·권한·실패 시 다시 시도/새 파일/취소) + `assets/xlsx-patch.js`(대상 시트만 교체, 전전월 1일 이전 행 유지). `assets/xlsx-writer.js` 는 `extension/xlsx-writer.js` 의 사본(빌드 스크립트가 복사)
 - 수집 후 순서: 엑셀 저장 → DB(Supabase `inni_replace_*` 함수, 로그인 사용자 권한) → 구글 시트(Worker `/api/sheet/*` 경유). 규칙은 `inni_RPA/Qoo10_RPA.py` 와 같음 (전전월 1일 이후 구간 교체). `assets/q10-sync.js`
 - `public/logs.html` — 수집 로그 (`/logs`). 수집 한 번 = 묶음 하나, 단계별 기록은 클릭하면 펼침. 기록은 `assets/q10-log.js`, 화면은 `assets/logs.js`
+- `public/dashboard.html` — 대시보드 (`/dashboard`). 기간·지표·단위를 골라 집계, 템플릿(기본 현황·전년 비교·분기 비교·주간 변화·월간 변화·유입 분석·상품 분석), 편집 모드에서 위젯 추가·설정·이동·너비·삭제, Supabase `dy_dashboards` 에 저장. 지표 목록·기간 계산·집계는 `assets/dash-core.js`, 화면은 `assets/dash.js`(Chart.js)
+- `supabase/dashboard.sql` — 대시보드용 집계 함수(`dy_dash_agg`, `dy_dash_bounds`, 표는 계속 잠금) + `dy_dashboards` 표. Supabase SQL Editor 에서 한 번 실행
 - `src/worker.js` — `/api/*` 만 처리하는 Worker (구글 시트 프록시, Supabase 로그인 토큰 확인, raw_data·raw_trade·raw_conversion 탭만 허용). secret: `GOOGLE_SA_JSON`, `SHEET_ID` (`npx wrangler secret put ...`)
 - `supabase/web_collector.sql` — 로그 테이블(`dy_collect_runs`, `dy_collect_steps`) + `inni_replace_*` 함수 웹 호출 허용. Supabase SQL Editor 에서 한 번 실행
 

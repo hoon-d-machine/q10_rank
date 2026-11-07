@@ -24,6 +24,7 @@
     table: { label: "기간별 표", desc: "기간별 여러 지표 표, CSV 내려받기", w: 6 }
   };
   var WIDTHS = [[2, "1/3"], [3, "1/2"], [4, "2/3"], [6, "전체"]];
+  var CAL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 8.5h14M7 2.8v3.4M13 2.8v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
   var INVERSE = { cancel_amt: 1, cancels: 1, cancel_qty: 1, cancel_rate: 1, g_cancel_amt: 1, g_cancel_qty: 1 };
 
   // ============================================================
@@ -122,7 +123,7 @@
   // ============================================================
   // 상단 막대 (대시보드 선택 · 기간 · 편집 · 저장)
   // ============================================================
-  var pick = $(".js-pick"), rangeSel = $(".js-range"), fromIn = $(".js-from"), toIn = $(".js-to");
+  var pick = $(".js-pick"), rangeSel = $(".js-range"), datesBtn = $(".js-dates"), datesText = $(".js-dates-text");
   var btnEdit = $(".js-edit"), btnSave = $(".js-save"), btnSaveAs = $(".js-saveas"), btnDel = $(".js-del"), btnAdd = $(".js-add"), btnReload = $(".js-reload");
 
   function fillPick() {
@@ -148,10 +149,9 @@
     var r = cur.config.range || { preset: "last30" };
     rangeSel.value = r.preset;
     var custom = r.preset === "custom";
-    fromIn.hidden = toIn.hidden = !custom;
     var rg = D.resolve(r, D.anchor(), D.minDate());
-    fromIn.value = rg.from; toIn.value = rg.to;
-    $(".js-range-note").textContent = custom ? "" : rg.from + " ~ " + rg.to;
+    datesText.textContent = rg.from + " ~ " + rg.to;
+    datesBtn.classList.toggle("is-custom", custom);
     var mine = cur.id && cur.owner === me;
     document.body.classList.toggle("is-editing", editing);
     btnEdit.textContent = editing ? "편집 끝내기" : "편집";
@@ -171,16 +171,19 @@
     if (dirty && !confirm("저장하지 않은 변경이 있어요. 다른 대시보드로 바꿀까요?")) { fillPick(); return; }
     openByValue(pick.value);
   });
-  rangeSel.addEventListener("change", function () {
-    var r = { preset: rangeSel.value };
-    if (r.preset === "custom") { var rg = D.resolve(cur.config.range, D.anchor(), D.minDate()); r.from = rg.from; r.to = rg.to; }
-    cur.config.range = r; markDirty(); renderAll();
-  });
-  [fromIn, toIn].forEach(function (inp) {
-    inp.addEventListener("change", function () {
-      cur.config.range = { preset: "custom", from: fromIn.value, to: toIn.value }; markDirty(); renderAll();
+  // 기간 달력 (dy-cal.js): 날짜 버튼을 누르거나 '직접 지정'을 고르면 열림
+  function pickDates() {
+    var rg = D.resolve(cur.config.range, D.anchor(), D.minDate());
+    return window.dyCal.range({ anchor: datesBtn, from: rg.from, to: rg.to, min: D.minDate(), max: D.anchor() }).then(function (v) {
+      if (v) { cur.config.range = { preset: "custom", from: v.from, to: v.to }; markDirty(); renderAll(); }
+      else renderBar();
     });
+  }
+  rangeSel.addEventListener("change", function () {
+    if (rangeSel.value === "custom") { pickDates(); return; }
+    cur.config.range = { preset: rangeSel.value }; markDirty(); renderAll();
   });
+  datesBtn.addEventListener("click", pickDates);
   btnEdit.addEventListener("click", function () { editing = !editing; renderBar(); renderAll(true); });
   btnAdd.addEventListener("click", function () { editWidget(null); });
   btnReload.addEventListener("click", function () { D.clearCache(); D.loadBounds().then(function () { renderBounds(); renderBar(); renderAll(); }, showErr); });
@@ -725,8 +728,14 @@
     var metric = el("select"), metric2 = el("select");
     var multi = el("div", "dash-multi");
     var rangeS = select([["dash", "대시보드 기간 따르기"]].concat(D.PRESETS), w.range && w.range !== "dash" ? w.range.preset : "dash");
-    var from = el("input"); from.type = "date"; var to = el("input"); to.type = "date";
-    if (w.range && w.range.preset === "custom") { from.value = w.range.from || ""; to.value = w.range.to || ""; }
+    // 직접 지정 기간: 달력 버튼 (값은 cr 에 보관)
+    var cr = w.range && w.range.preset === "custom" ? { from: w.range.from, to: w.range.to } : (function () { var x = D.resolve(cur.config.range, D.anchor(), D.minDate()); return { from: x.from, to: x.to }; })();
+    var crBtn = el("button", "dash-datebtn"); crBtn.type = "button"; crBtn.setAttribute("aria-haspopup", "dialog");
+    function crText() { crBtn.innerHTML = CAL_ICON; crBtn.appendChild(el("span", null, cr.from + " ~ " + cr.to)); }
+    crText();
+    crBtn.addEventListener("click", function () {
+      window.dyCal.range({ anchor: crBtn, from: cr.from, to: cr.to, min: D.minDate(), max: D.anchor() }).then(function (v) { if (v) { cr = v; crText(); } });
+    });
     var grainS = select([["auto", "자동 (기간 길이에 맞춰)"]].concat(D.GRAINS), w.grain || "auto");
     var cmpS = select([["none", "비교 안 함"], ["prev", "직전 기간"], ["yoy", "전년 동기"]], w.compare || "none");
     var chartS = select([["line", "선"], ["bar", "막대"], ["area", "영역"]], w.chart || "line");
@@ -738,7 +747,7 @@
       type: field("종류", typeSel), title: field("제목", title),
       metric: field("지표", metric), metric2: field("두 번째 지표 (오른쪽 축)", metric2),
       multi: field("지표 (여러 개)", multi),
-      range: field("기간", rangeS), custom: (function () { var d = el("div", "dash-field dash-two"); d.appendChild(from); d.appendChild(el("span", null, "~")); d.appendChild(to); return d; })(),
+      range: field("기간", rangeS), custom: field("직접 지정한 기간", crBtn),
       grain: field("단위", grainS), compare: field("비교", cmpS), chart: field("그래프", chartS),
       dim: field("묶음", dimS, "브랜드·상품 묶음은 '상품별' 지표만"), top: field("상위 몇 개", topIn), width: field("너비", widthS)
     };
@@ -804,7 +813,7 @@
         if (!F.chart.hidden) n.chart = chartS.value;
         if (!F.dim.hidden && dimS.value) n.dim = dimS.value;
         if (!F.top.hidden) n.top = Math.max(3, Math.min(50, +topIn.value || 10));
-        n.range = rangeS.value === "dash" ? "dash" : rangeS.value === "custom" ? { preset: "custom", from: from.value, to: to.value } : { preset: rangeS.value };
+        n.range = rangeS.value === "dash" ? "dash" : rangeS.value === "custom" ? { preset: "custom", from: cr.from, to: cr.to } : { preset: rangeS.value };
         if ((t === "mix" || t === "table") && (!n.metrics || !n.metrics.length)) n.metrics = ["net_sales"];
         if (isNew) cur.config.widgets.push(n); else cur.config.widgets[i] = n;
         markDirty(); renderAll();

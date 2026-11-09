@@ -26,10 +26,11 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 .frame::after { content: ""; position: absolute; inset: 2.2mm; border: .3mm solid rgba(251,250,243,.7); border-radius: 2mm }
 .cloud { position: absolute }
 .fl { position: absolute }
-.title { position: absolute; top: 56mm; left: 0; right: 0; text-align: center }
+.title { position: absolute; top: 52mm; left: 0; right: 0; text-align: center }
 .title small { display: block; font: 700 4.4mm/1 "Noto Serif KR", serif; letter-spacing: 1.4mm; color: #7b1e2b; margin-bottom: 7mm }
 .title h1 { margin: 0; font: 900 31mm/1.05 Hahmlet, "Noto Serif KR", serif; letter-spacing: 2mm; color: #e8661c; text-shadow: 1.2mm 1.2mm 0 rgba(123,30,43,.35) }
-.rule { position: absolute; top: 108mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
+.jt { margin: 4mm 0 0; font: 600 5.2mm/1 "Noto Serif JP", serif; letter-spacing: 1.6mm; color: #1b4478 }
+.rule { position: absolute; top: 102mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
 .rule i { display: block; width: 38mm; height: .6mm; background: #fbfaf3; border-radius: 1mm }
 .rule svg { width: 12mm; height: 12mm }
 .qrbox { position: absolute; top: 128mm; left: 50%; transform: translateX(-50%); width: 104mm; height: 104mm; padding: 6mm; background: #fffdf4; border-radius: 3mm;
@@ -43,15 +44,15 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 <svg class="fl" style="top:19mm;left:50%;margin-left:-14mm;width:28mm;height:28mm"><use href="#flower"/></svg>
 <svg class="fl" style="top:20mm;left:24mm;width:15mm;height:15mm"><use href="#flower"/></svg>
 <svg class="fl" style="top:20mm;right:24mm;width:15mm;height:15mm"><use href="#flower"/></svg>
-<svg class="cloud" style="top:40mm;left:20mm;width:50mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
-<svg class="cloud" style="top:44mm;right:20mm;width:50mm" viewBox="0 0 130 34"><use href="#cloud-b"/></svg>
+<svg class="cloud" style="top:38mm;left:20mm;width:50mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
+<svg class="cloud" style="top:40mm;right:20mm;width:50mm" viewBox="0 0 130 34"><use href="#cloud-b"/></svg>
 <svg class="cloud" style="top:206mm;left:15mm;width:30mm" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
 <svg class="cloud" style="top:212mm;right:15mm;width:30mm;transform:scaleX(-1)" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
-<div class="title"><small>전통 사대부가 혼인례</small><h1>식순 안내</h1></div>
+<div class="title"><h1>식순 안내</h1><p class="jt">式次第のご案内</p></div>
 <div class="rule"><i></i><svg><use href="#flower"/></svg><i></i></div>
 <div class="qrbox">__QR__</div>
 <div class="cap">QR을 스캔하여 확인해주세요</div>
-<div class="jp">式次第のご案内 ・ QRコードをスキャンしてご確認ください</div>
+<div class="jp">QRコードをスキャンしてご確認ください</div>
 <svg class="fl" style="top:271mm;left:50%;margin-left:-6mm;width:12mm;height:12mm"><use href="#flower"/></svg>
 </body></html>'''.replace('__DEFS__', defs).replace('__QR__', qr)
 

@@ -51,13 +51,22 @@ h1 {
 /* ---------- 두루마리 ---------- */
 .scroll { width: min(100%, 560px); margin: 0 auto; padding: 4px 20px 28px; }
 .rod {
-  position: relative; z-index: 2; height: 26px; margin: 0 -8px; border-radius: 13px;
-  background: linear-gradient(#c58c4f 0%, var(--wood-1) 18%, var(--wood-2) 55%, var(--wood-3) 100%);
-  box-shadow: 0 6px 14px rgba(40, 60, 90, .45), inset 0 1px 0 rgba(255, 255, 255, .35);
+  /* 한지를 말아 놓은 원통: 위아래로 밝고 어두운 음영 + 양끝 가까이 두른 붉은 끈 */
+  position: relative; z-index: 2; height: 30px; margin: 0 -10px; border-radius: 15px;
+  background:
+    linear-gradient(90deg, transparent 9.5%, var(--burg) 9.5% 11.2%, transparent 11.2% 88.8%, var(--burg) 88.8% 90.5%, transparent 90.5%),
+    linear-gradient(#cdbd95 0%, #efe4c6 20%, #fdf8e8 42%, #f1e7ca 66%, #c9b88c 100%);
+  box-shadow: 0 7px 14px rgba(40, 70, 100, .32), inset 0 0 0 1px rgba(120, 95, 50, .25);
 }
-.rod::before, .rod::after { content: ""; position: absolute; top: -4px; width: 16px; height: 34px; border-radius: 8px; background: linear-gradient(#e0b05a, #9c6a1f 60%, #6b4510); box-shadow: 0 3px 8px rgba(40, 60, 90, .4); }
-.rod::before { left: -9px; }
-.rod::after { right: -9px; }
+.rod::before, .rod::after { /* 말린 종이의 단면(소용돌이) */
+  content: ""; position: absolute; top: 0; bottom: 0; width: 22px; border-radius: 11px / 15px;
+  background:
+    radial-gradient(ellipse 5px 11px at 50% 50%, #8a7650 0 28%, transparent 30%),
+    repeating-radial-gradient(ellipse 11px 15px at 50% 50%, #f3e9cc 0 2px, #b9a77c 2px 3px);
+  box-shadow: inset 0 0 0 1px rgba(120, 95, 50, .45);
+}
+.rod::before { left: 0; }
+.rod::after { right: 0; }
 .rod-top { margin-bottom: -2px; }
 .rod-bottom { margin-top: -2px; }
 
@@ -72,11 +81,6 @@ h1 {
 
 /* ---------- 머리 ---------- */
 .head { padding: 26px 0 6px; text-align: center; }
-.seal {
-  position: absolute; right: 0; top: 14px; width: 40px; height: 40px; display: grid; place-items: center;
-  font: 800 23px/1 var(--serif); color: var(--paper); background: var(--burg); border-radius: 5px; transform: rotate(6deg);
-  box-shadow: inset 0 0 0 2px rgba(248, 241, 222, .55), 0 2px 0 rgba(0, 0, 0, .18);
-}
 .knot { display: flex; align-items: center; gap: 8px; margin: 6px auto 16px; width: min(240px, 72%); }
 .knot i { flex: 1; height: 3px; border-radius: 2px; background: linear-gradient(90deg, var(--blue), var(--burg)); }
 .knot i:last-child { background: linear-gradient(90deg, var(--burg), var(--blue)); }
@@ -96,11 +100,12 @@ h1 {
 details > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 44px minmax(0, 1fr) 20px; column-gap: 12px; row-gap: 3px; align-items: center; padding: 14px 14px; -webkit-tap-highlight-color: transparent; }
 details > summary::-webkit-details-marker { display: none; }
 .no {
-  grid-row: 1 / span 2; width: 38px; height: 38px; display: grid; place-items: center; transform: rotate(-3deg);
-  font: 800 18px/1 var(--serif); color: var(--paper); background: var(--burg); border-radius: 5px;
-  box-shadow: inset 0 0 0 2px rgba(248, 241, 222, .5), 0 2px 0 rgba(0, 0, 0, .15);
+  grid-row: 1 / span 2; width: 38px; height: 38px; display: grid; place-items: center;
+  font: 800 18px/1 var(--serif); color: #fff8ea; background: radial-gradient(circle at 35% 28%, #f08a3f, var(--orange) 55%, #cf520d);
+  border-radius: 50%; box-shadow: 0 0 0 3px rgba(232, 102, 28, .22), 0 2px 0 rgba(123, 30, 43, .22);
+  text-shadow: 0 1px 0 rgba(123, 30, 43, .28);
 }
-.no-ap { background: var(--blue); font-size: 17px; }
+.no-ap { background: radial-gradient(circle at 35% 28%, #4f84c4, var(--blue) 60%, #1b4a82); box-shadow: 0 0 0 3px rgba(36, 92, 159, .2), 0 2px 0 rgba(0, 0, 0, .18); font-size: 17px; }
 .ttl { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .ttl b { font: 800 19px/1.3 var(--serif); letter-spacing: .02em; }
 .ttl em { font-style: normal; font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--orange); }

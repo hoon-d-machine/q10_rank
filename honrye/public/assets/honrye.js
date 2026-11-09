@@ -82,7 +82,7 @@
     document.title = t("docTitle");
     var h1 = $("title"); h1.textContent = "";
     t("title").forEach(function (s, i) { if (i) h1.appendChild(document.createElement("br")); h1.appendChild(document.createTextNode(s)); });
-    $("sub").textContent = t("sub");
+    $("sub").textContent = pick(data.subtitle) || t("sub");
 
     var g = pick(data.couple && data.couple.groom), b = pick(data.couple && data.couple.bride);
     var names = g && b ? t("names").replace("{g}", g).replace("{b}", b) : g ? t("groomOnly").replace("{g}", g) : b ? t("brideOnly").replace("{b}", b) : "";

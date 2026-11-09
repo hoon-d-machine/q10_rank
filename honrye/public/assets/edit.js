@@ -72,6 +72,7 @@
   // ---------- 데이터 모양 맞추기 ----------
   function ensure(d) {
     d.intro = d.intro || loc();
+    d.subtitle = d.subtitle || loc();
     d.couple = d.couple || {};
     ["groom", "bride"].forEach(function (k) { d.couple[k] = d.couple[k] || loc(); });
     d.steps = d.steps || [];
@@ -114,6 +115,7 @@
   // ---------- 그리기 ----------
   function renderBasics() {
     var b = $("basics"); b.textContent = "";
+    b.appendChild(field("부제 (제목 아래 한 줄, 예: 전통 사대부가 혼인례 · 친영례)", "line", S.data, "subtitle", { hint: "비우면 기본 부제(전통 사대부가 혼인례 · 친영례)로 보여요" }));
     b.appendChild(field("소개 문구 (맨 위 설명)", "area", S.data, "intro", { rows: 3 }));
     var isKo = S.lang === "ko";
     b.appendChild(field("신랑 이름", "line", S.data.couple, "groom", { hint: isKo ? "" : "비우면 한글 이름으로 보여요" }));

@@ -139,62 +139,73 @@
     },
     {
       "id": "s6",
-      "title": {
-        "ko": "교배지례",
-        "en": "Exchange of Bows (Gyobae-jirye)",
-        "ja": "交拝の礼(キョベジレ)"
+      "how": {
+        "en": "Attendants spread the mats, and the couple wash their hands in the basins.\nThey bow to each other (eumrye).\nAs the pre-ceremony performance, **samulnori and a lion dance (sajatalchum)** take place.\nThe bride and groom bow to each other (matjeol).",
+        "ja": "介添人が敷物を整え、新郎新婦は水盤で手を洗います。\n互いに揖礼(ウムレ)をします。\n式前の公演として、**サムルノリと獅子舞(サジャタルチュム)**が披露されます。\n新郎新婦が向かい合って、互いに礼(マッチョル)をします。",
+        "ko": "양가 집사가 자리를 펴고, 신랑 신부는 대아에서 손을 씻어요.\n서로 읍례를 해요.\n식전 공연으로 **사물놀이와 사자탈춤**이 펼쳐져요.\n신랑 신부가 맞절을 해요."
       },
       "one": {
-        "ko": "신랑 신부가 손을 씻고 마주 서서 절을 주고받아요.",
         "en": "The couple washes their hands, stands face to face and bows to each other.",
-        "ja": "新郎新婦が手を洗い、向かい合って礼を交わします。"
-      },
-      "meaning": {
-        "ko": "신랑과 신부가 처음 만나 **서로에게 절을 올리는** 의식이에요. 손을 씻는 것은 **몸과 마음을 정갈하게** 한다는 뜻을 담고 있어요.",
-        "en": "The rite in which the couple, meeting for the first time, **bow to one another**. Washing the hands means **purifying body and mind**.",
-        "ja": "初めて顔を合わせた新郎新婦が**互いに礼をする**儀式です。手を洗うのは**心身を清める**という意味があります。"
-      },
-      "how": {
-        "ko": "양가 집사가 자리를 펴고, 신랑 신부는 대아에서 손을 씻어요.\n서로 읍례를 해요.\n식전 공연으로 **사물놀이와 사자탈춤**이 펼쳐져요.\n신부 재배 → 신랑 1배 → 신부 재배 → 신랑 1배 순서로 절을 해요.",
-        "en": "Attendants spread the mats, and the couple wash their hands in the basins.\nThey bow to each other (eumrye).\nAs the pre-ceremony performance, **samulnori and a lion dance (sajatalchum)** take place.\nThe bride bows twice, the groom once, the bride twice again, then the groom once again.",
-        "ja": "介添人が敷物を整え、新郎新婦は水盤で手を洗います。\n互いに揖礼(ウムレ)をします。\n式前の公演として、**サムルノリと獅子舞(サジャタルチュム)**が披露されます。\n新婦が2拝、新郎が1拝、新婦が再び2拝、新郎が再び1拝の順に礼をします。"
+        "ja": "新郎新婦が手を洗い、向かい合って礼を交わします。",
+        "ko": "신랑 신부가 손을 씻고 마주 서서 절을 주고받아요."
       },
       "note": {
-        "title": {
-          "ko": "절의 횟수는 왜 다를까요?",
-          "en": "Why do the numbers of bows differ?",
-          "ja": "お辞儀の回数はなぜ違うの?"
-        },
         "body": {
-          "ko": "신랑은 1배를 두 번(총 2배), 신부는 2배를 두 번(총 4배) 해요. 음양오행에서 남성은 양(홀수), 여성은 음(짝수)을 상징해서 나눈 예법이에요. **신부가 더 많이 절한다는 뜻이 아니에요.**",
-          "en": "The groom bows once, twice over (2 bows in all); the bride bows twice, twice over (4 bows in all). In yin-yang thought men are yang (odd numbers) and women are yin (even numbers), and the etiquette follows that. **It does not mean the bride bows more.**",
-          "ja": "新郎は1拝を2回(計2拝)、新婦は2拝を2回(計4拝)行います。陰陽五行では男性は陽(奇数)、女性は陰(偶数)を象徴するため、このように分けた作法です。**新婦のほうが多くお辞儀をするという意味ではありません。**"
+          "en": "The groom bows once, twice over (2 bows in all); the bride bows twice, twice over (4 bows in all). In yin-yang thought men are yang (odd numbers) and women are yin (even numbers), and the etiquette follows that. **It does not mean the bride bows more.**\nHowever, in this ceremony the bride and groom will bow to each other as a pair (matjeol).",
+          "ja": "新郎は1拝を2回(計2拝)、新婦は2拝を2回(計4拝)行います。陰陽五行では男性は陽(奇数)、女性は陰(偶数)を象徴するため、このように分けた作法です。**新婦のほうが多くお辞儀をするという意味ではありません。**\nただし、今回の式では、新郎新婦が向かい合って互いに礼をする「マッチョル」で進めます。",
+          "ko": "신랑은 1배를 두 번(총 2배), 신부는 2배를 두 번(총 4배) 해요. 음양오행에서 남성은 양(홀수), 여성은 음(짝수)을 상징해서 나눈 예법이에요. **신부가 더 많이 절한다는 뜻이 아니에요.**\n하지만, 이번 식은 신랑 신부 맞절로 진행해요."
+        },
+        "title": {
+          "en": "Why do the numbers of bows differ in a traditional wedding?",
+          "ja": "伝統的な婚礼では、お辞儀の回数はなぜ違うの?",
+          "ko": "전통 결혼식에서 절의 횟수는 왜 다를까요?"
         }
+      },
+      "title": {
+        "en": "Exchange of Bows (Gyobae-jirye)",
+        "ja": "交拝の礼(キョベジレ)",
+        "ko": "교배지례"
+      },
+      "meaning": {
+        "en": "The rite in which the couple, meeting for the first time, **bow to one another**. Washing the hands means **purifying body and mind**.",
+        "ja": "初めて顔を合わせた新郎新婦が**互いに礼をする**儀式です。手を洗うのは**心身を清める**という意味があります。",
+        "ko": "신랑과 신부가 처음 만나 **서로에게 절을 올리는** 의식이에요. 손을 씻는 것은 **몸과 마음을 정갈하게** 한다는 뜻을 담고 있어요."
       }
     },
     {
       "id": "s7",
-      "title": {
-        "ko": "성혼선언과 축도",
-        "en": "Declaration of Marriage and Benediction",
-        "ja": "成婚宣言と祝祷"
+      "how": {
+        "en": "",
+        "ja": "",
+        "ko": "\n\n"
       },
       "one": {
-        "ko": "신랑 아버지가 성혼을 선언하고, 신부 측 교회 목사님이 축도를 올려요.",
-        "en": "The groom’s father declares the marriage, and the pastor of the bride’s church gives the benediction.",
-        "ja": "新郎のお父様が成婚を宣言し、新婦側の教会の牧師様が祝祷を捧げます。"
+        "en": "The pastor declares the marriage and offers a prayer of blessing.",
+        "ja": "牧師様が成婚を宣言し、祝福の祈りを捧げます。",
+        "ko": "목사님이 성혼 선언을 해주시고, 축복 기도를 올려요."
+      },
+      "note": {
+        "body": {
+          "en": "Urijip Church is the church the bride has attended since she was seven, and it is run together with a community facility for people with severe physical disabilities.",
+          "ja": "ウリジプ教会は、新婦が7歳のときから通っている教会で、重度の肢体障がいのある方々のための共同体施設とともに運営されています。",
+          "ko": "우리집교회는 신부가 7살때부터 다녔던 교회로, 중증 지체장애인들을 위한 공동체 시설과 함께 운영되고 있어요. "
+        },
+        "title": {
+          "en": "",
+          "ja": "",
+          "ko": ""
+        }
+      },
+      "title": {
+        "en": "Declaration of Marriage and Benediction",
+        "ja": "成婚宣言と祝祷",
+        "ko": "성혼 선언과 축도"
       },
       "meaning": {
-        "ko": "혼인례를 거쳐 신랑과 신부가 **부부가 되었음**을 하객 앞에서 널리 알리는 선언이에요.\n\n이어서 새로 부부가 된 두 사람의 앞날에 **복이 있기를 비는** 축도로 마무리해요.",
-        "en": "A declaration, made before the guests, that through the wedding rites the groom and bride have **become husband and wife**.\n\nIt is followed by a benediction asking that **blessings be upon** the future of the newly married couple.",
-        "ja": "婚礼の儀式を経て、新郎新婦が**夫婦になったこと**をゲストの前で広く告げる宣言です。\n\n続いて、新しく夫婦となった二人の未来に**祝福があるように祈る**祝祷で締めくくります。"
-      },
-      "how": {
-        "ko": "**신랑 아버지**가 성혼을 선언해요.\n**신부 측 교회 목사님**이 축도를 해 주세요.",
-        "en": "**The groom’s father** declares the marriage.\n**The pastor of the bride’s church** gives the benediction.",
-        "ja": "**新郎のお父様**が成婚を宣言します。\n**新婦側の教会の牧師様**が祝祷を捧げます。"
-      },
-      "note": null
+        "en": "A declaration, made before the guests, that through the wedding rites the groom and bride have **become husband and wife**.\n\n**Pastor Park Seong-hun of the Urijip Community in Nonsan** declares the marriage,\nand the ceremony closes with a prayer blessing the future of the newly married couple.",
+        "ja": "婚礼の儀式を経て、新郎新婦が**夫婦になったこと**をゲストの前で広く告げる宣言です。\n\n**論山市ウリジプ共同体のパク・ソンフン牧師様**が成婚を宣言し、\n続いて、新しく夫婦となった二人の未来を祝福する祈りで締めくくります。",
+        "ko": "혼인례를 거쳐 신랑과 신부가 **부부가 되었음**을 하객 앞에서 널리 알리는 선언이에요.\n\n**논산시 우리집 공동체 박성훈 목사님**이 성혼을 선언하시고, \n이어서 새로 부부가 된 두 사람의 앞날을 축복하는 기도로 마무리해요."
+      }
     },
     {
       "id": "s8",

@@ -1,0 +1,10 @@
+{
+  "name": "honrye",
+  "compatibility_date": "2026-10-01",
+  // 정적 파일만 서빙하는 Worker (public/). Cloudflare 프로젝트 이름은 위 name 과 같아야 함
+  "assets": {
+    "directory": "./public",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

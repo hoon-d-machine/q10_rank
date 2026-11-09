@@ -27,7 +27,11 @@ Workers & Pages → Create → Workers → GitHub 저장소(q10_rank) 연결
 - 빌드 감시 경로(Build watch paths): `honrye/*` (다른 폴더 커밋에 빌드가 돌지 않게)
 - Cloudflare Access 는 켜지 않음 (하객이 로그인 없이 봐야 함)
 
-배포 주소(`https://honrye.<계정>.workers.dev`)로 QR 코드를 만들어 인쇄·공유.
+배포 주소: `https://honrye.xogns1381.workers.dev/`
+
+## QR 코드
+`honrye/qr/honrye-qr.png`(인쇄·화면용) / `honrye-qr.svg`(크게 뽑을 때). 주소가 바뀌면 `python honrye/tools/make_qr.py <새 주소>` 로 다시 만든다 (만든 뒤 디코딩해서 주소가 맞는지 확인함. 필요: `pip install qrcode pillow zxing-cpp`).
+인쇄할 때는 한 변을 3cm 이상으로, 주변 여백(흰 테두리)은 자르지 않는다.
 
 ## 출처
 식순과 뜻 풀이는 전통 사대부가 혼인례 홀기(궁중의례원, 2020년 6월 1일 수정본)를 바탕으로 정리했다. 홀기의 저작권은 궁중의례원에 있다. 페이지 맨 아래에 출처를 표시하고 있다.

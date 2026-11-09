@@ -1,7 +1,6 @@
-/* 예식 정보: 비워 두면 화면에 표시하지 않아요. 따옴표 안만 고치면 돼요. */
-window.HONRYE = {
-  groom: "유태훈",
-  bride: "김도연",
-  date: "",    // 날짜·시간은 표시하지 않음 (쓰려면 예: "2026년 11월 21일 토요일 오후 1시")
-  place: ""    // 식장은 표시하지 않음
+/* honrye 설정 (공개해도 되는 값만). 수정한 식순 내용은 Supabase 에 저장되고, 이 키는 읽기·함수 호출용 공개 키예요. */
+window.HONRYE_CFG = {
+  SUPABASE_URL: "https://dlgyvqcfastqguudzcob.supabase.co",
+  SUPABASE_KEY: "sb_publishable_gpElJE3Ag9JVB_9z2wWwqA_2kheALPF",
+  DEFAULT_SLUG: "main"
 };

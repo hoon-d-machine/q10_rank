@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>식순 수정</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="only light">
+<meta name="theme-color" content="#7db6d4">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css"></noscript>
+<link rel="stylesheet" href="/assets/edit.css">
+</head>
+<body>
+
+<main class="ed">
+
+  <!-- PIN 입력 -->
+  <section id="gate" class="gate">
+    <h1>식순 수정</h1>
+    <p class="muted">수정용 PIN을 입력해 주세요.</p>
+    <form id="gateForm" autocomplete="off">
+      <label class="sr" for="pin">PIN</label>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" maxlength="32" placeholder="PIN">
+      <button class="btn primary" type="submit">들어가기</button>
+    </form>
+    <p id="gateMsg" class="msg" role="alert"></p>
+  </section>
+
+  <!-- 편집 화면 -->
+  <section id="editor" hidden>
+    <header class="top">
+      <div><b>식순 수정</b><small id="slugInfo"></small></div>
+      <div class="top-btns">
+        <a class="btn ghost" id="viewLink" href="/" target="_blank" rel="noopener">페이지 보기</a>
+        <button class="btn ghost" id="pinBtn" type="button">PIN 변경</button>
+        <button class="btn ghost" id="lockBtn" type="button">잠금</button>
+      </div>
+    </header>
+
+    <div class="langtabs" role="group" aria-label="수정할 언어">
+      <span>수정할 언어</span>
+      <button type="button" data-l="ko" aria-pressed="true">한국어</button>
+      <button type="button" data-l="en" aria-pressed="false">English</button>
+      <button type="button" data-l="ja" aria-pressed="false">日本語</button>
+    </div>
+    <p class="tip">한국어만 고쳐도 돼요. 영어·일본어가 비어 있으면 그 칸은 <b>한국어로 대신 보여요</b>. 글자를 <b>**이렇게**</b> 감싸면 굵게 보여요.</p>
+
+    <section class="card">
+      <h2>소개와 이름</h2>
+      <div id="basics"></div>
+    </section>
+
+    <section>
+      <h2 class="h2">식 순서 <small>(▲▼로 순서 변경, 눌러서 내용 수정)</small></h2>
+      <ol id="stepList" class="steps"></ol>
+      <div class="row">
+        <button id="addBtn" class="btn" type="button">+ 순서 추가</button>
+        <button id="resetBtn" class="btn ghost" type="button">기본 내용으로 되돌리기</button>
+      </div>
+    </section>
+
+    <section id="pvWrap" class="pv" hidden>
+      <h2 class="h2">미리보기 <small>(저장 전 내용이 그대로 보여요)</small></h2>
+      <iframe id="pv" title="미리보기"></iframe>
+    </section>
+  </section>
+
+</main>
+
+<footer id="savebar" class="savebar" hidden>
+  <span id="state" class="state"></span>
+  <button id="pvBtn" class="btn ghost" type="button">미리보기</button>
+  <button id="saveBtn" class="btn primary" type="button">저장</button>
+</footer>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/config.js"></script>
+<script src="/content-default.js"></script>
+<script src="/assets/store.js"></script>
+<script src="/assets/edit.js"></script>
+</body>
+</html>

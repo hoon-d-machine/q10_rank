@@ -149,6 +149,18 @@ html[data-theme="nature"] .help-note, html[data-theme="dark"] .help-note { borde
   html[data-theme="dark"] .logout, html[data-theme="dark"] .theme-btn, html[data-theme="dark"] .help-btn { padding: 6px 3px; font-size: 12px; }
 }
 
+/* 아주 좁은 화면(360px 안팎): 메뉴가 4개라 한 번 더 줄여서 한 줄에 맞춤 */
+@media (max-width: 400px) {
+  .topbar { padding: 0 8px; }
+  .brand { --bw: 60px; }
+  .top-nav { margin-left: 2px; }
+  .top-nav a, html[data-theme="nature"] .top-nav a, html[data-theme="dark"] .top-nav a { padding: 4px 3px; font-size: 11.5px; }
+  .top-actions { gap: 3px; }
+  .logout, html[data-theme="nature"] .logout, html[data-theme="dark"] .logout { padding: 5px 5px; font-size: 11.5px; }
+  .theme-btn, html[data-theme="nature"] .theme-btn, html[data-theme="dark"] .theme-btn,
+  .help-btn, html[data-theme="nature"] .help-btn, html[data-theme="dark"] .help-btn { padding: 5px 4px; }
+}
+
 .help-table thead th { font-size: 12px; color: var(--h-muted); font-weight: 600; border-bottom-width: 1.5px; }
 .help-recipes tbody th { width: 34%; white-space: normal; }
 .help-panel dd + dt { margin-top: 14px; }

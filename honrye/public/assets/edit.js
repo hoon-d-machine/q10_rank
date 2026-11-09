@@ -5,7 +5,7 @@
   "use strict";
 
   var Store = window.HonryeStore, slug = Store.slug();
-  var LNAME = { ko: "한국어", en: "English", ja: "日本語" };
+  var LNAME = { ko: "한국어", ja: "日本語" };
   var S = { pin: "", rev: null, data: null, saved: "", lang: "ko", open: null, saving: false, pv: false, pvReady: false };
 
   var $ = function (id) { return document.getElementById(id); };

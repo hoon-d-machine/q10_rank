@@ -46,7 +46,7 @@ begin
     insert into honrye_attempts default values;
     return 'bad_pin';
   end if;
-  delete from honrye_attempts;
+  delete from honrye_attempts where true;   -- Supabase 는 조건 없는 delete 를 막으므로 where 를 붙인다
   return 'ok';
 end;
 $$;

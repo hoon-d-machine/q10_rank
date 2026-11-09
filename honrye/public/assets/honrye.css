@@ -37,10 +37,10 @@ button { font: inherit; color: inherit; }
 .fl-l { left: -46px; top: 170px; animation-direction: reverse; }
 .fl-r { right: -46px; top: 250px; width: 86px; height: 86px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.cloud { position: absolute; width: 96px; height: auto; fill: none; animation: drift 9s ease-in-out infinite alternate; }
+.cloud { position: absolute; width: 96px; height: auto; fill: none; will-change: transform; animation: drift 9s ease-in-out infinite alternate; }
 .c1 { left: 24px; top: 98px; width: 112px; }
 .c2 { right: 20px; top: 50px; width: 88px; animation-delay: -3s; }
-.c3 { right: 22px; top: 90px; width: 100px; animation-delay: -6s; animation-direction: alternate-reverse; }
+.c3 { right: 24px; top: 92px; width: 70px; animation-delay: -6s; animation-direction: alternate-reverse; }
 .c4 { left: 30px; top: 236px; width: 84px; animation-delay: -2s; }
 @keyframes drift { from { transform: translateX(-10px); } to { transform: translateX(14px); } }
 .arch { position: relative; display: block; width: 74px; height: auto; margin: 0 auto 12px; }
@@ -147,7 +147,7 @@ details[open] .chev { transform: rotate(-135deg) translate(-2px, -1px); }
 /* ---------- 맨 아래 마무리: 구름과 꽃 문양 ---------- */
 .end { height: 150px; overflow: hidden; max-width: 560px; margin: 0 auto; }
 .e1 { left: 28px; top: 28px; width: 108px; }
-.e2 { right: 28px; top: 54px; width: 104px; animation-delay: -4s; }
+.e2 { right: 34px; top: 56px; width: 76px; animation-delay: -4s; }
 .fl-bl { left: -36px; bottom: -44px; top: auto; width: 104px; height: 104px; animation-direction: reverse; }
 .fl-br { right: -36px; bottom: -44px; top: auto; left: auto; width: 104px; height: 104px; }
 

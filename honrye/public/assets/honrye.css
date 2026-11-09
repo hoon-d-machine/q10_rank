@@ -38,12 +38,11 @@ button { font: inherit; color: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .cloud { position: absolute; width: 96px; height: auto; fill: none; animation: drift 9s ease-in-out infinite alternate; }
 .c1 { left: 24px; top: 98px; width: 112px; }
-.c2 { right: 12px; top: 412px; width: 64px; animation-delay: -3s; }
-.c3 { right: 12px; top: 368px; width: 72px; animation-delay: -6s; animation-direction: alternate-reverse; }
+.c2 { right: 12px; top: 392px; width: 64px; animation-delay: -3s; }
+.c3 { right: 4px; top: 344px; width: 72px; animation-delay: -6s; animation-direction: alternate-reverse; }
 .c4 { left: 30px; top: 236px; width: 84px; animation-delay: -2s; }
 @keyframes drift { from { transform: translateX(-10px); } to { transform: translateX(14px); } }
 .arch { position: relative; display: block; width: 74px; height: auto; margin: 0 auto 12px; }
-.eyebrow { position: relative; margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; color: var(--burg); }
 h1 {
   position: relative; margin: 0; font: 900 clamp(50px, 15vw, 68px)/1.1 var(--display); letter-spacing: -.01em;
   color: var(--orange); text-shadow: 3px 3px 0 rgba(123, 30, 43, .2);

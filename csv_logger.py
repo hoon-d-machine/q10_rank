@@ -13,6 +13,10 @@ HEADERS = {
 }
 KST = timezone(timedelta(hours=9))
 
+
+class CollectError(Exception):
+    """수집 결과가 비정상(점검·차단 페이지 등)일 때. 조용히 넘기지 않고 워크플로를 실패시키기 위해 사용."""
+
 def update_csv(df, file_name):
     if df is None or df.empty: return
     file_path = f"data/{file_name}"
@@ -32,7 +36,9 @@ def update_csv(df, file_name):
 
 def get_daily_bestsellers(current_date): # 날짜를 인자로 받음
     url = 'https://m.qoo10.jp/gmkt.inc/BestSellers/?g=2'
-    res = requests.get(url, headers=HEADERS)
+    res = requests.get(url, headers=HEADERS, timeout=30)
+    if res.status_code != 200:
+        raise CollectError(f"일일 베스트셀러 HTTP {res.status_code}")
     soup = BeautifulSoup(res.text, 'html.parser')
     items = soup.select('li[data_gd_no]')
     data = []
@@ -49,6 +55,8 @@ def get_daily_bestsellers(current_date): # 날짜를 인자로 받음
                 "가격": int(item.select_one('.price_final_value').text.strip().replace(',', ''))
             })
         except: continue
+    if not data:
+        raise CollectError(f"일일 베스트셀러 상품 0개 (응답 {len(res.text):,}B, 점검·차단 페이지일 수 있음)")
     return pd.DataFrame(data)
 
 def get_official_ranking(period, current_date): # 날짜를 인자로 받음
@@ -71,8 +79,12 @@ def get_official_ranking(period, current_date): # 날짜를 인자로 받음
             'period': period, 'pageNo': 1, 'pageSize': 100, 
             'showMegaoshi': 'Y', '___cache_expire___': str(int(time.time()*1000))
         }
-        res = requests.post(url, headers=HEADERS, json=payload)
-        items = res.json().get('d', {}).get('goods', [])
+        res = requests.post(url, headers=HEADERS, json=payload, timeout=30)
+        try:
+            items = res.json().get('d', {}).get('goods', [])
+        except ValueError:
+            raise CollectError(f"공식 랭킹({name}_{period_name}) 응답이 JSON이 아님: HTTP {res.status_code}, "
+                               f"{res.headers.get('content-type', '')}, {len(res.text):,}B (점검·차단 페이지일 수 있음)")
         for item in items:
             all_data.append({
                 "일자": current_date, # 전달받은 날짜 사용
@@ -82,27 +94,43 @@ def get_official_ranking(period, current_date): # 날짜를 인자로 받음
                 "상품명": item.get("GD_NM", ""),
                 "가격": int(item.get("FINAL_PRICE", 0))
             })
+    if not all_data:
+        raise CollectError(f"공식 랭킹({period_name}) 모든 카테고리 결과가 비어 있음")
     return pd.DataFrame(all_data)
 
 if __name__ == "__main__":
+    import sys
     now = datetime.now(KST)
     today_str = now.strftime('%Y-%m-%d')
     print(f"🚀 수집 시작 (기준 시간: {now.strftime('%Y-%m-%d %H:%M:%S')} KST)")
 
+    failures = []
+
+    def step(label, fn):
+        """한 단계가 실패해도 다음 단계는 계속 하고, 마지막에 실패 목록으로 종료 코드를 정한다."""
+        try:
+            fn()
+        except Exception as e:
+            print(f"❌ {label} 실패: {type(e).__name__}: {e}")
+            failures.append(label)
+
     # 1. 데일리 수집
-    update_csv(get_daily_bestsellers(today_str), "bestseller_daily.csv")
+    step("일일 베스트셀러", lambda: update_csv(get_daily_bestsellers(today_str), "bestseller_daily.csv"))
 
     # 2. 주간 수집
     if now.weekday() == 0 or not os.path.exists("data/official_weekly.csv"):
         print("2. 주간 랭킹 수집 중...")
-        update_csv(get_official_ranking('W', today_str), "official_weekly.csv")
+        step("주간 공식 랭킹", lambda: update_csv(get_official_ranking('W', today_str), "official_weekly.csv"))
     else:
         print("2. 주간 랭킹 수집 일자 아님, PASS")
     # 3. 월간 수집
     if now.day == 1 or not os.path.exists("data/official_monthly.csv"):
         print("3. 월간 랭킹 수집 중...")
-        update_csv(get_official_ranking('M', today_str), "official_monthly.csv")
+        step("월간 공식 랭킹", lambda: update_csv(get_official_ranking('M', today_str), "official_monthly.csv"))
     else:
         print("3. 월간 랭킹 수집 일자 아님, PASS")
-    
+
+    if failures:
+        print(f"⚠️ 실패한 단계: {failures}")
+        sys.exit(1)
     print("✨ 모든 수집 프로세스 완료")

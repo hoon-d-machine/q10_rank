@@ -46,9 +46,9 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 <svg class="fl" style="top:92mm;right:-12mm;width:27mm;height:27mm"><use href="#flower"/></svg>
 <!-- 구름: 참고 포스터처럼 한쪽에 치우치게 흩어 놓는다 (굵은 직선 둘 + 가는 연결선) -->
 <svg class="cloud" style="top:36mm;left:16mm;width:40mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
-<svg class="cloud" style="top:42mm;right:17mm;width:32mm" viewBox="0 0 130 34"><use href="#cloud-b"/></svg>
+<svg class="cloud" style="top:42mm;right:17mm;width:34mm" viewBox="0 0 130 34"><use href="#cloud-d"/></svg>
 <svg class="cloud" style="top:176mm;left:13mm;width:27mm" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
-<svg class="cloud" style="top:200mm;right:14mm;width:30mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
+<svg class="cloud" style="top:196mm;right:13mm;width:30mm" viewBox="0 0 130 49"><use href="#cloud-e"/></svg>
 <div class="title"><h1>식순 안내</h1><p class="jt">式次第のご案内</p></div>
 <div class="rule"><i></i><b></b><i></i></div>
 <div class="qrbox">__QR__</div>

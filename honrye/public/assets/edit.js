@@ -69,10 +69,14 @@
     return code === "locked" ? "틀린 횟수가 많아 잠시 잠겼어요. 10분 뒤에 다시 시도해 주세요." : "PIN이 맞지 않아요.";
   }
 
+  var ICON_OPTS = [["", "없음"], ["bell", "종 (시작)"], ["lantern", "청사초롱"], ["goose", "기러기"], ["candle", "촛불"], ["people", "사람들 (인사)"], ["bow", "절"], ["scroll", "두루마리 (선언)"], ["flower", "꽃"], ["gate", "문 (마무리)"], ["heart", "하트"]];
+  var DEF_ICON = { s1: "bell", s2: "lantern", s3: "goose", s4: "candle", s5: "people", s6: "bow", s7: "scroll", s8: "flower", s9: "gate" };
+
   // ---------- 데이터 모양 맞추기 ----------
   function ensure(d) {
     d.intro = d.intro || loc();
     d.subtitle = d.subtitle || loc();
+    d.title = d.title || loc();
     d.couple = d.couple || {};
     ["groom", "bride"].forEach(function (k) { d.couple[k] = d.couple[k] || loc(); });
     d.steps = d.steps || [];
@@ -115,6 +119,7 @@
   // ---------- 그리기 ----------
   function renderBasics() {
     var b = $("basics"); b.textContent = "";
+    b.appendChild(field("제목 (맨 위 큰 글씨)", "area", S.data, "title", { rows: 2, hint: "줄바꿈으로 줄 나누기 · 비우면 기본 제목(전통 혼례 / 식순)" }));
     b.appendChild(field("부제 (제목 아래 한 줄, 예: 전통 사대부가 혼인례 · 친영례)", "line", S.data, "subtitle", { hint: "비우면 기본 부제(전통 사대부가 혼인례 · 친영례)로 보여요" }));
     b.appendChild(field("소개 문구 (맨 위 설명)", "area", S.data, "intro", { rows: 3 }));
     var isKo = S.lang === "ko";
@@ -149,6 +154,12 @@
       if (S.open === s.id) {
         var body = el("div", "body");
         body.appendChild(field("제목", "line", s, "title", { onInput: function (v) { tt.textContent = v.trim() || pickKo(s.title) || "(제목 없음)"; } }));
+        var ic = el("label", "fld"); ic.appendChild(el("span", null, "아이콘 (모든 언어 공통)"));
+        var sel = el("select");
+        ICON_OPTS.forEach(function (o) { var op = el("option", null, o[1]); op.value = o[0]; sel.appendChild(op); });
+        sel.value = s.icon || DEF_ICON[s.id] || "";
+        sel.addEventListener("change", function () { s.icon = sel.value; changed(); });
+        ic.appendChild(sel); body.appendChild(ic);
         body.appendChild(field("한 줄 설명 (목록에 보이는 글)", "line", s, "one"));
         body.appendChild(field("이 의식의 뜻", "area", s, "meaning", { rows: 6, hint: "빈 줄로 문단 나누기" }));
         body.appendChild(field("이렇게 진행돼요", "area", s, "how", { rows: 5, hint: "줄마다 한 항목" }));

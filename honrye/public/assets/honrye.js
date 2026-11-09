@@ -19,13 +19,30 @@
     collapse: { ko: "모두 접기", en: "Collapse all", ja: "すべて閉じる" },
     meaning: { ko: "이 의식의 뜻", en: "What it means", ja: "この儀式の意味" },
     how: { ko: "이렇게 진행돼요", en: "How it goes", ja: "進め方" },
-    thanks: { ko: "함께해 주셔서 감사합니다", en: "Thank you for being with us", ja: "ご列席いただき、ありがとうございます" },
-    credit: {
-      ko: "이 식순은 전통 사대부가 혼인례 홀기(궁중의례원, 2020년 6월 1일 수정본)를 바탕으로 뜻을 쉽게 풀어 정리했고, 일부 순서는 오늘 예식에 맞춰 더했어요. 홀기의 저작권은 궁중의례원에 있어요.",
-      en: "This program is based on the traditional sadaebu wedding hol-gi (Gungjung Uirye-won, revised June 1, 2020), with its meanings explained in plain words, and some parts were added to suit today’s ceremony. The hol-gi is copyrighted by Gungjung Uirye-won.",
-      ja: "この式次第は、伝統的な士大夫家の婚礼の笏記(ホルギ)(宮中儀礼院、2020年6月1日修正版)をもとに意味をやさしく解説したもので、一部の順序は本日の式に合わせて加えました。笏記の著作権は宮中儀礼院にあります。"
-    }
+    thanks: { ko: "함께해 주셔서 감사합니다", en: "Thank you for being with us", ja: "ご列席いただき、ありがとうございます" }
   };
+
+  // 순서별 아이콘 (선으로 그린 작은 그림). 수정 페이지에서 고른 이름(step.icon) 또는 기본 배정(id)을 쓴다
+  var petals = [0, 72, 144, 216, 288].map(function (a) { return '<ellipse cx="12" cy="6.6" rx="2.3" ry="3.4" transform="rotate(' + a + ' 12 12)"/>'; }).join("");
+  var ICONS = {
+    bell: '<path d="M6 17h12l-1.5-2.2V10a4.5 4.5 0 0 0-9 0v4.8z"/><path d="M10 20a2 2 0 0 0 4 0M12 5.5V3.5"/>',
+    lantern: '<path d="M9.5 3h5M10 3v2.2M14 3v2.2"/><rect x="6.5" y="5.2" width="11" height="12" rx="4.5"/><path d="M6.8 11.2h10.4M12 17.2V20M10 21h4"/>',
+    goose: '<path d="M4 15.5c0-2.6 2.8-4 5.8-4 1.6 0 2.7-.5 3.4-1.7l.9-3.2a2 2 0 1 1 3.6 1.4l-.9 2.5c0 4-3 6.8-7.4 6.8H4"/><path d="M18.5 5.5 21 6M9 19v2M13 19v2"/>',
+    candle: '<path d="M12 2.5c2.2 2.4 2.2 4.2 0 5.5-2.2-1.3-2.2-3.1 0-5.5z"/><rect x="9" y="9" width="6" height="11" rx="1"/><path d="M6.5 20.5h11"/>',
+    people: '<circle cx="8" cy="8" r="2.6"/><circle cx="16" cy="8" r="2.6"/><path d="M3.5 19c0-3 2-5 4.5-5s4.5 2 4.5 5M11.5 19c0-3 2-5 4.5-5s4.5 2 4.5 5"/>',
+    bow: '<circle cx="6.5" cy="6" r="2"/><circle cx="17.5" cy="6" r="2"/><path d="M3 20.5l1.6-6.5 4.2 1.6M21 20.5l-1.6-6.5-4.2 1.6M8.8 15.6 7.5 11h-2M15.2 15.6 16.5 11h2"/>',
+    scroll: '<path d="M8 4h10a2 2 0 0 1 2 2v11.5a2.5 2.5 0 0 1-2.5 2.5H7"/><path d="M8 4a2.5 2.5 0 0 0-2.5 2.5V18a2 2 0 0 0 2 2 2 2 0 0 0 2-2V6.5M11.5 9H17M11.5 12.5H17"/>',
+    flower: petals + '<circle cx="12" cy="12" r="1.8"/>',
+    gate: '<path d="M2.5 6 12 3l9.5 3M4.5 8.5h15M6.5 8.5V21M17.5 8.5V21M10 8.5V21M14 8.5V21"/>',
+    heart: '<path d="M12 20s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 7.6 4.2 4.2 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>'
+  };
+  var DEFAULT_ICON = { s1: "bell", s2: "lantern", s3: "goose", s4: "candle", s5: "people", s6: "bow", s7: "scroll", s8: "flower", s9: "gate" };
+  function iconEl(name) {
+    if (!name || !ICONS[name]) return null;
+    var w = document.createElement("span"); w.className = "ico"; w.setAttribute("aria-hidden", "true");
+    w.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + ICONS[name] + "</svg>";
+    return w;
+  }
 
   var $ = function (id) { return document.getElementById(id); };
   var sheet = $("sheet"), paper = $("paper"), list = $("steps"), allBtn = $("toggleAll");
@@ -79,9 +96,10 @@
   // ---------- 그리기 ----------
   function renderChrome() {
     document.documentElement.lang = lang;
-    document.title = t("docTitle");
+    var custom = pick(data.title).split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+    document.title = custom.length ? custom.join(" ") : t("docTitle");
     var h1 = $("title"); h1.textContent = "";
-    t("title").forEach(function (s, i) { if (i) h1.appendChild(document.createElement("br")); h1.appendChild(document.createTextNode(s)); });
+    (custom.length ? custom : t("title")).forEach(function (s, i) { if (i) h1.appendChild(document.createElement("br")); h1.appendChild(document.createTextNode(s)); });
     $("sub").textContent = pick(data.subtitle) || t("sub");
 
     var g = pick(data.couple && data.couple.groom), b = pick(data.couple && data.couple.bride);
@@ -93,7 +111,6 @@
     $("hint").textContent = t("hint");
     allBtn.textContent = all ? t("collapse") : t("expand");
     $("thanks").textContent = t("thanks");
-    $("credit").textContent = t("credit");
     Array.prototype.forEach.call(document.querySelectorAll(".lang button"), function (b2) {
       b2.setAttribute("aria-pressed", String(b2.getAttribute("data-lang") === lang));
     });
@@ -125,7 +142,7 @@
       d.setAttribute("data-id", s.id || ("i" + i));
       var sum = el("summary");
       sum.appendChild(el("span", "no", String(i + 1)));
-      var ttl = el("span", "ttl"); ttl.appendChild(el("b", null, pick(s.title))); sum.appendChild(ttl);
+      var ttl = el("span", "ttl"); var ic = iconEl(s.icon || DEFAULT_ICON[s.id]); if (ic) ttl.appendChild(ic); ttl.appendChild(el("b", null, pick(s.title))); sum.appendChild(ttl);
       sum.appendChild(el("span", "one", pick(s.one)));
       var chev = el("span", "chev"); chev.setAttribute("aria-hidden", "true"); sum.appendChild(chev);
       d.appendChild(sum);

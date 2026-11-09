@@ -46,7 +46,8 @@ button, input, textarea { font: inherit; color: inherit; }
 .card { background: var(--card); border: 1.5px solid var(--line); border-radius: 14px; padding: 14px; }
 .fld { display: block; margin: 0 0 14px; }
 .fld > span { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 5px; font-size: 13px; font-weight: 700; color: var(--burg); }
-.fld input, .fld textarea { width: 100%; padding: 11px 12px; font-size: 16px; line-height: 1.55; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; }
+.fld input, .fld textarea, .fld select { width: 100%; padding: 11px 12px; font-size: 16px; line-height: 1.55; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; }
+.fld select { appearance: auto; }
 .fld textarea { min-height: 96px; resize: vertical; }
 .fld input:focus, .fld textarea:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(232, 102, 28, .15); }
 .ref { margin-top: 5px; padding: 7px 10px; font-size: 12.5px; line-height: 1.6; color: var(--muted); background: #f4f8fb; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }

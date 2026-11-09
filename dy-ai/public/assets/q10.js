@@ -154,10 +154,10 @@
 
     // 1) 엑셀
     var saved = false;
-    log.step("엑셀 저장", "info", t.mode === "file" ? "원본 파일에 덮어쓰기: " + t.handle.name : "새 파일로 받기");
+    log.step("엑셀 저장", "info", t.mode === "file" ? "원본 파일에 덮어쓰기: " + t.handle.name : t.mode === "none" ? "건너뜀 (엑셀 없이 진행)" : "새 파일로 받기");
     try {
       saved = await window.dyQ10Save.save(p, t);
-      log.step("엑셀 저장", saved ? "ok" : "warn", saved ? "저장 완료" : "저장 안 함 (취소)");
+      log.step("엑셀 저장", saved ? (t.mode === "none" ? "info" : "ok") : "warn", t.mode === "none" ? "건너뜀" : saved ? "저장 완료" : "저장 안 함 (취소)");
     } catch (e) {
       console.error("[DY-AI Q10]", e);
       log.step("엑셀 저장", "error", (e && e.message) || String(e));
@@ -170,7 +170,7 @@
       window.dyToast("DB · 구글 시트 업데이트 중…", 0);
       var res = await window.dyQ10Sync.run(p, log);
       var bad = res.parts.filter(function (x) { return !x.ok; });
-      var line = "엑셀 " + (saved ? "✓" : "✕") + " · DB " + (bad.some(function (x) { return x.target === "DB"; }) ? "✕" : "✓") +
+      var line = "엑셀 " + (t.mode === "none" ? "-" : saved ? "✓" : "✕") + " · DB " + (bad.some(function (x) { return x.target === "DB"; }) ? "✕" : "✓") +
         " · 시트 " + (bad.some(function (x) { return x.target === "시트"; }) ? "✕" : "✓");
       if (!bad.length) {
         log.end(saved ? "ok" : "partial", line + " (" + p.start + " ~ " + p.end + ")");
@@ -222,7 +222,7 @@
           if (!t) return;
           target = t;
           run = window.dyLog ? window.dyLog.start({}) : null;
-          if (run) run.step("시작", "info", "저장 대상: " + (t.mode === "file" ? "원본 파일 " + t.handle.name : "새 파일로 받기") + " · 확장 v" + installed);
+          if (run) run.step("시작", "info", "저장 대상: " + (t.mode === "file" ? "원본 파일 " + t.handle.name : t.mode === "none" ? "엑셀 없이 진행" : "새 파일로 받기") + " · 확장 v" + installed);
           setBusy(true);
           window.postMessage({ source: "dy-ai", type: "q10-collect", deliver: "page" }, location.origin);
         })

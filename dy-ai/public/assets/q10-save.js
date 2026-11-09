@@ -19,6 +19,8 @@
   TYPES[0].accept[MIME] = [".xlsx"];
   var SHEETS = "raw_data · raw_trade · raw_conversion";
 
+  var NOFILE = "dy-q10-nofile";
+  var picker = { blocked: false, err: null };
   var supported = "showOpenFilePicker" in window && "showSaveFilePicker" in window && "indexedDB" in window;
 
   // ---------- 파일 핸들 보관 (IndexedDB) ----------
@@ -58,7 +60,10 @@
       .then(function (hs) { return hs[0]; })
       .catch(function (e) {
         if (e && e.name === "AbortError") return null;
-        window.dyToast("파일을 열지 못했어요: " + (e && e.message || e), 5000);
+        // 사내 정책 등으로 파일 선택 자체가 막힌 경우: 기억해 두고 안내 창으로 넘어간다
+        picker.blocked = true;
+        picker.err = e;
+        try { localStorage.setItem(NOFILE, "1"); } catch (_) {}
         return null;
       });
   }
@@ -74,8 +79,38 @@
 
   // ---------- 1) 저장 대상 고르기 ----------
   // → { mode: "file", handle } | { mode: "download" } | null(취소)
+  // 파일 선택이 막힌 PC: 엑셀 없이(DB·구글 시트에만) 또는 새 파일로 받기
+  // → { mode } | "retry"(다시 파일 고르기) | null(취소)
+  async function blockedChoice() {
+    var detail = picker.err && (picker.err.message || picker.err.name);
+    var v = await window.dyModal({
+      tone: "warn",
+      title: "이 PC에서는 파일 선택이 막혀 있어요",
+      body: [
+        "사내 보안 정책으로 파일을 고를 수 없는 것 같아요. 엑셀 저장은 건너뛰어도 수집한 데이터는 DB와 구글 시트에 그대로 쌓여요.",
+        "엑셀이 필요하면 ‘데이터’ 메뉴에서 언제든 내려받을 수 있어요."
+      ].concat(detail ? [{ note: "브라우저 메시지: " + detail }] : []),
+      actions: [
+        { label: "엑셀 없이 진행", value: "none", kind: "primary" },
+        { label: "새 파일로 받기", value: "download" },
+        { label: "파일 고르기 다시 시도", value: "retry" },
+        { label: "취소", value: null, kind: "quiet" }
+      ]
+    });
+    picker.blocked = false; picker.err = null;
+    if (v === null) return null;
+    if (v === "retry") { try { localStorage.removeItem(NOFILE); } catch (_) {} return "retry"; }
+    return { mode: v };
+  }
+
   async function chooseTarget() {
     if (!supported) return { mode: "download" };
+    var flagged = false;
+    try { flagged = localStorage.getItem(NOFILE) === "1"; } catch (_) {}
+    if (flagged) {
+      var r0 = await blockedChoice();
+      if (r0 !== "retry") return r0;
+    }
     var h = await getHandle();
     var cut = cutoffLabel();
 
@@ -94,6 +129,7 @@
             { label: "이 파일에 저장", value: "use", kind: "primary" },
             { label: "다른 파일 고르기", value: "pick" },
             { label: "새 파일로 받기", value: "download" },
+            { label: "엑셀 없이 진행", value: "none" },
             { label: "취소", value: null, kind: "quiet" }
           ]
         });
@@ -108,6 +144,7 @@
           actions: [
             { label: "원본 파일 고르기", value: "pick", kind: "primary" },
             { label: "새 파일로 받기", value: "download" },
+            { label: "엑셀 없이 진행", value: "none" },
             { label: "취소", value: null, kind: "quiet" }
           ]
         });
@@ -115,9 +152,17 @@
 
       if (v === null) return null;
       if (v === "download") return { mode: "download" };
+      if (v === "none") return { mode: "none" };
       if (v === "pick") {
         var picked = await pickOriginal();
-        if (!picked) continue;
+        if (!picked) {
+          if (picker.blocked) {
+            var r1 = await blockedChoice();
+            if (r1 === null) return null;
+            if (r1 !== "retry") return r1;
+          }
+          continue;
+        }
         h = picked;
         await setHandle(h);
         if (await askWrite(h)) return { mode: "file", handle: h };
@@ -233,6 +278,7 @@
   // ---------- 2) 저장 ----------
   // → true(저장됨) | false(취소)
   async function save(p, target) {
+    if (target && target.mode === "none") return true; // 엑셀 저장 건너뜀 (DB·시트에만 반영)
     if (!target || target.mode !== "file") {
       download(await freshBytes(p), p.filename);
       summary(p.filename + " (다운로드 폴더)", p, null);

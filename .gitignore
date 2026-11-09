@@ -16,3 +16,4 @@ browser_profile/
 
 # wrangler 로컬 비밀값
 .dev.vars
+honrye/tools/_backup_before_sync.json

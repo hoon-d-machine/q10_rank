@@ -14,56 +14,46 @@ qr = re.sub(r'width="[^"]*" height="[^"]*"', 'width="100%" height="100%"', qr, c
 qr = qr.replace('<svg ', '<svg shape-rendering="crispEdges" ', 1)
 
 HTML = '''<!doctype html><html lang="ko"><meta charset="utf-8">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;800&family=Noto+Serif+JP:wght@600&family=Hahmlet:wght@700;900&display=swap" rel="stylesheet">
 <style>
 @page { size: A4; margin: 0 }
 * { box-sizing: border-box }
 html, body { margin: 0; width: 210mm; height: 296.5mm; overflow: hidden }
-:root { --red: #8c1d2a; --red2: #b3263a; --gold: #b8924a; --gold2: #d9bc7e; --cream: #f7efdc; --ink: #3a2a1c }
-body { position: relative; overflow: hidden; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: "Noto Serif KR", serif; color: var(--red);
-  background: radial-gradient(120% 80% at 50% 40%, #fbf5e6 0%, var(--cream) 60%, #efe3c6 100%) }
-/* 청해파(물결) 무늬 띠 : 위·아래 */
-.wave { position: absolute; left: 0; right: 0; height: 22mm }
-.wave.t { top: 0 } .wave.b { bottom: 0; transform: scaleY(-1) }
-.wave svg { width: 100%; height: 100% }
-.frame { position: absolute; inset: 29mm 12mm; border: .8mm solid var(--red); }
-.frame::before { content: ""; position: absolute; inset: 1.6mm; border: .3mm solid var(--gold) }
-.corner { position: absolute; width: 9mm; height: 9mm; border: .8mm solid var(--gold); background: var(--cream) }
-.corner::after { content: ""; position: absolute; inset: 1.6mm; background: var(--red) }
+body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #7b1e2b; font-family: "Noto Serif KR", serif;
+  background: radial-gradient(120% 55% at 50% 0%, #a8d0e3 0%, #7db6d4 62%) }
+/* 식순 페이지(포스터 머리)와 같은 색·문양: 하늘색 바탕, 주황 제목, 크림색 테두리, 단청 꽃, 직선 구름 */
+.frame { position: absolute; inset: 9mm; border: .7mm solid #fbfaf3; border-radius: 3mm }
+.frame::after { content: ""; position: absolute; inset: 2.2mm; border: .3mm solid rgba(251,250,243,.7); border-radius: 2mm }
+.cloud { position: absolute }
 .fl { position: absolute }
-.title { position: absolute; top: 58mm; left: 0; right: 0; text-align: center }
-.title small { display: block; font: 600 4.4mm/1 "Noto Serif KR", serif; letter-spacing: 2.2mm; color: var(--gold); margin-bottom: 8mm }
-.title h1 { margin: 0; font: 900 30mm/1.05 "Noto Serif KR", serif; letter-spacing: 2.5mm; color: var(--red); text-shadow: .9mm .9mm 0 rgba(184,146,74,.55) }
-.rule { position: absolute; top: 106mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
-.rule i { display: block; width: 42mm; height: .5mm; background: linear-gradient(90deg, transparent, var(--gold) 40%, var(--gold)); }
-.rule i:last-child { transform: scaleX(-1) }
-.rule svg { width: 11mm; height: 11mm }
-.qrbox { position: absolute; top: 126mm; left: 50%; transform: translateX(-50%); width: 104mm; height: 104mm; padding: 5.5mm; background: #fffdf6;
-  box-shadow: 0 0 0 1.2mm var(--red), 0 0 0 2.2mm var(--cream), 0 0 0 3mm var(--gold) }
+.title { position: absolute; top: 56mm; left: 0; right: 0; text-align: center }
+.title small { display: block; font: 700 4.4mm/1 "Noto Serif KR", serif; letter-spacing: 1.4mm; color: #7b1e2b; margin-bottom: 7mm }
+.title h1 { margin: 0; font: 900 31mm/1.05 Hahmlet, "Noto Serif KR", serif; letter-spacing: 2mm; color: #e8661c; text-shadow: 1.2mm 1.2mm 0 rgba(123,30,43,.35) }
+.rule { position: absolute; top: 108mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
+.rule i { display: block; width: 38mm; height: .6mm; background: #fbfaf3; border-radius: 1mm }
+.rule svg { width: 12mm; height: 12mm }
+.qrbox { position: absolute; top: 128mm; left: 50%; transform: translateX(-50%); width: 104mm; height: 104mm; padding: 6mm; background: #fffdf4; border-radius: 3mm;
+  box-shadow: 0 0 0 1.2mm #7b1e2b, 0 0 0 2.4mm #fbfaf3, 0 0 0 3.2mm #245c9f }
 .qrbox > svg { width: 100%; height: 100% }
-.cap { position: absolute; top: 241mm; left: 0; right: 0; text-align: center; font: 800 8.2mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: var(--red) }
-.cap2 { position: absolute; top: 254mm; left: 0; right: 0; text-align: center; font: 400 4mm/1.5 "Noto Serif KR", serif; letter-spacing: .6mm; color: var(--ink) }
+.cap { position: absolute; top: 247mm; left: 0; right: 0; text-align: center; font: 800 8mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
+.jp { position: absolute; top: 260mm; left: 0; right: 0; text-align: center; font: 600 3.6mm/1.5 "Noto Serif JP", serif; letter-spacing: .5mm; color: #1b4478 }
 </style>
 <body>__DEFS__
-<svg width="0" height="0" style="position:absolute"><defs>
-  <pattern id="sea" width="16" height="8" patternUnits="userSpaceOnUse" patternTransform="scale(2.4)">
-    <g fill="none" stroke="#fff3df" stroke-width=".7">
-      <g id="sc"><circle cx="8" cy="8" r="7.4"/><circle cx="8" cy="8" r="5.2"/><circle cx="8" cy="8" r="3"/></g>
-      <use href="#sc" x="-8" y="-4"/><use href="#sc" x="8" y="-4"/>
-    </g>
-  </pattern></defs></svg>
-<div class="wave t"><svg><rect width="100%" height="100%" fill="#a9694f"/><rect width="100%" height="100%" fill="url(#sea)"/><rect y="100%" width="100%" height="0"/><rect x="0" y="calc(100% - 1.2mm)" width="100%" height="1.2mm" fill="#8c1d2a"/></svg></div>
-<div class="wave b"><svg><rect width="100%" height="100%" fill="#a9694f"/><rect width="100%" height="100%" fill="url(#sea)"/><rect x="0" y="calc(100% - 1.2mm)" width="100%" height="1.2mm" fill="#8c1d2a"/></svg></div>
 <div class="frame"></div>
-<div class="corner" style="top:24.6mm;left:7.6mm"></div><div class="corner" style="top:24.6mm;right:7.6mm"></div>
-<div class="corner" style="bottom:24.6mm;left:7.6mm"></div><div class="corner" style="bottom:24.6mm;right:7.6mm"></div>
-<svg class="fl" style="top:34mm;left:50%;margin-left:-11mm;width:22mm;height:22mm"><use href="#flower"/></svg>
-<div class="title"><small>傳統 士大夫家 婚禮</small><h1>식순 안내</h1></div>
+<svg class="fl" style="top:19mm;left:50%;margin-left:-14mm;width:28mm;height:28mm"><use href="#flower"/></svg>
+<svg class="fl" style="top:20mm;left:24mm;width:15mm;height:15mm"><use href="#flower"/></svg>
+<svg class="fl" style="top:20mm;right:24mm;width:15mm;height:15mm"><use href="#flower"/></svg>
+<svg class="cloud" style="top:40mm;left:20mm;width:50mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
+<svg class="cloud" style="top:44mm;right:20mm;width:50mm" viewBox="0 0 130 34"><use href="#cloud-b"/></svg>
+<svg class="cloud" style="top:206mm;left:15mm;width:30mm" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
+<svg class="cloud" style="top:212mm;right:15mm;width:30mm;transform:scaleX(-1)" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
+<div class="title"><small>전통 사대부가 혼인례</small><h1>식순 안내</h1></div>
 <div class="rule"><i></i><svg><use href="#flower"/></svg><i></i></div>
 <div class="qrbox">__QR__</div>
 <div class="cap">QR을 스캔하여 확인해주세요</div>
-<div class="cap2">휴대폰 카메라를 QR에 비추면 식순과 뜻풀이를 볼 수 있어요</div>
-'''.replace('__DEFS__', defs).replace('__QR__', qr)
+<div class="jp">式次第のご案内 ・ QRコードをスキャンしてご確認ください</div>
+<svg class="fl" style="top:271mm;left:50%;margin-left:-6mm;width:12mm;height:12mm"><use href="#flower"/></svg>
+</body></html>'''.replace('__DEFS__', defs).replace('__QR__', qr)
 
 out = os.path.join(ROOT, 'poster'); os.makedirs(out, exist_ok=True)
 hp = os.path.join(out, '_poster.html'); open(hp, 'w', encoding='utf-8').write(HTML)

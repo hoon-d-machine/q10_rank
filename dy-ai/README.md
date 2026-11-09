@@ -14,6 +14,7 @@ Cloudflare Workers(정적 자산)로 서빙하는 개인용 사이트. 지금은
 - `public/data.html` — 데이터 (`/data`). 원본 표 4개(일자·품목별 거래 / 일자별 거래 / 일자별 페이지뷰 / 상품코드)를 기간·검색·페이지로 보고, 엑셀(xlsx)로 내려받기(이 표 / 표 4개). 품목별 거래에는 상품코드표의 제품명·라인·카테고리가 붙음. 화면은 `assets/data.js`, 엑셀은 `assets/xlsx-writer.js`
 - `supabase/data_view.sql` — 데이터 화면용 읽기 함수 `dy_data_page` (표는 계속 잠금, 로그인 사용자만 호출). Supabase SQL Editor 에서 한 번 실행
 - `supabase/dashboard.sql` — 대시보드용 집계 함수(`dy_dash_agg`, `dy_dash_bounds`, 표는 계속 잠금) + `dy_dashboards` 표. Supabase SQL Editor 에서 한 번 실행
+- `supabase/rank_log.sql` — Q10 랭킹 기록 표 `q10_rank_log`(루트 `data/*.csv` 3개와 같은 내용)와 이니스프리 일별 요약 뷰 `inni_rank_daily`. SQL Editor 에서 실행한 뒤 `dashboard.sql` 을 다시 실행(대시보드의 'rank' 소스). 처음 한 번 `python rank_log_db.py --all` 로 CSV 전체를 올리고, 그 뒤로는 일 수집(`csv_logger.py`)이 그날 분량을 올림(Actions secret `DY_SUPABASE_URL`·`DY_SUPABASE_KEY`). 대시보드 템플릿 '랭킹·판매 대조', 지표 그룹 '랭킹(이니스프리)'
 - `src/worker.js` — `/api/*` 만 처리하는 Worker (구글 시트 프록시, Supabase 로그인 토큰 확인, raw_data·raw_trade·raw_conversion 탭만 허용). secret: `GOOGLE_SA_JSON`, `SHEET_ID` (`npx wrangler secret put ...`)
 - `supabase/web_collector.sql` — 로그 테이블(`dy_collect_runs`, `dy_collect_steps`) + `inni_replace_*` 함수 웹 호출 허용. Supabase SQL Editor 에서 한 번 실행
 

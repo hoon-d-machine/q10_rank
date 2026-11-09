@@ -6,7 +6,7 @@
 
 -- ============================================================
 -- 1) 집계 함수
---   p_source : 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'goods'(inni_sales_goods)
+--   p_source : 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'goods'(inni_sales_goods) | 'rank'(inni_rank_daily 뷰)
 --   p_grain  : 'day' | 'week' | 'month' | 'quarter' | 'year' | 'all'
 --   p_cols   : 합계를 낼 숫자 열 (표의 숫자 열만 허용)
 --   p_dim    : null | 'weekday' | 'brand_nm' | 'gd_no'  (brand_nm·gd_no 는 goods 만)
@@ -31,6 +31,7 @@ begin
     when 'sales' then tbl := 'inni_sales_daily'; dcol := 'base_start_dt';
     when 'pageview' then tbl := 'inni_pageview_daily'; dcol := 'base_start_dt';
     when 'goods' then tbl := 'inni_sales_goods'; dcol := 'base_date';
+    when 'rank' then tbl := 'inni_rank_daily'; dcol := 'rank_date';   -- supabase/rank_log.sql 먼저 실행
     else raise exception 'bad source %', p_source;
   end case;
 
@@ -91,7 +92,8 @@ as $$
   select case when auth.uid() is null then null else jsonb_build_object(
     'sales', (select jsonb_build_object('min', min(base_start_dt), 'max', max(base_start_dt)) from inni_sales_daily),
     'pageview', (select jsonb_build_object('min', min(base_start_dt), 'max', max(base_start_dt)) from inni_pageview_daily),
-    'goods', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_sales_goods)
+    'goods', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_sales_goods),
+    'rank', (select jsonb_build_object('min', min(rank_date), 'max', max(rank_date)) from inni_rank_daily)
   ) end;
 $$;
 revoke all on function dy_dash_bounds() from public, anon;

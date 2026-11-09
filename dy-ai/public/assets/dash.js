@@ -25,7 +25,7 @@
   };
   var WIDTHS = [[2, "1/3"], [3, "1/2"], [4, "2/3"], [6, "전체"]];
   var CAL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 8.5h14M7 2.8v3.4M13 2.8v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-  var INVERSE = { cancel_amt: 1, cancels: 1, cancel_qty: 1, cancel_rate: 1, g_cancel_amt: 1, g_cancel_qty: 1 };
+  var INVERSE = { cancel_amt: 1, cancels: 1, cancel_qty: 1, cancel_rate: 1, g_cancel_amt: 1, g_cancel_qty: 1, r_d_avg: 1, r_w_avg: 1, r_m_avg: 1 };
 
   // ============================================================
   // 템플릿
@@ -77,6 +77,12 @@
         W("mix", { metrics: ["pv_main", "pv_search", "pv_bestseller", "pv_mn_megawari", "pv_deal", "pv_category", "pv_sellershop", "pv_external", "pv_directurl"], compare: "prev", title: "유입 경로별 PV" }),
         W("mix", { metrics: ["pv_ext_google", "pv_ext_yahoo", "pv_ext_instagram", "pv_ext_twitter", "pv_ext_line", "pv_ext_facebook", "pv_ext_kakaku"], compare: "prev", title: "외부 유입 PV" }),
         W("weekday", { metric: "cvr", w: 6, title: "요일별 구매전환율" })
+      ] } },
+      { key: "t-rank", name: "랭킹·판매 대조", config: { range: { preset: "last90" }, widgets: [
+        W("kpi", { metric: "r_d_cnt", compare: "prev", title: "일간 베스트셀러 진입 상품수(합계)" }), W("kpi", { metric: "r_d_avg", compare: "prev" }), W("kpi", { metric: "net_sales", compare: "prev" }),
+        W("trend", { metric: "net_sales", metric2: "r_d_cnt", grain: "week", compare: "none", chart: "line", title: "매출 vs 일간 랭킹 진입 상품수 (주별)" }),
+        W("trend", { metric: "net_sales", metric2: "r_w_top50", grain: "week", compare: "none", chart: "line", title: "매출 vs 주간 랭킹 50위 안 상품수" }),
+        W("table", { metrics: ["net_sales", "orders", "r_d_cnt", "r_d_top50", "r_d_avg", "r_w_cnt", "r_w_avg", "r_m_cnt"], grain: "month", title: "월별 매출과 랭킹" })
       ] } },
       { key: "t-goods", name: "상품 분석", config: { range: { preset: "last30" }, widgets: [
         W("kpi", { metric: "g_net_amt", compare: "prev" }), W("kpi", { metric: "g_net_qty", compare: "prev" }), W("kpi", { metric: "g_unit_price", compare: "prev" }),
@@ -692,7 +698,7 @@
     if (allowNone) { var o0 = el("option", null, "없음"); o0.value = ""; sel.appendChild(o0); }
     var groups = {};
     Object.keys(M).forEach(function (k) {
-      if (filter && !filter(M[k])) return;
+      if (M[k].hidden || (filter && !filter(M[k]))) return;
       var g = M[k].group;
       if (!groups[g]) { groups[g] = el("optgroup"); groups[g].label = g; sel.appendChild(groups[g]); }
       var o = el("option", null, M[k].label); o.value = k; groups[g].appendChild(o);
@@ -765,6 +771,7 @@
       multi.innerHTML = "";
       var groups = {};
       Object.keys(M).forEach(function (k) {
+        if (M[k].hidden) return;
         var g = M[k].group;
         if (!groups[g]) { var d = el("details"); d.appendChild(el("summary", null, g)); groups[g] = el("div", "dash-checks"); d.appendChild(groups[g]); multi.appendChild(d); if (selected.some(function (s) { return M[s] && M[s].group === g; })) d.open = true; }
         var l = el("label"); var cb = el("input"); cb.type = "checkbox"; cb.value = k; cb.checked = selected.indexOf(k) >= 0;
@@ -853,7 +860,7 @@
   function renderBounds() {
     var parts = [];
     D.loadBounds().then(function (bd) {
-      ["sales", "pageview", "goods"].forEach(function (k) {
+      ["sales", "pageview", "goods", "rank"].forEach(function (k) {
         if (bd[k] && bd[k].min) parts.push(D.SRC_LABEL[k] + " " + bd[k].min + " ~ " + bd[k].max);
       });
       $(".js-bounds").textContent = parts.length ? "데이터: " + parts.join(" · ") : "DB 에 아직 데이터가 없어요. 수집기에서 Q10 수집을 한 번 하면 채워져요.";

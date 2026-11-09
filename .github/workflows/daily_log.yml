@@ -17,6 +17,9 @@ jobs:
         run: pip install requests beautifulsoup4 pandas openpyxl
         
       - name: Run CSV Logger
+        env:
+          DY_SUPABASE_URL: ${{ secrets.DY_SUPABASE_URL }}
+          DY_SUPABASE_KEY: ${{ secrets.DY_SUPABASE_KEY }}
         run: python csv_logger.py
         
       - name: Commit and Push

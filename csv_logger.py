@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 import os
 import time
+import rank_log_db
 
 # 1. 전역 설정
 HEADERS = {
@@ -33,6 +34,11 @@ def update_csv(df, file_name):
         updated_df = df
     
     updated_df.to_csv(file_path, index=False, encoding='utf-8-sig')
+    # 방금 수집한 분량만 DB(q10_rank_log)에도 반영. DB 문제로 CSV 수집이 실패하지 않게 경고만 남긴다.
+    try:
+        rank_log_db.sync_frames(df)
+    except Exception as e:
+        print(f"⚠️ 랭킹 DB 반영 실패(CSV는 저장됨): {type(e).__name__}: {e}")
 
 def get_daily_bestsellers(current_date): # 날짜를 인자로 받음
     url = 'https://m.qoo10.jp/gmkt.inc/BestSellers/?g=2'

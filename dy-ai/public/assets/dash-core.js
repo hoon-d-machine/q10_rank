@@ -10,7 +10,7 @@
   // fmt: int | money | pct | dec
   // ============================================================
   var METRICS = {};
-  function base(key, label, src, col, fmt, group) { METRICS[key] = { key: key, label: label, src: src, col: col, fmt: fmt || "int", group: group }; }
+  function base(key, label, src, col, fmt, group, hidden) { METRICS[key] = { key: key, label: label, src: src, col: col, fmt: fmt || "int", group: group, hidden: !!hidden }; }
   function ratio(key, label, num, den, fmt, group, scale) { METRICS[key] = { key: key, label: label, num: num, den: den, fmt: fmt, group: group, scale: scale || 1 }; }
 
   // 판매 (일자별 거래)
@@ -57,7 +57,18 @@
   base("g_cancel_qty", "상품 취소수량", "goods", "cancel_cnt", "int", "상품별");
   ratio("g_unit_price", "상품 평균 단가", "g_net_amt", "g_net_qty", "money", "상품별");
 
-  var SRC_LABEL = { sales: "일자별 거래", pageview: "일자별 페이지뷰", goods: "일자·상품별 거래" };
+  // 랭킹 (data/*.csv → q10_rank_log → inni_rank_daily 뷰): 이니스프리(イニスフリー) 상품의 순위 요약
+  // 주간·월간은 수집한 날에만 값이 있어 주·월 단위로 볼 때 의미가 있다. 평균 순위는 낮을수록 좋음.
+  [["d", "일간 베스트셀러(200위)", "d"], ["w", "주간 전체 랭킹", "w"], ["m", "월간 전체 랭킹", "m"]].forEach(function (x) {
+    var p = x[2], g = "랭킹(이니스프리)";
+    base("r_" + p + "_cnt", x[1] + " 진입 상품수", "rank", p + "_cnt", "int", g);
+    base("r_" + p + "_top10", x[1] + " 10위 안 상품수", "rank", p + "_top10", "int", g);
+    base("r_" + p + "_top50", x[1] + " 50위 안 상품수", "rank", p + "_top50", "int", g);
+    base("r_" + p + "_ranksum", x[1] + " 순위 합계", "rank", p + "_rank_sum", "int", g, true);
+    ratio("r_" + p + "_avg", x[1] + " 평균 순위", "r_" + p + "_ranksum", "r_" + p + "_cnt", "dec", g);
+  });
+
+  var SRC_LABEL = { sales: "일자별 거래", pageview: "일자별 페이지뷰", goods: "일자·상품별 거래", rank: "랭킹 기록" };
 
   function srcOf(key) { // 지표가 쓰는 원본 표들
     var m = METRICS[key];
@@ -214,12 +225,12 @@
   // 기준일: 매출 데이터 마지막 날 (없으면 어제)
   function anchor() {
     var b = bounds || {};
-    var max = (b.sales && b.sales.max) || (b.pageview && b.pageview.max) || (b.goods && b.goods.max);
+    var max = (b.sales && b.sales.max) || (b.pageview && b.pageview.max) || (b.goods && b.goods.max) || (b.rank && b.rank.max);
     return max || ymd(addDays(new Date(), -1));
   }
   function minDate() {
     var b = bounds || {};
-    var mins = ["sales", "pageview", "goods"].map(function (k) { return b[k] && b[k].min; }).filter(Boolean).sort();
+    var mins = ["sales", "pageview", "goods", "rank"].map(function (k) { return b[k] && b[k].min; }).filter(Boolean).sort();
     return mins[0] || null;
   }
 

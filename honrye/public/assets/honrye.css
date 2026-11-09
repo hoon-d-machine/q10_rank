@@ -9,6 +9,8 @@
   /* 인쇄물/한지 결 (회색 노이즈를 multiply) */
   --fiber: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='.8 .35' numOctaves='3' seed='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
+/* 다크모드 사용자도 항상 밝은 화면으로: 브라우저가 어두운 화면을 강제로 입히지 못하게 선언 */
+:root { color-scheme: only light; }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {

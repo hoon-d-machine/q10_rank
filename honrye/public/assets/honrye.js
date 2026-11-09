@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  var LANGS = ["ko", "en", "ja"];
+  var LANGS = ["ko", "ja"];
   var UI = {
     docTitle: { ko: "전통 혼례 식순", en: "Traditional Wedding Order", ja: "伝統婚礼 式次第" },
     title: { ko: ["전통 혼례", "식순"], en: ["Traditional", "Wedding Order"], ja: ["伝統婚礼", "式次第"] },
@@ -61,7 +61,7 @@
     if (LANGS.indexOf(q) >= 0) return q;
     try { var s = localStorage.getItem("honrye.lang"); if (LANGS.indexOf(s) >= 0) return s; } catch (e) {}
     var n = (navigator.language || "").slice(0, 2).toLowerCase();
-    return n === "ja" ? "ja" : n === "en" ? "en" : "ko";
+    return n === "ja" ? "ja" : "ko";
   }
   var lang = initialLang();
   var cached = preview ? null : window.HonryeStore.cacheGet(slug);

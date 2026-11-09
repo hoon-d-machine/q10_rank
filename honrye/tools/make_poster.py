@@ -14,7 +14,7 @@ qr = re.sub(r'width="[^"]*" height="[^"]*"', 'width="100%" height="100%"', qr, c
 qr = qr.replace('<svg ', '<svg shape-rendering="crispEdges" ', 1)
 
 HTML = '''<!doctype html><html lang="ko"><meta charset="utf-8">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;800&family=Noto+Serif+JP:wght@600&family=Hahmlet:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;800&family=Noto+Serif+JP:wght@600&family=Gowun+Batang:wght@700&display=swap" rel="stylesheet">
 <style>
 @page { size: A4; margin: 0 }
 * { box-sizing: border-box }
@@ -26,27 +26,31 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 .frame::after { content: ""; position: absolute; inset: 2.2mm; border: .3mm solid rgba(251,250,243,.7); border-radius: 2mm }
 .cloud { position: absolute }
 .fl { position: absolute }
-.title { position: absolute; top: 52mm; left: 0; right: 0; text-align: center }
+.title { position: absolute; top: 49mm; left: 0; right: 0; text-align: center }
 .title small { display: block; font: 700 4.4mm/1 "Noto Serif KR", serif; letter-spacing: 1.4mm; color: #7b1e2b; margin-bottom: 7mm }
-.title h1 { margin: 0; font: 900 31mm/1.05 Hahmlet, "Noto Serif KR", serif; letter-spacing: 2mm; color: #e8661c; text-shadow: 1.2mm 1.2mm 0 rgba(123,30,43,.35) }
-.jt { margin: 4mm 0 0; font: 600 5.2mm/1 "Noto Serif JP", serif; letter-spacing: 1.6mm; color: #1b4478 }
-.rule { position: absolute; top: 102mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
+.title h1 { margin: 0; font: 700 35mm/1.0 'Gowun Batang', 'Noto Serif KR', serif; letter-spacing: 0; color: #e8661c; -webkit-text-stroke: 1.5mm #e8661c; paint-order: stroke fill; text-shadow: 1.3mm 1.3mm 0 #7b1e2b, .5mm .5mm 0 #7b1e2b }
+.jt { margin: 7mm 0 0; font: 600 5.2mm/1 "Noto Serif JP", serif; letter-spacing: 1.6mm; color: #1b4478 }
+.rule { position: absolute; top: 135mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
 .rule i { display: block; width: 38mm; height: .6mm; background: #fbfaf3; border-radius: 1mm }
 .rule b { display: block; width: 2.6mm; height: 2.6mm; background: #fbfaf3; transform: rotate(45deg) }
-.qrbox { position: absolute; top: 128mm; left: 50%; transform: translateX(-50%); width: 104mm; height: 104mm; padding: 6mm; background: #fffdf4; border-radius: 3mm;
+.qrbox { position: absolute; top: 142mm; left: 50%; transform: translateX(-50%); width: 92mm; height: 92mm; padding: 5mm; background: #fffdf4; border-radius: 3mm;
   box-shadow: 0 0 0 1.2mm #7b1e2b, 0 0 0 2.4mm #fbfaf3, 0 0 0 3.2mm #245c9f }
 .qrbox > svg { width: 100%; height: 100% }
-.cap { position: absolute; top: 247mm; left: 0; right: 0; text-align: center; font: 800 8mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
+.cap { position: absolute; top: 246mm; left: 0; right: 0; text-align: center; font: 800 8mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
 .jp { position: absolute; top: 260mm; left: 0; right: 0; text-align: center; font: 600 3.6mm/1.5 "Noto Serif JP", serif; letter-spacing: .5mm; color: #1b4478 }
 </style>
 <body>__DEFS__
 <div class="frame"></div>
-<svg class="fl" style="top:19mm;left:50%;margin-left:-14mm;width:28mm;height:28mm"><use href="#flower"/></svg>
-<svg class="cloud" style="top:38mm;left:20mm;width:50mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
-<svg class="cloud" style="top:40mm;right:20mm;width:50mm" viewBox="0 0 130 34"><use href="#cloud-b"/></svg>
-<svg class="cloud" style="top:206mm;left:15mm;width:30mm" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
-<svg class="cloud" style="top:212mm;right:15mm;width:30mm;transform:scaleX(-1)" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
-<div class="title"><h1>식순 안내</h1><p class="jt">式次第のご案内</p></div>
+<svg class="fl" viewBox="0 0 120 64" style="top:27mm;left:50%;margin-left:-19mm;width:38mm;height:20mm"><g fill="none" stroke="#fbfaf3" stroke-width="5" stroke-linecap="round"><path d="M12 60a48 48 0 0 1 96 0"/><path d="M30 60a30 30 0 0 1 60 0"/></g><path d="M48 60a12 12 0 0 1 24 0z" fill="#fbfaf3"/></svg>
+<!-- 구름: 참고 포스터처럼 한쪽에 치우치게 흩어 놓는다 (굵은 직선 둘 + 가는 연결선) -->
+<svg class="cloud" style="top:60mm;left:15mm;width:40mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
+<svg class="cloud" style="top:84mm;right:16mm;width:32mm" viewBox="0 0 130 34"><use href="#cloud-b"/></svg>
+<svg class="cloud" style="top:176mm;left:13mm;width:27mm" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
+<svg class="cloud" style="top:190mm;right:14mm;width:30mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
+<svg class="cloud" style="top:200mm;right:18mm;width:24mm" viewBox="0 0 130 34"><use href="#cloud-b"/></svg>
+<svg class="cloud" style="top:268mm;left:18mm;width:40mm" viewBox="0 0 130 34"><use href="#cloud-b"/></svg>
+<svg class="cloud" style="top:270mm;right:20mm;width:34mm" viewBox="0 0 130 49"><use href="#cloud-c"/></svg>
+<div class="title"><h1>식순<br>안내</h1><p class="jt">式 次 第 の ご 案 内</p></div>
 <div class="rule"><i></i><b></b><i></i></div>
 <div class="qrbox">__QR__</div>
 <div class="cap">QR을 스캔하여 확인해주세요</div>

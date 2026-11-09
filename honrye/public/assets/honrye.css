@@ -22,7 +22,7 @@ body::before { /* 인쇄물 질감 */
   background-image: var(--fiber); opacity: .16; mix-blend-mode: multiply;
 }
 button { font: inherit; color: inherit; }
-.poster, .scroll, .gate { position: relative; z-index: 1; }
+.poster, .scroll, .end { position: relative; z-index: 1; }
 
 /* ---------- 포스터 머리 ---------- */
 .poster { overflow: hidden; padding: 84px 20px 40px; text-align: center; max-width: 560px; margin: 0 auto; }
@@ -32,11 +32,11 @@ button { font: inherit; color: inherit; }
 .fl-l { left: -46px; top: 170px; animation-direction: reverse; }
 .fl-r { right: -46px; top: 250px; width: 86px; height: 86px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.cloud { position: absolute; width: 96px; height: auto; animation: drift 9s ease-in-out infinite alternate; }
-.c1 { left: 24px; top: 96px; width: 84px; }
-.c2 { right: 18px; top: 60px; width: 76px; animation-delay: -3s; }
-.c3 { right: 26px; top: 190px; width: 100px; animation-delay: -6s; animation-direction: alternate-reverse; }
-.c4 { left: 34px; top: 238px; width: 68px; animation-delay: -2s; }
+.cloud { position: absolute; width: 96px; height: auto; fill: none; animation: drift 9s ease-in-out infinite alternate; }
+.c1 { left: 26px; top: 100px; width: 92px; }
+.c2 { right: 22px; top: 52px; width: 72px; animation-delay: -3s; }
+.c3 { right: 26px; top: 94px; width: 90px; animation-delay: -6s; animation-direction: alternate-reverse; }
+.c4 { left: 34px; top: 240px; width: 70px; animation-delay: -2s; }
 @keyframes drift { from { transform: translateX(-10px); } to { transform: translateX(14px); } }
 .arch { position: relative; display: block; width: 74px; height: auto; margin: 0 auto 12px; }
 .eyebrow { position: relative; margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: .24em; text-transform: uppercase; color: var(--burg); }
@@ -51,24 +51,15 @@ h1 {
 /* ---------- 두루마리 ---------- */
 .scroll { width: min(100%, 560px); margin: 0 auto; padding: 4px 20px 28px; }
 .rod {
-  /* 한지를 말아 놓은 원통: 위아래로 밝고 어두운 음영 + 양끝 가까이 두른 붉은 끈 */
-  position: relative; z-index: 2; height: 30px; margin: 0 -10px; border-radius: 15px;
+  /* 종이 폭에 딱 맞는 말림: 위아래 음영만 (끝 단면 없음) + 끝 가까이 두른 붉은 끈 */
+  position: relative; z-index: 2; height: 24px; margin: 0; border-radius: 12px;
   background:
-    linear-gradient(90deg, transparent 9.5%, var(--burg) 9.5% 11.2%, transparent 11.2% 88.8%, var(--burg) 88.8% 90.5%, transparent 90.5%),
-    linear-gradient(#cdbd95 0%, #efe4c6 20%, #fdf8e8 42%, #f1e7ca 66%, #c9b88c 100%);
-  box-shadow: 0 7px 14px rgba(40, 70, 100, .32), inset 0 0 0 1px rgba(120, 95, 50, .25);
+    linear-gradient(90deg, transparent 8%, var(--burg) 8% 9.6%, transparent 9.6% 90.4%, var(--burg) 90.4% 92%, transparent 92%),
+    linear-gradient(#cbbb92 0%, #eee3c4 22%, #fdf8e8 46%, #f0e5c6 70%, #c6b589 100%);
+  box-shadow: 0 7px 14px rgba(40, 70, 100, .3);
 }
-.rod::before, .rod::after { /* 말린 종이의 단면(소용돌이) */
-  content: ""; position: absolute; top: 0; bottom: 0; width: 22px; border-radius: 11px / 15px;
-  background:
-    radial-gradient(ellipse 5px 11px at 50% 50%, #8a7650 0 28%, transparent 30%),
-    repeating-radial-gradient(ellipse 11px 15px at 50% 50%, #f3e9cc 0 2px, #b9a77c 2px 3px);
-  box-shadow: inset 0 0 0 1px rgba(120, 95, 50, .45);
-}
-.rod::before { left: 0; }
-.rod::after { right: 0; }
-.rod-top { margin-bottom: -2px; }
-.rod-bottom { margin-top: -2px; }
+.rod-top { margin-bottom: -4px; }
+.rod-bottom { margin-top: -4px; }
 
 .sheet { position: relative; overflow: hidden; background: var(--paper); box-shadow: 0 0 0 1px rgba(80, 60, 30, .35); }
 .js .sheet { height: 0; }
@@ -134,9 +125,13 @@ details[open] .chev { transform: rotate(-135deg) translate(-2px, -1px); }
 .foot p { margin: 0 0 12px; font: 700 16px/1.6 var(--serif); letter-spacing: .06em; color: var(--burg); }
 .foot small { display: block; font-size: 11.5px; line-height: 1.7; color: var(--ink-2); word-break: keep-all; }
 
-/* ---------- 대문 그림 (맨 아래) ---------- */
-.gate { width: 100%; overflow: hidden; margin-top: 8px; }
-.gate svg { display: block; width: min(100%, 560px); height: auto; margin: 0 auto; overflow: visible; }
+
+/* ---------- 맨 아래 마무리: 구름과 꽃 문양 ---------- */
+.end { height: 150px; overflow: hidden; max-width: 560px; margin: 0 auto; }
+.e1 { left: 30px; top: 26px; width: 88px; }
+.e2 { right: 30px; top: 52px; width: 92px; animation-delay: -4s; }
+.fl-bl { left: -36px; bottom: -44px; top: auto; width: 104px; height: 104px; animation-direction: reverse; }
+.fl-br { right: -36px; bottom: -44px; top: auto; left: auto; width: 104px; height: 104px; }
 
 @media (max-width: 380px) {
   .poster { padding: 78px 16px 34px; }

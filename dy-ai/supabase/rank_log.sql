@@ -27,3 +27,13 @@ from q10_rank_log
 where brand like 'イニスフリー%'
 group by rank_date, period, category;
 revoke all on inni_rank_cat from anon, authenticated;
+
+-- 주간 리포트 메일용: 한 구분(daily|weekly|monthly)의 전체 행을 배열로 (서비스 키 전용, 로그인 사용자도 못 부름)
+create or replace function dy_rank_export(p_period text) returns jsonb
+language sql stable security definer set search_path = public
+as $$
+  select coalesce(jsonb_agg(jsonb_build_array(rank_date, category, rank, brand, product_name, price) order by rank_date, category, rank), '[]'::jsonb)
+  from q10_rank_log where period = p_period;
+$$;
+revoke all on function dy_rank_export(text) from public, anon, authenticated;
+grant execute on function dy_rank_export(text) to service_role;

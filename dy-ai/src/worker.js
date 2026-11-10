@@ -9,9 +9,17 @@
  * 모든 요청은 Supabase 로그인 토큰(Authorization: Bearer ...)이 있어야 한다.
  * 쓸 수 있는 탭은 raw_data / raw_trade / raw_conversion 세 개뿐.
  *
- * secret (wrangler secret put): GOOGLE_SA_JSON(서비스 계정 JSON), SHEET_ID
+ * 예약 작업 (wrangler.jsonc 의 triggers.crons, UTC 기준) — 예전 cron-job.org + GitHub Actions 를 대체
+ *   20 15 * * *  (매일 00:20 KST) Q10 랭킹 수집 → DB            (src/rank_collect.js)
+ *   0 0 * * 1    (월요일 09:00 KST) 주간 랭킹 리포트 메일          (src/rank_report.js)
+ * 수동 실행: POST /api/cron/rank?only=daily|weekly|monthly&dry=1, POST /api/cron/report?dry=1  (헤더 x-cron-token = secret CRON_TOKEN)
+ *
+ * secret (wrangler secret put): GOOGLE_SA_JSON(서비스 계정 JSON), SHEET_ID,
+ *   SUPABASE_SERVICE_KEY(랭킹 표 쓰기), CRON_TOKEN(수동 실행), RESEND_API_KEY, RECEIVER_EMAIL(메일)
  * vars (wrangler.jsonc): SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY
  */
+import { collectRank } from "./rank_collect.js";
+import { sendWeeklyReport, sendResend } from "./rank_report.js";
 
 const SHEETS = new Set(["raw_data", "raw_trade", "raw_conversion"]);
 const RANGE_RE = /^[A-Z]{1,3}[1-9][0-9]{0,6}:[A-Z]{1,3}[1-9][0-9]{0,6}$/;
@@ -19,10 +27,14 @@ const COL_RE = /^[A-Z]{1,3}$/;
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets/";
 
 export default {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(runCron(event.cron, env, event.scheduledTime));
+  },
   async fetch(req, env) {
     const url = new URL(req.url);
     if (!url.pathname.startsWith("/api/")) return env.ASSETS.fetch(req);
     try {
+      if (url.pathname.startsWith("/api/cron/")) return await manualCron(req, env, url);
       const user = await checkUser(req, env);
       if (!user) return json({ error: "로그인이 필요해요" }, 401);
       return await route(req, env, url);
@@ -188,4 +200,35 @@ function pemToDer(pem) {
   const out = new Uint8Array(b.length);
   for (let i = 0; i < b.length; i++) out[i] = b.charCodeAt(i);
   return out.buffer;
+}
+
+// ---- 예약 작업 ----
+async function runCron(cron, env, scheduledTime) {
+  try {
+    if (cron === "20 15 * * *") {
+      const r = await collectRank(env, scheduledTime);
+      console.log("랭킹 수집", JSON.stringify(r));
+      if (r.failures.length) await alertFail(env, "랭킹 수집 실패: " + r.failures.map((f) => f.label + " — " + f.error).join(" / "));
+    } else if (cron === "0 0 * * 1") {
+      console.log("주간 리포트", JSON.stringify(await sendWeeklyReport(env, scheduledTime)));
+    } else {
+      console.log("알 수 없는 cron", cron);
+    }
+  } catch (e) {
+    console.log("cron 실패", cron, String((e && e.message) || e));
+    await alertFail(env, String((e && e.message) || e));
+  }
+}
+
+async function alertFail(env, msg) { // 실패를 메일로 알림 (메일 설정이 없으면 로그만)
+  try { await sendResend(env, "⚠️ DY-AI 예약 작업 실패", "<p>" + msg.replace(/[<&]/g, "") + "</p>"); } catch (e) { console.log("알림 메일 실패", String(e)); }
+}
+
+async function manualCron(req, env, url) {
+  const tok = req.headers.get("x-cron-token") || "";
+  if (!env.CRON_TOKEN || tok !== env.CRON_TOKEN || req.method !== "POST") return json({ error: "forbidden" }, 403);
+  const dry = url.searchParams.get("dry") === "1";
+  if (url.pathname === "/api/cron/rank") return json(await collectRank(env, Date.now(), { dry, only: url.searchParams.get("only") || undefined }));
+  if (url.pathname === "/api/cron/report") return json(await sendWeeklyReport(env, Date.now(), { dry }));
+  return json({ error: "not found" }, 404);
 }

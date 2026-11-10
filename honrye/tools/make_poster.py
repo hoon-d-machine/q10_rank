@@ -29,7 +29,7 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 .title { position: absolute; top: 52mm; left: 0; right: 0; text-align: center }
 .title small { display: block; font: 700 4.4mm/1 "Noto Serif KR", serif; letter-spacing: 1.4mm; color: #7b1e2b; margin-bottom: 7mm }
 .title h1 { margin: 0; font: 900 31mm/1.05 Hahmlet, 'Noto Serif KR', serif; letter-spacing: 2mm; color: #e8661c; text-shadow: 1.2mm 1.2mm 0 rgba(123,30,43,.35) }
-.jt { margin: 4mm 0 0; font: 600 5.2mm/1 "Noto Serif JP", serif; letter-spacing: 1.6mm; color: #1b4478 }
+.jt { margin: 4mm 0 0; font: 700 9mm/1 "Noto Serif JP", serif; letter-spacing: 2.4mm; color: #1b4478 }
 .rule { position: absolute; top: 106mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
 .rule i { display: block; width: 38mm; height: .6mm; background: #fbfaf3; border-radius: 1mm }
 .rule b { display: block; width: 2.6mm; height: 2.6mm; background: #fbfaf3; transform: rotate(45deg) }
@@ -37,7 +37,7 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
   box-shadow: 0 0 0 1.2mm #7b1e2b, 0 0 0 2.4mm #fbfaf3, 0 0 0 3.2mm #245c9f }
 .qrbox > svg { width: 100%; height: 100% }
 .cap { position: absolute; top: 227mm; left: 0; right: 0; text-align: center; font: 800 8mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
-.jp { position: absolute; top: 240mm; left: 0; right: 0; text-align: center; font: 700 5.6mm/1.45 "Noto Serif JP", serif; letter-spacing: .6mm; color: #1b4478 }
+.jp { position: absolute; top: 241mm; left: 0; right: 0; text-align: center; font: 700 7mm/1.4 "Noto Serif JP", serif; letter-spacing: .4mm; color: #1b4478 }
 .who { position: absolute; top: 264mm; left: 0; right: 0; text-align: center; font: 800 6.6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #7b1e2b }
 .who i { font-style: normal; color: #e8661c; margin: 0 2.4mm }
 .when { position: absolute; top: 274mm; left: 0; right: 0; text-align: center; font: 700 5mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #1b4478 }
@@ -56,7 +56,7 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 <div class="rule"><i></i><b></b><i></i></div>
 <div class="qrbox">__QR__</div>
 <div class="cap">QR을 스캔하여 확인해주세요</div>
-<div class="jp">QRコードをスキャンして<br>ご確認ください</div>
+<div class="jp">QRコードをスキャンしてご確認ください</div>
 <div class="who">신랑 유태훈<i>♥</i>신부 김도연</div>
 <div class="when">2026. 11. 21 (토) 오후 1시</div>
 </body></html>'''.replace('__DEFS__', defs).replace('__QR__', qr)

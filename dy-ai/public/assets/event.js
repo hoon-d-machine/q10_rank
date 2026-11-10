@@ -54,8 +54,11 @@
   function draw(sel, data, layout) {
     var node = $(sel);
     if (!data.length) { Plotly.purge(node); node.innerHTML = '<p class="ev-empty">보여 줄 데이터가 없어요. 필터를 바꿔 보세요.</p>'; return; }
-    node.innerHTML = "";
-    Plotly.react(node, data, layout, { responsive: true, displaylogo: false });
+    if (node.querySelector(".ev-empty")) { Plotly.purge(node); node.innerHTML = ""; }   // 안내 문구만 있던 칸이면 비우고 새로 그림 (그려진 그래프의 DOM 은 건드리지 않음)
+    try {
+      var pr = Plotly.react(node, data, layout, { responsive: true, displaylogo: false });
+      if (pr && pr.catch) pr.catch(function (e) { console.error("Plotly 오류", e); node.innerHTML = '<p class="ev-empty">그래프를 그리지 못했어요: ' + String((e && e.message) || e) + "</p>"; });
+    } catch (e) { console.error("Plotly 오류", e); node.innerHTML = '<p class="ev-empty">그래프를 그리지 못했어요: ' + String((e && e.message) || e) + "</p>"; }
   }
 
   // ---- 필터 적용 ----

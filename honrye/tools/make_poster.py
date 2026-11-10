@@ -26,21 +26,21 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 .frame::after { content: ""; position: absolute; inset: 2.2mm; border: .3mm solid rgba(251,250,243,.7); border-radius: 2mm }
 .cloud { position: absolute }
 .fl { position: absolute }
-.title { position: absolute; top: 52mm; left: 0; right: 0; text-align: center }
+.title { position: absolute; top: 50mm; left: 0; right: 0; text-align: center }
 .title small { display: block; font: 700 4.4mm/1 "Noto Serif KR", serif; letter-spacing: 1.4mm; color: #7b1e2b; margin-bottom: 7mm }
-.title h1 { margin: 0; font: 900 31mm/1.05 Hahmlet, 'Noto Serif KR', serif; letter-spacing: 2mm; color: #e8661c; text-shadow: 1.2mm 1.2mm 0 rgba(123,30,43,.35) }
-.jt { margin: 4mm 0 0; font: 700 9mm/1 "Noto Serif JP", serif; letter-spacing: 2.4mm; color: #1b4478 }
-.rule { position: absolute; top: 106mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
+.title h1 { margin: 0; font: 900 27mm/1.05 Hahmlet, 'Noto Serif KR', serif; letter-spacing: 2mm; color: #e8661c; text-shadow: 1.2mm 1.2mm 0 rgba(123,30,43,.35) }
+.jt { margin: 4mm 0 0; font: 700 7.8mm/1 "Noto Serif JP", serif; letter-spacing: 2.2mm; color: #1b4478 }
+.rule { position: absolute; top: 103mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
 .rule i { display: block; width: 38mm; height: .6mm; background: #fbfaf3; border-radius: 1mm }
 .rule b { display: block; width: 2.6mm; height: 2.6mm; background: #fbfaf3; transform: rotate(45deg) }
-.qrbox { position: absolute; top: 122mm; left: 50%; transform: translateX(-50%); width: 96mm; height: 96mm; padding: 6mm; background: #fffdf4; border-radius: 3mm;
+.qrbox { position: absolute; top: 116mm; left: 50%; transform: translateX(-50%); width: 84mm; height: 84mm; padding: 6mm; background: #fffdf4; border-radius: 3mm;
   box-shadow: 0 0 0 1.2mm #7b1e2b, 0 0 0 2.4mm #fbfaf3, 0 0 0 3.2mm #245c9f }
 .qrbox > svg { width: 100%; height: 100% }
-.cap { position: absolute; top: 227mm; left: 0; right: 0; text-align: center; font: 800 8mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
-.jp { position: absolute; top: 241mm; left: 0; right: 0; text-align: center; font: 700 7mm/1.4 "Noto Serif JP", serif; letter-spacing: .4mm; color: #1b4478 }
-.who { position: absolute; top: 264mm; left: 0; right: 0; text-align: center; font: 800 6.6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #7b1e2b }
+.cap { position: absolute; top: 215mm; left: 0; right: 0; text-align: center; font: 800 7mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
+.jp { position: absolute; top: 226mm; left: 0; right: 0; text-align: center; font: 700 6.1mm/1.4 "Noto Serif JP", serif; letter-spacing: .4mm; color: #1b4478 }
+.who { position: absolute; top: 252mm; left: 0; right: 0; text-align: center; font: 800 6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #7b1e2b }
 .who i { font-style: normal; color: #e8661c; margin: 0 2.4mm }
-.when { position: absolute; top: 274mm; left: 0; right: 0; text-align: center; font: 700 5mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #1b4478 }
+.when { position: absolute; top: 263mm; left: 0; right: 0; text-align: center; font: 700 4.6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #1b4478 }
 </style>
 <body>__DEFS__
 <div class="frame"></div>

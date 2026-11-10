@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DY-AI 행사 랭킹</title>
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light dark">
+<script src="/assets/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;500;600;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.css">
+<link rel="stylesheet" href="/assets/dy.css">
+<link rel="stylesheet" href="/assets/main.css">
+<link rel="stylesheet" href="/assets/themes.css">
+<link rel="stylesheet" href="/assets/help.css">
+<link rel="stylesheet" href="/assets/logs.css">
+<link rel="stylesheet" href="/assets/dash.css">
+<link rel="stylesheet" href="/assets/data.css">
+<link rel="stylesheet" href="/assets/event.css">
+</head>
+<body class="logs-body data-body event-body">
+
+<!-- 탑바: 왼쪽 로고 + 메뉴(수집기·대시보드·로그), 오른쪽 테마 선택 + 로그아웃 -->
+<header class="topbar">
+  <a class="brand" href="/main" aria-label="DY-AI 메인으로"><span data-logo="flat"></span></a>
+  <nav class="top-nav" aria-label="메뉴">
+    <a href="/main">수집기</a>
+    <a href="/dashboard">대시보드</a>
+    <a href="/event" aria-current="page">행사 랭킹</a>
+    <a href="/data">데이터</a>
+    <a href="/logs">로그</a>
+  </nav>
+  <div class="top-actions">
+    <div class="theme-pick" data-theme-pick>
+      <button class="theme-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="theme-menu" title="화면 테마 바꾸기">
+        <i class="sw sw-rug" aria-hidden="true"></i><span class="theme-label">테마</span><span class="theme-name">러그</span>
+        <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="theme-menu" id="theme-menu" role="menu" aria-label="화면 테마" hidden>
+        <button type="button" role="menuitemradio" aria-checked="true" data-theme-val="rug"><i class="sw sw-rug" aria-hidden="true"></i><span><b>러그</b><small>알록달록 털실 러그</small></span></button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="nature"><i class="sw sw-nature" aria-hidden="true"></i><span><b>풀잎</b><small>녹차 잎·돌·햇살, 자연 무드</small></span></button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-theme-val="dark"><i class="sw sw-dark" aria-hidden="true"></i><span><b>다크</b><small>해 질 녘 사진, 에디토리얼</small></span></button>
+        <p class="theme-hint">고른 테마는 다음 접속에도 그대로예요</p>
+      </div>
+    </div>
+    <button class="logout" id="logout" type="button">로그아웃</button>
+  </div>
+</header>
+
+<main class="data-page">
+  <div class="data-inner ev-inner">
+    <header class="logs-head">
+      <p class="logs-eyebrow">Mega-wari ranking</p>
+      <h1>행사 랭킹</h1>
+      <p class="logs-lead">Qoo10 메가와리 행사의 누적건수·누적금액 랭킹 추이를 보고, 브랜드·상품·카테고리별로 비교해요. 수집은 매일 밤 11시(한국 시간)에 자동으로 돌아요.</p>
+    </header>
+
+    <section class="ev-card ev-collect">
+      <h2>수집 설정</h2>
+      <div class="ev-collect-row">
+        <label>행사 번호(SID) <input class="js-sid" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="예: 162288"></label>
+        <label class="ev-check"><input class="js-enabled" type="checkbox"> 수집 켜기</label>
+        <button class="logs-btn js-save-cfg" type="button">저장</button>
+        <button class="logs-btn js-run-now" type="button">지금 한 번 수집</button>
+        <span class="ev-note js-cfg-note"></span>
+      </div>
+      <p class="ev-hint">행사 기간에만 켜 두세요. 행사가 아닌 날에 켜 두면 수집을 건너뛰어요(오류 아님). 같은 행사를 3시간 안에 두 번 수집하지는 않아요.</p>
+    </section>
+
+    <section class="ev-card ev-filters">
+      <div class="ev-grid">
+        <label>행사(SID)<select class="js-event"></select></label>
+        <label>랭킹 기준<select class="js-rtype"></select></label>
+        <label>타겟(연령/카테고리)<select class="js-cat"></select></label>
+        <label>조회 기간<button class="dash-datebtn js-range" type="button" aria-haspopup="dialog"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="4.5" width="14" height="12.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 8.5h14M7 2.8v3.4M13 2.8v3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span></span></button></label>
+        <label>상위 N개만 보기<select class="js-topn"></select></label>
+      </div>
+      <div class="ev-brandbar">
+        <details class="ev-brands js-brands">
+          <summary><span class="js-brand-sum">브랜드: 전체</span></summary>
+          <div class="ev-brandpanel">
+            <input class="js-brand-q" type="search" placeholder="브랜드 검색" autocomplete="off">
+            <div class="ev-brandlist js-brand-list"></div>
+          </div>
+        </details>
+        <button class="logs-btn js-fav-select" type="button">⭐ 즐겨찾기만 선택</button>
+        <button class="logs-btn js-brand-clear" type="button">선택 해제</button>
+        <details class="ev-favs">
+          <summary>즐겨찾기 관리</summary>
+          <div class="ev-favpanel">
+            <div class="ev-favadd">
+              <select class="js-fav-brand"></select>
+              <input class="js-fav-color" type="color" value="#ff4b4b" aria-label="색상">
+              <button class="logs-btn js-fav-save" type="button">저장/수정</button>
+            </div>
+            <ul class="ev-favlist js-fav-list"></ul>
+          </div>
+        </details>
+        <span class="data-spacer"></span>
+        <button class="logs-btn js-reload" type="button">새로고침</button>
+        <button class="logs-btn js-dl-view" type="button">현재 데이터 CSV</button>
+        <button class="logs-btn js-dl-all" type="button">전체 원본 CSV</button>
+      </div>
+    </section>
+
+    <p class="data-status js-status" role="status"></p>
+
+    <div class="data-tabs ev-tabs js-tabs" role="tablist" aria-label="분석 종류">
+      <button class="data-tab" data-tab="trend" role="tab" aria-selected="true">📈 순위 트렌드</button>
+      <button class="data-tab" data-tab="price" role="tab" aria-selected="false">💰 가격/리뷰 분석</button>
+      <button class="data-tab" data-tab="share" role="tab" aria-selected="false">🔲 카테고리 점유율</button>
+    </div>
+
+    <section class="ev-pane" data-pane="trend">
+      <p class="ev-hint">범례를 <b>클릭</b>하면 그 항목만 보이고, <b>더블 클릭</b>하면 그 항목을 숨겨요. 순위는 숫자가 작을수록 위(1위)예요.</p>
+      <div class="ev-one">
+        <div class="ev-card"><h3 class="js-t-brand">🏢 브랜드 순위</h3><div class="ev-chart js-c-brand"></div></div>
+        <div class="ev-card"><h3 class="js-t-goods">📦 상품 순위</h3><div class="ev-chart js-c-goods"></div></div>
+      </div>
+    </section>
+    <section class="ev-pane" data-pane="price" hidden>
+      <div class="ev-two">
+        <div class="ev-card"><h3>🔵 가격 vs 리뷰</h3><div class="ev-chart js-c-scatter"></div></div>
+        <div class="ev-card"><h3>💰 카테고리별 가격대</h3><div class="ev-chart js-c-box"></div></div>
+      </div>
+    </section>
+    <section class="ev-pane" data-pane="share" hidden>
+      <div class="ev-two">
+        <div class="ev-card"><h3>🔲 카테고리 점유율</h3><div class="ev-chart js-c-tree"></div>
+          <p class="ev-hint">점유율 산정: (101 − 순위)의 합계. 상위권에 오래 머무를수록 면적이 넓어져요.</p></div>
+        <div class="ev-card"><h3>☀️ 세부 계층 구조</h3><div class="ev-chart js-c-sun"></div></div>
+      </div>
+    </section>
+
+    <details class="ev-card ev-raw">
+      <summary>📋 필터링된 데이터 보기 <span class="ev-note js-raw-count"></span></summary>
+      <div class="data-table-wrap"><table class="data-table"><thead><tr><th>일자</th><th>순위</th><th>브랜드</th><th>상품명</th><th>가격</th><th>리뷰</th></tr></thead><tbody class="js-raw"></tbody></table></div>
+    </details>
+  </div>
+</main>
+
+<script src="/assets/dy.js"></script>
+<script src="/assets/help.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="/assets/config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
+<script src="/assets/dy-cal.js"></script>
+<script src="/assets/event.js"></script>
+<script>
+  document.getElementById("logout").addEventListener("click", function () {
+    window.dyAuth.signOut().then(function () { location.replace("/"); });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+/* 행사 랭킹 화면 (data.css·dash.css 위에 얹음) */
+.ev-inner { max-width: 1280px; }
+.ev-card { background: var(--dt-cell, #fff); border-radius: 14px; padding: 16px 18px; margin: 0 0 14px; box-shadow: inset 0 0 0 1px var(--lg-line, rgba(0,0,0,.1)); }
+html[data-theme="nature"] .ev-card, html[data-theme="dark"] .ev-card { border-radius: 0; }
+.ev-card h2 { margin: 0 0 10px; font-size: 15px; }
+.ev-card h3 { margin: 0 0 8px; font-size: 14px; }
+.ev-collect-row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.ev-collect label, .ev-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--lg-muted, #666); }
+.ev-collect input[type="text"], .ev-filters select, .ev-brandpanel input, .ev-favadd select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--lg-line, rgba(0,0,0,.2)); background: transparent; color: inherit; min-width: 150px; }
+.ev-collect .ev-check { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 8px; color: inherit; }
+.ev-note { font-size: 12.5px; color: var(--lg-muted, #666); font-weight: 400; }
+.ev-hint { margin: 8px 0 0; font-size: 12.5px; line-height: 1.6; color: var(--lg-muted, #666); }
+.ev-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.ev-grid .dash-datebtn { width: 100%; justify-content: flex-start; }
+.ev-brandbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.ev-brands, .ev-favs { position: relative; }
+.ev-brands > summary, .ev-favs > summary { list-style: none; cursor: pointer; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--lg-line, rgba(0,0,0,.2)); font-size: 14px; }
+.ev-brands > summary::-webkit-details-marker, .ev-favs > summary::-webkit-details-marker { display: none; }
+.ev-brandpanel, .ev-favpanel { position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: 300px; max-height: 360px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: var(--dt-cell, #fff); box-shadow: 0 8px 28px rgba(0,0,0,.25), inset 0 0 0 1px var(--lg-line, rgba(0,0,0,.15)); }
+.ev-brandpanel input { min-width: 0; width: 100%; box-sizing: border-box; }
+.ev-brandlist { overflow: auto; display: flex; flex-direction: column; }
+.ev-brandrow { display: flex; align-items: center; gap: 8px; padding: 5px 4px; font-size: 13.5px; cursor: pointer; }
+.ev-brandrow:hover { background: var(--lg-line-2, rgba(0,0,0,.05)); }
+.ev-dot { width: 12px; height: 12px; border-radius: 3px; flex: none; background: transparent; box-shadow: inset 0 0 0 1px var(--lg-line, rgba(0,0,0,.2)); }
+.ev-favadd { display: flex; gap: 6px; align-items: center; }
+.ev-favadd select { min-width: 0; flex: 1; }
+.ev-favadd input[type="color"] { width: 38px; height: 34px; padding: 0; border: 0; background: none; }
+.ev-favlist { list-style: none; margin: 0; padding: 0; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+.ev-favlist li { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.ev-favlist li span { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.ev-one { display: grid; gap: 14px; }
+.ev-one .ev-card { margin: 0; min-width: 0; }
+.ev-one .ev-chart { min-height: 520px; }
+.ev-status:empty, .data-status.js-status:empty { display: none; }
+.ev-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ev-two .ev-card { margin: 0; min-width: 0; }
+.ev-chart { min-height: 420px; }
+.ev-empty { margin: 40px 0; text-align: center; font-size: 13.5px; color: var(--lg-muted, #666); }
+.ev-raw > summary { cursor: pointer; font-size: 14px; }
+.ev-raw .data-table-wrap { margin-top: 12px; max-height: 480px; overflow: auto; }
+@media (max-width: 900px) { .ev-two { grid-template-columns: 1fr; } .ev-brandpanel, .ev-favpanel { width: min(300px, 86vw); } }

@@ -6,10 +6,10 @@
 
 -- ============================================================
 -- 1) 집계 함수
---   p_source : 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'goods'(inni_sales_goods) | 'rank'(inni_rank_daily 뷰)
+--   p_source : 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'goods'(inni_sales_goods) | 'rank_d'·'rank_w'·'rank_m'(inni_rank_cat 뷰의 일간·주간·월간)
 --   p_grain  : 'day' | 'week' | 'month' | 'quarter' | 'year' | 'all'
 --   p_cols   : 합계를 낼 숫자 열 (표의 숫자 열만 허용)
---   p_dim    : null | 'weekday' | 'brand_nm' | 'gd_no'  (brand_nm·gd_no 는 goods 만)
+--   p_dim    : null | 'weekday' | 'brand_nm' | 'gd_no' | 'category'  (brand_nm·gd_no 는 goods 만, category 는 rank_* 만)
 --   p_top    : p_dim 이 있을 때 기간 전체 p_top_col 합계 상위 N 개만
 -- 결과: [{ "p": 기간 시작일, "d": 묶음 값, "l": 표시 이름, "n": 날짜 수, "<열>": 합계, ... }]
 -- ============================================================
@@ -21,7 +21,7 @@ language plpgsql stable security definer set search_path = public
 as $$
 declare
   tbl text; dcol text; allowed text[]; c text;
-  pexpr text; dexpr text; lexpr text; sums text; topw text := ''; q text; res jsonb;
+  pexpr text; dexpr text; lexpr text; sums text; topw text := ''; extra text := ''; q text; res jsonb;
 begin
   if auth.uid() is null then raise exception 'login required'; end if;
   if p_from is null or p_to is null or p_to < p_from then raise exception 'bad range'; end if;
@@ -31,7 +31,9 @@ begin
     when 'sales' then tbl := 'inni_sales_daily'; dcol := 'base_start_dt';
     when 'pageview' then tbl := 'inni_pageview_daily'; dcol := 'base_start_dt';
     when 'goods' then tbl := 'inni_sales_goods'; dcol := 'base_date';
-    when 'rank' then tbl := 'inni_rank_daily'; dcol := 'rank_date';   -- supabase/rank_log.sql 먼저 실행
+    when 'rank_d' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''daily''';     -- supabase/rank_log.sql 먼저 실행
+    when 'rank_w' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''weekly''';
+    when 'rank_m' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''monthly''';
     else raise exception 'bad source %', p_source;
   end case;
 
@@ -61,21 +63,22 @@ begin
   elsif p_dim = 'weekday' then dexpr := format('extract(isodow from %I)::int::text', dcol); lexpr := 'null::text';
   elsif p_dim = 'brand_nm' and p_source = 'goods' then dexpr := 'coalesce(brand_nm, ''(없음)'')'; lexpr := 'null::text';
   elsif p_dim = 'gd_no' and p_source = 'goods' then dexpr := 'gd_no'; lexpr := 'max(gd_nm)';
+  elsif p_dim = 'category' and p_source like 'rank\_%' then dexpr := 'category'; lexpr := 'null::text';
   else raise exception 'bad dim %', p_dim;
   end if;
 
   select string_agg(format('sum(%I)::float8 as %I', x, x), ', ') into sums from unnest(p_cols) x;
 
   if p_dim is not null and p_top is not null and p_top > 0 then
-    topw := format(' and %s in (select %s from %I where %I between $1 and $2 group by 1 order by sum(%I) desc nulls last limit %s)',
-      dexpr, dexpr, tbl, dcol, coalesce(p_top_col, p_cols[1]), least(p_top, 200));
+    topw := format(' and %s in (select %s from %I where %I between $1 and $2%s group by 1 order by sum(%I) desc nulls last limit %s)',
+      dexpr, dexpr, tbl, dcol, extra, coalesce(p_top_col, p_cols[1]), least(p_top, 200));
   end if;
 
   q := format(
     'select coalesce(jsonb_agg(to_jsonb(t) order by t.p, t.d), ''[]''::jsonb) from (' ||
-    'select %s as p, %s as d, %s as l, count(distinct %I)::int as n, %s from %I where %I between $1 and $2%s group by 1, 2' ||
+    'select %s as p, %s as d, %s as l, count(distinct %I)::int as n, %s from %I where %I between $1 and $2%s%s group by 1, 2' ||
     ') t',
-    pexpr, dexpr, lexpr, dcol, sums, tbl, dcol, topw);
+    pexpr, dexpr, lexpr, dcol, sums, tbl, dcol, extra, topw);
   execute q into res using p_from, p_to;
   return res;
 end;
@@ -93,7 +96,7 @@ as $$
     'sales', (select jsonb_build_object('min', min(base_start_dt), 'max', max(base_start_dt)) from inni_sales_daily),
     'pageview', (select jsonb_build_object('min', min(base_start_dt), 'max', max(base_start_dt)) from inni_pageview_daily),
     'goods', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_sales_goods),
-    'rank', (select jsonb_build_object('min', min(rank_date), 'max', max(rank_date)) from inni_rank_daily)
+    'rank', (select jsonb_build_object('min', min(rank_date), 'max', max(rank_date)) from q10_rank_log)
   ) end;
 $$;
 revoke all on function dy_dash_bounds() from public, anon;

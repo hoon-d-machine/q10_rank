@@ -57,18 +57,17 @@
   base("g_cancel_qty", "상품 취소수량", "goods", "cancel_cnt", "int", "상품별");
   ratio("g_unit_price", "상품 평균 단가", "g_net_amt", "g_net_qty", "money", "상품별");
 
-  // 랭킹 (data/*.csv → q10_rank_log → inni_rank_daily 뷰): 이니스프리(イニスフリー) 상품의 순위 요약
-  // 주간·월간은 수집한 날에만 값이 있어 주·월 단위로 볼 때 의미가 있다. 평균 순위는 낮을수록 좋음.
-  [["d", "일간 베스트셀러(200위)", "d"], ["w", "주간 랭킹(전 카테고리)", "w"], ["m", "월간 랭킹(전 카테고리)", "m"]].forEach(function (x) {
-    var p = x[2], g = "랭킹(이니스프리)";
-    base("r_" + p + "_cnt", x[1] + " 진입 상품수", "rank", p + "_cnt", "int", g);
-    base("r_" + p + "_top10", x[1] + " 10위 안 상품수", "rank", p + "_top10", "int", g);
-    base("r_" + p + "_top50", x[1] + " 50위 안 상품수", "rank", p + "_top50", "int", g);
-    base("r_" + p + "_ranksum", x[1] + " 순위 합계", "rank", p + "_rank_sum", "int", g, true);
+  // 랭킹 (data/*.csv → q10_rank_log → inni_rank_cat 뷰): 이니스프리(イニスフリー) 상품의 랭킹 진입 수량·평균 순위
+  // 묶음(dim) '랭킹 카테고리'를 고르면 전체·스킨케어·베이스… 카테고리마다 선이 따로 나온다. 묶음 없이 쓰면 카테고리 합계.
+  // 주간·월간은 수집한 날에만 값이 있다. 평균 순위는 낮을수록 좋음.
+  [["d", "일간 베스트셀러"], ["w", "주간 랭킹"], ["m", "월간 랭킹"]].forEach(function (x) {
+    var p = x[0], g = "랭킹(이니스프리)", src = "rank_" + p;
+    base("r_" + p + "_cnt", x[1] + " 진입 수량", src, "cnt", "int", g);
+    base("r_" + p + "_ranksum", x[1] + " 순위 합계", src, "rank_sum", "int", g, true);
     ratio("r_" + p + "_avg", x[1] + " 평균 순위", "r_" + p + "_ranksum", "r_" + p + "_cnt", "dec", g);
   });
 
-  var SRC_LABEL = { sales: "일자별 거래", pageview: "일자별 페이지뷰", goods: "일자·상품별 거래", rank: "랭킹 기록" };
+  var SRC_LABEL = { sales: "일자별 거래", pageview: "일자별 페이지뷰", goods: "일자·상품별 거래", rank: "랭킹 기록", rank_d: "일간 랭킹", rank_w: "주간 랭킹", rank_m: "월간 랭킹" };
 
   function srcOf(key) { // 지표가 쓰는 원본 표들
     var m = METRICS[key];
@@ -277,12 +276,12 @@
     var bk = baseKeys(opt.metrics);
     var bySrc = {};
     bk.forEach(function (k) { var m = METRICS[k]; (bySrc[m.src] = bySrc[m.src] || []).push(k); });
-    var topBase = opt.topMetric ? baseKeys([opt.topMetric]).filter(function (k) { return METRICS[k].src === "goods" || !opt.dim || opt.dim === "weekday"; })[0] : null;
+    var topBase = opt.topMetric ? baseKeys([opt.topMetric]).filter(function (k) { return METRICS[k].src === "goods" || /^rank_/.test(METRICS[k].src) || !opt.dim || opt.dim === "weekday"; })[0] : null;
     var srcs = Object.keys(bySrc);
     return loadBounds().then(function () {
       return Promise.all(srcs.map(function (s) {
         var cols = bySrc[s].map(function (k) { return METRICS[k].col; });
-        var useDim = opt.dim && (opt.dim === "weekday" || s === "goods") ? opt.dim : null;
+        var useDim = opt.dim && (opt.dim === "weekday" || (s === "goods" && opt.dim !== "category") || (opt.dim === "category" && /^rank_/.test(s))) ? opt.dim : null;
         var topCol = opt.top && useDim && useDim !== "weekday" ? (topBase && METRICS[topBase].src === s ? METRICS[topBase].col : cols[0]) : null;
         if (topCol && cols.indexOf(topCol) < 0) cols.push(topCol);
         return agg(s, opt.grain, opt.range, cols, useDim, topCol ? opt.top : null, topCol).then(function (data) { return { src: s, dim: useDim, data: data }; });

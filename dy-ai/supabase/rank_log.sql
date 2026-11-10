@@ -16,32 +16,14 @@ alter table q10_rank_log enable row level security;
 revoke all on q10_rank_log from anon, authenticated;
 create index if not exists q10_rank_log_brand_idx on q10_rank_log (rank_date, brand);
 
--- 이니스프리 브랜드(イニスフリー)의 날짜별 랭킹 요약 → 대시보드 'rank' 소스
---  일간: 데일리 뷰티 200위. 주간·월간: 전체·스킨케어·베이스·세부 카테고리 랭킹을 모두 합쳐 보되,
---  같은 상품이 여러 카테고리에 있으면 한 번만 세고 그 상품의 가장 높은 순위를 쓴다.
---  *_cnt: 순위 안에 든 상품 수, *_top10/50: 최고 순위가 10위·50위 안인 상품 수, *_rank_sum: 상품별 최고 순위의 합(÷cnt = 평균 순위)
---  주간·월간은 수집한 날에만 값이 있어요(다른 날은 0).
-create or replace view inni_rank_daily as
-with b as (
-  select rank_date, period, product_name, min(rank) as best
-  from q10_rank_log
-  where brand like 'イニスフリー%'
-  group by rank_date, period, product_name
-)
-select d.rank_date,
-  count(*) filter (where b.period = 'daily')::bigint as d_cnt,
-  count(*) filter (where b.period = 'daily' and b.best <= 10)::bigint as d_top10,
-  count(*) filter (where b.period = 'daily' and b.best <= 50)::bigint as d_top50,
-  coalesce(sum(b.best) filter (where b.period = 'daily'), 0)::bigint as d_rank_sum,
-  count(*) filter (where b.period = 'weekly')::bigint as w_cnt,
-  count(*) filter (where b.period = 'weekly' and b.best <= 10)::bigint as w_top10,
-  count(*) filter (where b.period = 'weekly' and b.best <= 50)::bigint as w_top50,
-  coalesce(sum(b.best) filter (where b.period = 'weekly'), 0)::bigint as w_rank_sum,
-  count(*) filter (where b.period = 'monthly')::bigint as m_cnt,
-  count(*) filter (where b.period = 'monthly' and b.best <= 10)::bigint as m_top10,
-  count(*) filter (where b.period = 'monthly' and b.best <= 50)::bigint as m_top50,
-  coalesce(sum(b.best) filter (where b.period = 'monthly'), 0)::bigint as m_rank_sum
-from (select distinct rank_date from q10_rank_log) d
-left join b on b.rank_date = d.rank_date
-group by d.rank_date;
-revoke all on inni_rank_daily from anon, authenticated;
+-- 이니스프리 브랜드(イニスフリー)의 날짜·구분·카테고리별 랭킹 요약 → 대시보드 'rank_d/rank_w/rank_m' 소스
+--  cnt: 그 랭킹에 진입한 상품 수(행 수), rank_sum: 그 순위들의 합 (rank_sum ÷ cnt = 평균 순위)
+--  period: daily(데일리 뷰티 200위) | weekly | monthly (카테고리: 전체·스킨케어·스킨케어>화장수·스킨케어>미용액·베이스·베이스>루스파우더·포인트)
+--  주간·월간은 수집한 날에만 행이 있어요.
+drop view if exists inni_rank_daily;
+create or replace view inni_rank_cat as
+select rank_date, period, category, count(*)::bigint as cnt, coalesce(sum(rank), 0)::bigint as rank_sum
+from q10_rank_log
+where brand like 'イニスフリー%'
+group by rank_date, period, category;
+revoke all on inni_rank_cat from anon, authenticated;

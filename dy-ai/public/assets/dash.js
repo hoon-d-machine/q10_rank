@@ -79,10 +79,13 @@
         W("weekday", { metric: "cvr", w: 6, title: "요일별 구매전환율" })
       ] } },
       { key: "t-rank", name: "랭킹·판매 대조", config: { range: { preset: "last90" }, widgets: [
-        W("kpi", { metric: "r_d_cnt", compare: "prev", title: "일간 베스트셀러 진입 상품수(합계)" }), W("kpi", { metric: "r_d_avg", compare: "prev" }), W("kpi", { metric: "net_sales", compare: "prev" }),
-        W("trend", { metric: "net_sales", metric2: "r_d_cnt", grain: "week", compare: "none", chart: "line", title: "매출 vs 일간 랭킹 진입 상품수 (주별)" }),
-        W("trend", { metric: "net_sales", metric2: "r_w_top50", grain: "week", compare: "none", chart: "line", title: "매출 vs 주간 랭킹 50위 안 상품수" }),
-        W("table", { metrics: ["net_sales", "orders", "r_d_cnt", "r_d_top50", "r_d_avg", "r_w_cnt", "r_w_avg", "r_m_cnt"], grain: "month", title: "월별 매출과 랭킹" })
+        W("kpi", { metric: "net_sales", compare: "prev" }), W("kpi", { metric: "r_d_cnt", compare: "prev", title: "일간 베스트셀러 진입 수량(합계)" }), W("kpi", { metric: "r_d_avg", compare: "prev" }),
+        W("trend", { metric: "net_sales", metric2: "r_d_cnt", grain: "week", compare: "none", chart: "line", title: "매출 vs 일간 베스트셀러 진입 수량 (주별)" }),
+        W("trend", { metric: "r_w_cnt", dim: "category", top: 8, grain: "week", chart: "line", w: 3, title: "주간 랭킹 카테고리별 진입 수량" }),
+        W("trend", { metric: "r_w_avg", dim: "category", top: 8, grain: "week", chart: "line", w: 3, title: "주간 랭킹 카테고리별 평균 순위 (낮을수록 좋음)" }),
+        W("trend", { metric: "r_m_cnt", dim: "category", top: 8, grain: "month", chart: "line", w: 3, range: { preset: "last12m" }, title: "월간 랭킹 카테고리별 진입 수량" }),
+        W("trend", { metric: "r_m_avg", dim: "category", top: 8, grain: "month", chart: "line", w: 3, range: { preset: "last12m" }, title: "월간 랭킹 카테고리별 평균 순위 (낮을수록 좋음)" }),
+        W("table", { metrics: ["net_sales", "orders", "r_d_cnt", "r_d_avg", "r_w_cnt", "r_w_avg", "r_m_cnt", "r_m_avg"], grain: "month", title: "월별 매출과 랭킹" })
       ] } },
       { key: "t-goods", name: "상품 분석", config: { range: { preset: "last30" }, widgets: [
         W("kpi", { metric: "g_net_amt", compare: "prev" }), W("kpi", { metric: "g_net_qty", compare: "prev" }), W("kpi", { metric: "g_unit_price", compare: "prev" }),
@@ -303,7 +306,7 @@
     var m = label(w.metric);
     switch (w.type) {
       case "kpi": return m;
-      case "trend": return w.dim ? m + " · " + (w.dim === "brand_nm" ? "브랜드" : "상품") + "별 추이" : m + (w.metric2 ? " · " + label(w.metric2) : "") + " 추이";
+      case "trend": return w.dim ? m + " · " + (w.dim === "brand_nm" ? "브랜드" : w.dim === "category" ? "랭킹 카테고리" : "상품") + "별 추이" : m + (w.metric2 ? " · " + label(w.metric2) : "") + " 추이";
       case "compare": return m + " · " + (w.compare === "yoy" ? "전년 동기" : "직전 기간") + " 비교";
       case "change": return m + " · " + (w.grain === "month" ? "월간" : w.grain === "day" ? "일간" : "주간") + " 변화";
       case "rank": return m + " · " + (w.dim === "gd_no" ? "상품" : "브랜드") + " 상위 " + (w.top || 10);
@@ -410,7 +413,7 @@
           r.keys.forEach(function (key) { var d = key.split("|")[1]; tot[d] = (tot[d] || 0) + (r.rows[key][w.metric] || 0); });
           var ds = Object.keys(dims).sort(function (a, b) { return tot[b] - tot[a]; }).map(function (d, i) {
             var c = pal[i % pal.length];
-            return { label: trim(dims[d], 18), _k: w.metric, data: bs.map(function (b) { var v = r.rows[b + "|" + d]; return v ? v[w.metric] : 0; }),
+            return { label: trim(dims[d], 18), _k: w.metric, data: bs.map(function (b) { var v = r.rows[b + "|" + d]; return v ? v[w.metric] : (M[w.metric].num ? null : 0); }), spanGaps: !!M[w.metric].num,
               borderColor: c, backgroundColor: type === "bar" ? c : c + "22", fill: w.chart === "area", tension: .1, pointRadius: 0, borderWidth: 1.8 };
           });
           sub.textContent += " · " + D.GRAINS.filter(function (g) { return g[0] === grain; })[0][1] + "별";
@@ -752,7 +755,7 @@
     var grainS = select([["auto", "자동 (기간 길이에 맞춰)"]].concat(D.GRAINS), w.grain || "auto");
     var cmpS = select([["none", "비교 안 함"], ["prev", "직전 기간"], ["yoy", "전년 동기"]], w.compare || "none");
     var chartS = select([["line", "선"], ["bar", "막대"], ["area", "영역"]], w.chart || "line");
-    var dimS = select([["", "없음"], ["brand_nm", "브랜드"], ["gd_no", "상품"]], w.dim || "");
+    var dimS = select([["", "없음"], ["brand_nm", "브랜드"], ["gd_no", "상품"], ["category", "랭킹 카테고리"]], w.dim || "");
     var topIn = el("input"); topIn.type = "number"; topIn.min = 3; topIn.max = 50; topIn.value = w.top || 10;
     var widthS = select(WIDTHS.map(function (x) { return [String(x[0]), x[1]]; }), String(w.w || TYPES[w.type].w));
 
@@ -795,12 +798,15 @@
       cmpS.querySelector("option[value=prev]").textContent = t === "compare" ? "직전 묶음 (전 분기·전월·전주 대비)" : "직전 기간";
       if (t === "change") { grainS.querySelector("option[value=auto]").disabled = true; if (grainS.value === "auto") grainS.value = "week"; }
       else grainS.querySelector("option[value=auto]").disabled = false;
-      var goodsOnly = t === "rank" || (t === "trend" && dimS.value);
+      var byRank = t === "trend" && dimS.value === "category";
+      var goodsOnly = t === "rank" || (t === "trend" && dimS.value && !byRank);
       var keep = metric.value || w.metric;
-      metricOptions(metric, goodsOnly ? function (m) { return (m.src || "") === "goods" || (m.num && D.srcOf(m.key).join() === "goods"); } : null);
+      metricOptions(metric, byRank ? function (m) { return /^rank_/.test(D.srcOf(m.key)[0] || ""); }
+        : goodsOnly ? function (m) { return (m.src || "") === "goods" || (m.num && D.srcOf(m.key).join() === "goods"); } : null);
       metric.value = keep; if (!metric.value) metric.selectedIndex = 0;
       F.dim.querySelector("small").hidden = t !== "trend" && t !== "rank";
       dimS.querySelector("option[value='']").disabled = t === "rank";
+      dimS.querySelector("option[value=category]").disabled = t !== "trend";
     }
     metricOptions(metric2, null, true); metric2.value = w.metric2 || "";
     fillMulti(w.metrics || []);

@@ -12,6 +12,8 @@ qr = open(os.path.join(ROOT, 'qr', 'honrye-qr.svg'), encoding='utf-8').read()
 qr = re.sub(r'<\?xml[^>]*\?>', '', qr)
 qr = re.sub(r'width="[^"]*" height="[^"]*"', 'width="100%" height="100%"', qr, count=1)
 qr = qr.replace('<svg ', '<svg shape-rendering="crispEdges" ', 1)
+qr = qr.replace('viewBox="0 0 41 41"', 'viewBox="4 4 33 33"', 1)   # 흰 여백(조용한 영역)을 잘라 QR 점만 남기고, 여백은 흰 바탕 padding(10%)으로 준다
+assert 'viewBox="4 4 33 33"' in qr
 
 HTML = '''<!doctype html><html lang="ko"><meta charset="utf-8">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;800&family=Noto+Serif+JP:wght@600&family=Hahmlet:wght@700;900&display=swap" rel="stylesheet">
@@ -33,11 +35,11 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 .rule { position: absolute; top: 103mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
 .rule i { display: block; width: 38mm; height: .6mm; background: #fbfaf3; border-radius: 1mm }
 .rule b { display: block; width: 2.6mm; height: 2.6mm; background: #fbfaf3; transform: rotate(45deg) }
-.qrbox { position: absolute; top: 116mm; left: 50%; transform: translateX(-50%); width: 84mm; height: 84mm; padding: 6mm; background: #fffdf4; border-radius: 3mm;
+.qrbox { position: absolute; top: 112mm; left: 50%; transform: translateX(-50%); width: 92.4mm; height: 92.4mm; padding: 9.24mm; box-sizing: border-box; background: #fffdf4; border-radius: 3mm;
   box-shadow: 0 0 0 1.2mm #7b1e2b, 0 0 0 2.4mm #fbfaf3, 0 0 0 3.2mm #245c9f }
 .qrbox > svg { width: 100%; height: 100% }
-.cap { position: absolute; top: 215mm; left: 0; right: 0; text-align: center; font: 800 7mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
-.jp { position: absolute; top: 226mm; left: 0; right: 0; text-align: center; font: 700 6.1mm/1.4 "Noto Serif JP", serif; letter-spacing: .4mm; color: #1b4478 }
+.cap { position: absolute; top: 217mm; left: 0; right: 0; text-align: center; font: 800 7mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
+.jp { position: absolute; top: 228mm; left: 0; right: 0; text-align: center; font: 700 6.1mm/1.4 "Noto Serif JP", serif; letter-spacing: .4mm; color: #1b4478 }
 .who { position: absolute; top: 252mm; left: 0; right: 0; text-align: center; font: 800 6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #7b1e2b }
 .who i { font-style: normal; color: #e8661c; margin: 0 2.4mm }
 .when { position: absolute; top: 263mm; left: 0; right: 0; text-align: center; font: 700 4.6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #1b4478 }

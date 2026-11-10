@@ -40,20 +40,25 @@
   var PAGEVIEW = PV_NAMES.map(function (n) { return [snake(n), PV_RENAME[n] || n]; });
   var PRODUCTS = [["gd_no", "상품번호"], ["product_name", "제품명"], ["line", "라인"], ["category", "카테고리"]];
 
+  // 랭킹 기록 (루트 data/*.csv 3개와 같은 내용, q10_rank_log)
+  var RANK = [["rank_date", "일자"], ["category", "카테고리"], ["rank", "순위"], ["brand", "브랜드"], ["product_name", "상품명"], ["price", "가격"], ["period", "구분"]];
+
   // 쉼표를 넣지 않는 숫자 열 (연도·요일 번호 등)
-  var PLAIN = { base_year: 1, base_weekday_no: 1, base_week: 1, base_month: 1 };
-  var TEXTY = { gd_nm: 1, product_name: 1, brand_nm: 1 };
+  var PLAIN = { rank: 1, base_year: 1, base_weekday_no: 1, base_week: 1, base_month: 1 };
+  var TEXTY = { gd_nm: 1, brand: 1, product_name: 1, brand_nm: 1 };
 
   var SOURCES = {
     goods:    { label: "일자·품목별 거래", cols: GOODS,    dated: true,  file: "품목별거래",
                 hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
     sales:    { label: "일자별 거래",     cols: SALES,    dated: true,  file: "일자별거래", hint: "" },
     pageview: { label: "일자별 페이지뷰", cols: PAGEVIEW, dated: true,  file: "페이지뷰",   hint: "" },
+    rank:     { label: "랭킹(일·주·월)", cols: RANK,   dated: true,  file: "랭킹",
+                hint: "상품명 · 브랜드 · 카테고리 검색" },
     products: { label: "상품코드",        cols: PRODUCTS, dated: false, file: "상품코드",
                 hint: "상품번호 · 제품명 · 라인 · 카테고리 검색" }
   };
-  var ORDER = ["goods", "sales", "pageview", "products"];
-  var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview" };
+  var ORDER = ["goods", "sales", "pageview", "rank", "products"];
+  var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview", rank: "rank" };
 
   // ---- DOM ----
   var $ = function (s) { return document.querySelector(s); };
@@ -162,7 +167,7 @@
     qIn.placeholder = src.hint || "";
     if (qIn.value !== s.q) qIn.value = s.q;
     sizeSel.value = String(s.size);
-    dlAll.title = "표 4개를 시트로 나눠 한 파일로 받아요 (기간 필터는 날짜가 있는 표 3개에 적용돼요)";
+    dlAll.title = "표 5개를 시트로 나눠 한 파일로 받아요 (기간 필터는 날짜가 있는 표 4개에 적용돼요)";
   }
 
   function setStatus(msg, kind) {

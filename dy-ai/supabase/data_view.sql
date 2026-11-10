@@ -2,8 +2,8 @@
 --  dy_data_page : 원본 표를 기간·검색·페이지로 읽는 읽기 전용 함수 (엑셀 다운로드도 이 함수를 페이지별로 호출)
 -- inni_* 표는 계속 잠겨 있고, 로그인 사용자는 이 함수로만 읽는다 (dashboard.sql 과 같은 방식).
 --
---   p_source : 'goods'(inni_sales_goods) | 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'products'(inni_product_codes)
---   p_from/p_to : 날짜 범위 (goods 는 base_date, sales·pageview 는 base_start_dt 기준, products 는 무시)
+--   p_source : 'goods'(inni_sales_goods) | 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'products'(inni_product_codes) | 'rank'(q10_rank_log, 일간·주간·월간 랭킹)
+--   p_from/p_to : 날짜 범위 (goods 는 base_date, sales·pageview 는 base_start_dt, rank 는 rank_date 기준, products 는 무시)
 --   p_q      : 검색어 (goods: 상품명·브랜드·상품코드·외부상품코드·제품명·라인·카테고리 / products: 상품번호·제품명·라인·카테고리)
 --   p_limit  : 한 번에 가져올 행 수 (1~1000), p_offset : 건너뛸 행 수
 -- 결과: { "total": 조건에 맞는 전체 행 수, "rows": [ {열: 값, ...} ] }  (goods 행에는 상품코드표의 product_name·line·category 가 붙음)
@@ -31,6 +31,7 @@ begin
     when 'sales'    then tbl := 'inni_sales_daily';     dcol := 'base_start_dt'; ord := 't.base_start_dt desc';
     when 'pageview' then tbl := 'inni_pageview_daily';  dcol := 'base_start_dt'; ord := 't.base_start_dt desc';
     when 'products' then tbl := 'inni_product_codes';   dcol := null;            ord := 't.gd_no';
+    when 'rank'     then tbl := 'q10_rank_log';         dcol := 'rank_date';     ord := 't.rank_date desc, t.category, t.rank';   -- supabase/rank_log.sql 먼저
     else raise exception 'bad source';
   end case;
 
@@ -46,6 +47,8 @@ begin
       w := w || ' and (t.gd_nm ilike $3 or t.brand_nm ilike $3 or t.gd_no ilike $3 or t.outer_gd_no ilike $3'
              || ' or t.gd_no in (select m.gd_no from inni_product_codes m'
              || '  where m.product_name ilike $3 or m.line ilike $3 or m.category ilike $3))';
+    elsif p_source = 'rank' then
+      w := w || ' and (t.product_name ilike $3 or t.brand ilike $3 or t.category ilike $3)';
     elsif p_source = 'products' then
       w := w || ' and (t.gd_no ilike $3 or t.product_name ilike $3 or t.line ilike $3 or t.category ilike $3)';
     end if;

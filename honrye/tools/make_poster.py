@@ -31,7 +31,7 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 .title { position: absolute; top: 50mm; left: 0; right: 0; text-align: center }
 .title small { display: block; font: 700 4.4mm/1 "Noto Serif KR", serif; letter-spacing: 1.4mm; color: #7b1e2b; margin-bottom: 7mm }
 .title h1 { margin: 0; font: 900 27mm/1.05 Hahmlet, 'Noto Serif KR', serif; letter-spacing: 2mm; color: #e8661c; text-shadow: 1.2mm 1.2mm 0 rgba(123,30,43,.35) }
-.jt { margin: 4mm 0 0; font: 700 7.8mm/1 "Noto Serif JP", serif; letter-spacing: 2.2mm; color: #1b4478 }
+.jt { margin: 4mm 0 0; font: 700 13.2mm/1 "Noto Serif JP", serif; letter-spacing: 3.7mm; margin-right: -3.7mm; color: #1b4478 }
 .rule { position: absolute; top: 103mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
 .rule i { display: block; width: 38mm; height: .6mm; background: #fbfaf3; border-radius: 1mm }
 .rule b { display: block; width: 2.6mm; height: 2.6mm; background: #fbfaf3; transform: rotate(45deg) }

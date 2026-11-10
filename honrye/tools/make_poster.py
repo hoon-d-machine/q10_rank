@@ -35,14 +35,14 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 .rule { position: absolute; top: 103mm; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 4mm }
 .rule i { display: block; width: 38mm; height: .6mm; background: #fbfaf3; border-radius: 1mm }
 .rule b { display: block; width: 2.6mm; height: 2.6mm; background: #fbfaf3; transform: rotate(45deg) }
-.qrbox { position: absolute; top: 112mm; left: 50%; transform: translateX(-50%); width: 92.4mm; height: 92.4mm; padding: 9.24mm; box-sizing: border-box; background: #fffdf4; border-radius: 3mm;
+.qrbox { position: absolute; top: 145mm; left: 50%; transform: translateX(-50%); width: 92.4mm; height: 92.4mm; padding: 9.24mm; box-sizing: border-box; background: #fffdf4; border-radius: 3mm;
   box-shadow: 0 0 0 1.2mm #7b1e2b, 0 0 0 2.4mm #fbfaf3, 0 0 0 3.2mm #245c9f }
 .qrbox > svg { width: 100%; height: 100% }
-.cap { position: absolute; top: 217mm; left: 0; right: 0; text-align: center; font: 800 7mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
-.jp { position: absolute; top: 228mm; left: 0; right: 0; text-align: center; font: 700 6.1mm/1.4 "Noto Serif JP", serif; letter-spacing: .4mm; color: #1b4478 }
-.who { position: absolute; top: 252mm; left: 0; right: 0; text-align: center; font: 800 6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #7b1e2b }
+.cap { position: absolute; top: 248mm; left: 0; right: 0; text-align: center; font: 800 7mm/1.4 "Noto Serif KR", serif; letter-spacing: .8mm; color: #7b1e2b }
+.jp { position: absolute; top: 259mm; left: 0; right: 0; text-align: center; font: 700 6.1mm/1.4 "Noto Serif JP", serif; letter-spacing: .4mm; color: #1b4478 }
+.who { position: absolute; top: 114mm; left: 0; right: 0; text-align: center; font: 800 6.6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #7b1e2b }
 .who i { font-style: normal; color: #e8661c; margin: 0 2.4mm }
-.when { position: absolute; top: 263mm; left: 0; right: 0; text-align: center; font: 700 4.6mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #1b4478 }
+.when { position: absolute; top: 125mm; left: 0; right: 0; text-align: center; font: 700 5mm/1.3 "Noto Serif KR", serif; letter-spacing: 1mm; color: #1b4478 }
 </style>
 <body>__DEFS__
 <div class="frame"></div>
@@ -56,11 +56,11 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 <svg class="cloud" style="top:196mm;right:13mm;width:30mm" viewBox="0 0 130 49"><use href="#cloud-e"/></svg>
 <div class="title"><h1>식순 안내</h1><p class="jt">式次第のご案内</p></div>
 <div class="rule"><i></i><b></b><i></i></div>
+<div class="who">신랑 유태훈<i>♥</i>신부 김도연</div>
+<div class="when">2026. 11. 21 (토) 오후 1시</div>
 <div class="qrbox">__QR__</div>
 <div class="cap">QR을 스캔하여 확인해주세요</div>
 <div class="jp">QRコードをスキャンしてご確認ください</div>
-<div class="who">신랑 유태훈<i>♥</i>신부 김도연</div>
-<div class="when">2026. 11. 21 (토) 오후 1시</div>
 </body></html>'''.replace('__DEFS__', defs).replace('__QR__', qr)
 
 out = os.path.join(ROOT, 'poster'); os.makedirs(out, exist_ok=True)

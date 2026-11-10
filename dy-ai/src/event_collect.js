@@ -34,35 +34,49 @@ class Jar {
   header() { return Object.entries(this.c).map(([k, v]) => k + "=" + v).join("; "); }
 }
 
-async function getDetail(jar, goodsNo) { // [브랜드, 카테고리 4단, 리뷰수] 중 알아낸 것만
+// 상세 페이지에서 [브랜드, 카테고리, 리뷰수]를 읽는다. Qoo10 이 페이지 구조를 바꿔서(2026-11 확인) 예전 선택자 대신 새 구조를 쓴다:
+//   브랜드 #p_title_brand · 리뷰수 "review_cnt":N · 카테고리 "gdlc_nm"(= 예전 '중분류') + "gdmc_cd" 코드를 /cat/<대>/<중> 링크 이름으로 풀어 '소분류'
+//   대분류(ビューティー・コスメ 등)는 페이지에 없어서 기존 DB 값(중분류 → 대분류)으로 채운다
+const unjson = (v) => { try { return JSON.parse('"' + v + '"'); } catch (e) { return v; } };
+const cleanText = (v) => String(v || "").replace(/<[^>]*>/g, "").replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
+
+export function parseGoods(html, largeByMedium) {
+  const out = {};
+  const bm = html.match(/id="p_title_brand"[^>]*>([\s\S]*?)<\/a>/) || html.match(/class="title_brand"[^>]*>([\s\S]*?)<\/a>/);
+  if (bm && cleanText(bm[1])) out.brand = cleanText(bm[1]);
+  const rm = html.match(/"review_cnt"\s*:\s*(\d+)/) || html.match(/"reviewCount"\s*:\s*(\d+)/);
+  if (rm) out.review = parseInt(rm[1], 10);
+  const lc = html.match(/"gdlc_cd"\s*:\s*"(\d+)"/), ln = html.match(/"gdlc_nm"\s*:\s*"([^"]*)"/), mc = html.match(/"gdmc_cd"\s*:\s*"(\d+)"/);
+  if (ln) {
+    const medium = unjson(ln[1]);
+    let small = "";
+    if (lc && mc) {
+      const sm = html.match(new RegExp('href="[^"]*/cat/' + lc[1] + "/" + mc[1] + '"[^>]*>([\\s\\S]*?)</a>'));
+      if (sm) small = cleanText(sm[1]);
+    }
+    out.cats = ["", (largeByMedium && largeByMedium[medium]) || "ビューティー・コスメ", medium, small];
+  }
+  return out;
+}
+
+async function getDetail(jar, goodsNo, largeByMedium) {
   try {
     const res = await fetch("https://www.qoo10.jp/gmkt.inc/goods/goods.aspx?goodscode=" + encodeURIComponent(goodsNo), {
       headers: { "user-agent": UA_GOODS, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "accept-language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7", cookie: jar.header() },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(10000),
     });
     if (res.status !== 200) return null;
-    let brandTitle = null, brandText = "", cats = [], review = "";
-    let nBrand = 0, nReview = 0;
-    await new HTMLRewriter()
-      .on("a.title_brand", { element(e) { nBrand++; if (nBrand === 1) brandTitle = e.getAttribute("title"); }, text(t) { if (nBrand === 1) brandText += t.text; } })
-      .on("ul.category_depth_list li span", { element() { cats.push(""); }, text(t) { if (cats.length) cats[cats.length - 1] += t.text; } })
-      .on(".review_count span", { element() { nReview++; }, text(t) { if (nReview === 1) review += t.text; } })
-      .transform(res).arrayBuffer();
-    const out = {};
-    const brand = (brandTitle || brandText || "").trim();
-    if (brand) out.brand = brand;
-    const cc = cats.map((s) => s.trim()).filter((s, i) => s || i < cats.length);
-    if (cc.length) { while (cc.length < 4) cc.push(""); out.cats = cc.slice(0, 4); }
-    const txt = review.trim().replace(/[,()]/g, "");
-    if (/^\d+$/.test(txt)) out.review = parseInt(txt, 10);
-    return out;
+    return parseGoods(await res.text(), largeByMedium);
   } catch (e) { return null; }
 }
 
 // 한 번 실행. opt.sid 로 SID 지정, opt.dry 면 DB 에 쓰지 않음, opt.force 면 최근 수집 여부와 상관없이
 export async function collectEvent(env, now = Date.now(), opt = {}) {
   const out = { steps: [], failures: [] };
-  if (opt.probe) return { probe: await getDetail(new Jar(), opt.probe) };   // 상세 페이지 파싱만 시험
+  if (opt.probe) { // 상세 페이지 파싱만 시험 (진단용)
+    const r = await getDetail(new Jar(), opt.probe, null);
+    return { probe: r };
+  }
   let sid = opt.sid;
   if (!sid) {
     const cfg = await rpc(env, "dy_event_config_read");
@@ -98,6 +112,8 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
   let cache = {};
   try { cache = await rpc(env, "dy_event_goods_cache") || {}; } catch (e) { out.cacheWarn = String(e.message || e); }
 
+  const largeByMedium = {};
+  for (const v of Object.values(cache)) if (v && v[2] && v[1]) largeByMedium[v[2]] = v[1];
   const dbRows = [];
   let detailLeft = MAX_DETAIL;
   const fetchOne = async (rCode, rName, groupCode, age, sName) => {
@@ -122,7 +138,7 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
     detailLeft -= missing.length;
     for (let i = 0; i < missing.length; i += 4) {
       const part = missing.slice(i, i + 4);
-      const got = await Promise.all(part.map((g) => getDetail(jar, g)));
+      const got = await Promise.all(part.map((g) => getDetail(jar, g, largeByMedium)));
       part.forEach((g, k) => { const r = got[k] || {}; cache[g] = [r.brand || "", r.cats ? r.cats[1] : "", r.cats ? r.cats[2] : "", r.cats ? r.cats[3] : "", r.review || 0]; });
     }
 
@@ -147,6 +163,9 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
       catch (e) { out.failures.push({ label: `${rName}-${s}`, error: String((e && e.message) || e) }); }
       await sleep(1000);
     }
+  }
+  if (!dbRows.length && !out.steps.some((x) => x.rows) && out.failures.length && out.failures.every((f) => /HTTP 5\d\d/.test(f.error))) {
+    out.failures = []; out.skipped = "랭킹 API 가 응답하지 않아요 (행사가 끝났을 수 있어요)"; return out;
   }
   out.rows = dbRows.length;
   out.detailFetched = MAX_DETAIL - detailLeft;

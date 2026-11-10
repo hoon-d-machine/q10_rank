@@ -47,8 +47,8 @@ body { position: relative; -webkit-print-color-adjust: exact; print-color-adjust
 <body>__DEFS__
 <div class="frame"></div>
 <svg class="fl" style="top:-15mm;left:50%;margin-left:-21mm;width:42mm;height:42mm"><use href="#flower"/></svg>
-<svg class="fl" style="top:62mm;left:-13mm;width:30mm;height:30mm"><use href="#flower"/></svg>
-<svg class="fl" style="top:92mm;right:-12mm;width:27mm;height:27mm"><use href="#flower"/></svg>
+<svg class="fl" style="top:52mm;left:-13mm;width:30mm;height:30mm"><use href="#flower"/></svg>
+<svg class="fl" style="top:53.3mm;right:-12mm;width:27mm;height:27mm"><use href="#flower"/></svg>
 <!-- 구름: 참고 포스터처럼 한쪽에 치우치게 흩어 놓는다 (굵은 직선 둘 + 가는 연결선) -->
 <svg class="cloud" style="top:36mm;left:16mm;width:40mm" viewBox="0 0 130 34"><use href="#cloud-a"/></svg>
 <svg class="cloud" style="top:42mm;right:17mm;width:34mm" viewBox="0 0 130 34"><use href="#cloud-d"/></svg>

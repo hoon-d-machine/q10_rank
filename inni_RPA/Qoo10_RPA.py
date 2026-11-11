@@ -1338,6 +1338,27 @@ if __name__ == "__main__":
         if rows and not update_supabase(name, rows):
             failures.append(f"{name}(Supabase)")
     
+    # 9. 추가 수집: 상품별 일자 PV · 고객(일자) · 찜/장바구니 스냅샷 → Supabase (qsm_extra.py)
+    #    전전월 1일~어제를 다시 받아 구간 교체. 여기서 실패해도 위 단계 결과는 그대로 둔다.
+    logger.info("\n" + "="*60)
+    logger.info("추가 수집 (상품별 PV · 고객 · 찜/장바구니)")
+    logger.info("="*60)
+    try:
+        import qsm_extra
+
+        def _extra_post(endpoint, payload):
+            j = fetch_api(session, qsm_extra.API + endpoint, payload)
+            if j is None:
+                raise RuntimeError(f"{endpoint} 조회 실패")
+            return j
+
+        r = qsm_extra.sync_range(session, start_month, end_date, poster=_extra_post, log=logger.info)
+        logger.info(f"추가 수집 완료: 상품PV {r['pv']}행, 고객 {r['customer']}행")
+        logger.info(f"찜/장바구니 스냅샷 {qsm_extra.snapshot_customer_goods(session, poster=_extra_post)}행")
+    except Exception as e:
+        logger.error(f"추가 수집 실패: {e}")
+        failures.append("추가수집(상품PV·고객)")
+
     if failures:
         logger.error(f"\n일부 단계 실패: {failures}")
         sys.exit(1)

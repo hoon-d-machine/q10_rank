@@ -33,9 +33,11 @@
     scroll: '<path d="M8 4h10a2 2 0 0 1 2 2v11.5a2.5 2.5 0 0 1-2.5 2.5H7"/><path d="M8 4a2.5 2.5 0 0 0-2.5 2.5V18a2 2 0 0 0 2 2 2 2 0 0 0 2-2V6.5M11.5 9H17M11.5 12.5H17"/>',
     flower: petals + '<circle cx="12" cy="12" r="1.8"/>',
     gate: '<path d="M2.5 6 12 3l9.5 3M4.5 8.5h15M6.5 8.5V21M17.5 8.5V21M10 8.5V21M14 8.5V21"/>',
+    bible: '<path d="M6.5 3.5h11A1.5 1.5 0 0 1 19 5v14.5a1.5 1.5 0 0 1-1.5 1.5h-11A2 2 0 0 1 4.5 19V5.5a2 2 0 0 1 2-2z"/><path d="M4.5 18.5a2 2 0 0 1 2-2H19"/><path d="M12 6.2v7M9.4 8.8h5.2"/>',
+    letter: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.6 7.2 12 13.4l8.4-6.2"/>',
     heart: '<path d="M12 20s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 7.6 4.2 4.2 0 0 1 19.5 10c0 5.4-7.5 10-7.5 10z"/>'
   };
-  var DEFAULT_ICON = { s1: "bell", s2: "lantern", s3: "goose", s4: "candle", s5: "people", s6: "bow", s7: "scroll", s8: "flower", s9: "gate" };
+  var DEFAULT_ICON = { s1: "bell", s2: "lantern", s3: "goose", s4: "candle", s5: "people", s6: "bow", s7: "bible", s8: "letter", s9: "gate" };
   function iconEl(name) {
     if (!name || !ICONS[name]) return null;
     var w = document.createElement("span"); w.className = "ico"; w.setAttribute("aria-hidden", "true");

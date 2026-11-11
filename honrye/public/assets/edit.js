@@ -69,8 +69,8 @@
     return code === "locked" ? "틀린 횟수가 많아 잠시 잠겼어요. 10분 뒤에 다시 시도해 주세요." : "PIN이 맞지 않아요.";
   }
 
-  var ICON_OPTS = [["", "없음"], ["bell", "종 (시작)"], ["lantern", "청사초롱"], ["goose", "기러기"], ["candle", "촛불"], ["people", "사람들 (인사)"], ["bow", "절"], ["scroll", "두루마리 (선언)"], ["flower", "꽃"], ["gate", "문 (마무리)"], ["heart", "하트"]];
-  var DEF_ICON = { s1: "bell", s2: "lantern", s3: "goose", s4: "candle", s5: "people", s6: "bow", s7: "scroll", s8: "flower", s9: "gate" };
+  var ICON_OPTS = [["", "없음"], ["bell", "종 (시작)"], ["lantern", "청사초롱"], ["goose", "기러기"], ["candle", "촛불"], ["people", "사람들 (인사)"], ["bow", "절"], ["scroll", "두루마리 (선언)"], ["bible", "성경책 (성혼선언)"], ["letter", "편지 (축사)"], ["flower", "꽃"], ["gate", "문 (마무리)"], ["heart", "하트"]];
+  var DEF_ICON = { s1: "bell", s2: "lantern", s3: "goose", s4: "candle", s5: "people", s6: "bow", s7: "bible", s8: "letter", s9: "gate" };
 
   // ---------- 데이터 모양 맞추기 ----------
   function ensure(d) {

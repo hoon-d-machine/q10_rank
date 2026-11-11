@@ -13,7 +13,6 @@
     names: { ko: "신랑 {g} · 신부 {b}", en: "Groom {g} · Bride {b}", ja: "新郎 {g} · 新婦 {b}" },
     groomOnly: { ko: "신랑 {g}", en: "Groom {g}", ja: "新郎 {g}" },
     brideOnly: { ko: "신부 {b}", en: "Bride {b}", ja: "新婦 {b}" },
-    count: { ko: "모두 {n}가지 의식으로 이어져요.", en: "The ceremony unfolds in {n} rites.", ja: "全{n}の儀式で進みます。" },
     hint: { ko: "의식 이름을 눌러 뜻을 확인해 보세요", en: "Tap a rite to see its meaning", ja: "儀式の名前をタップして意味をご覧ください" },
     expand: { ko: "모두 펼치기", en: "Expand all", ja: "すべて開く" },
     collapse: { ko: "모두 접기", en: "Collapse all", ja: "すべて閉じる" },
@@ -107,7 +106,6 @@
     $("couple").textContent = names; $("couple").hidden = !names;
 
     $("intro").textContent = pick(data.intro);
-    $("count").textContent = t("count").replace("{n}", (data.steps || []).length);
     $("hint").textContent = t("hint");
     allBtn.textContent = all ? t("collapse") : t("expand");
     $("thanks").textContent = t("thanks");

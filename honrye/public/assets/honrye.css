@@ -213,3 +213,6 @@ html[lang="ja"] .ttl b { font-size: 17px; }
 }
 
 @media (prefers-color-scheme: dark) { .ico { color: #ff9a52; } }
+
+/* 편집 화면에서 엔터로 넣은 줄바꿈이 그대로 보이게 (빈 줄은 따로 문단으로 나뉨) */
+.lead, .one, .detail p, .detail li, .note p, .note b { white-space: pre-line; }

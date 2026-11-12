@@ -128,3 +128,52 @@ begin
 end; $$;
 revoke all on function dy_inni_settings_set(text, int, jsonb) from public, anon;
 grant execute on function dy_inni_settings_set(text, int, jsonb) to authenticated;
+
+-- ---- ONSITE AD: 광고센터 API 에 없는 광고(Beauty AD · Spotlight AD · Singleone)의 월별 광고비 직접 입력 (엔 단위로 저장, 화면에서는 천 엔) ----
+create table if not exists inni_ad_manual (
+  ym date not null,                    -- 그 달 1일
+  item text not null,                  -- beauty | spotlight | singleone
+  amount bigint not null,
+  updated_by text,
+  updated_at timestamptz not null default now(),
+  primary key (ym, item)
+);
+alter table inni_ad_manual enable row level security;
+revoke all on inni_ad_manual from anon, authenticated;
+
+create or replace function dy_inni_ad_manual_get(p_from date, p_to date) returns jsonb
+language plpgsql stable security definer set search_path = public
+as $$
+begin
+  if auth.uid() is null then raise exception 'login required'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('ym', ym, 'item', item, 'v', amount) order by ym, item)
+                   from inni_ad_manual where ym between date_trunc('month', p_from)::date and date_trunc('month', p_to)::date), '[]'::jsonb);
+end; $$;
+revoke all on function dy_inni_ad_manual_get(date, date) from public, anon;
+grant execute on function dy_inni_ad_manual_get(date, date) to authenticated;
+
+-- p_rows: [{ "ym": "2026-07-01", "item": "beauty", "v": 300000 }, ...]  v 가 null 이면 그 칸을 지움
+create or replace function dy_inni_ad_manual_set(p_rows jsonb) returns integer
+language plpgsql security definer set search_path = public
+as $$
+declare r jsonb; n int := 0; d date;
+begin
+  if auth.uid() is null then raise exception 'login required'; end if;
+  if jsonb_typeof(p_rows) <> 'array' or jsonb_array_length(p_rows) > 120 then raise exception 'bad rows'; end if;
+  for r in select * from jsonb_array_elements(p_rows) loop
+    if (r ->> 'item') not in ('beauty', 'spotlight', 'singleone') then raise exception 'bad item'; end if;
+    d := date_trunc('month', (r ->> 'ym')::date)::date;
+    if r -> 'v' is null or jsonb_typeof(r -> 'v') = 'null' then
+      delete from inni_ad_manual where ym = d and item = r ->> 'item';
+    else
+      if (r ->> 'v')::numeric < 0 then raise exception 'bad value'; end if;
+      insert into inni_ad_manual (ym, item, amount, updated_by, updated_at)
+      values (d, r ->> 'item', (r ->> 'v')::numeric::bigint, auth.jwt() ->> 'email', now())
+      on conflict (ym, item) do update set amount = excluded.amount, updated_by = excluded.updated_by, updated_at = now();
+    end if;
+    n := n + 1;
+  end loop;
+  return n;
+end; $$;
+revoke all on function dy_inni_ad_manual_set(jsonb) from public, anon;
+grant execute on function dy_inni_ad_manual_set(jsonb) to authenticated;

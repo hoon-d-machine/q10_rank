@@ -66,6 +66,16 @@
   base("g_wish", "상품 찜 수 (스냅샷 평균)", "custgoods", "wish_cnt", "int", "상품별 찜·장바구니", false, true);
   base("g_basket", "상품 장바구니 수 (스냅샷 평균)", "custgoods", "basket_cnt", "int", "상품별 찜·장바구니", false, true);
 
+  // 상품별 광고 (광고센터, inni_ad_goods_daily): 상품에 묶이지 않는 광고분은 빠진다. 스토어 전체 광고비는 일자·유형별 표(ad_daily)에 있다.
+  base("ad_spend", "상품 광고비", "adgoods", "ad_price", "money", "상품별 광고");
+  base("ad_sales", "상품 광고 매출", "adgoods", "ad_sales", "money", "상품별 광고");
+  base("ad_expose", "상품 광고 노출", "adgoods", "expose_cnt", "int", "상품별 광고");
+  base("ad_click", "상품 광고 클릭", "adgoods", "click_cnt", "int", "상품별 광고");
+  base("ad_cart", "상품 광고 장바구니", "adgoods", "cart_cnt", "int", "상품별 광고");
+  base("ad_purchase", "상품 광고 구매수량", "adgoods", "purchase_cnt", "int", "상품별 광고");
+  ratio("ad_roas", "상품 ROAS (광고 매출÷광고비)", "ad_sales", "ad_spend", "pct", "상품별 광고", 100);
+  ratio("ad_ctr", "상품 광고 클릭률", "ad_click", "ad_expose", "pct", "상품별 광고", 100);
+
   // 고객 (일자별): 신규·기존 구매자, 팔로워, 샵 방문
   (function () {
     var g = "고객·팔로워";
@@ -90,7 +100,7 @@
     ratio("r_" + p + "_avg", x[1] + " 평균 순위", "r_" + p + "_ranksum", "r_" + p + "_cnt", "dec", g);
   });
 
-  var SRC_LABEL = { sales: "일자별 거래", pageview: "일자별 페이지뷰", goods: "일자·상품별 거래·PV", customer: "고객(일자별)", custgoods: "찜·장바구니(스냅샷)", rank: "랭킹 기록", rank_d: "일간 랭킹", rank_w: "주간 랭킹", rank_m: "월간 랭킹" };
+  var SRC_LABEL = { sales: "일자별 거래", pageview: "일자별 페이지뷰", goods: "일자·상품별 거래·PV", customer: "고객(일자별)", custgoods: "찜·장바구니(스냅샷)", adgoods: "상품별 광고", rank: "랭킹 기록", rank_d: "일간 랭킹", rank_w: "주간 랭킹", rank_m: "월간 랭킹" };
 
   function srcOf(key) { // 지표가 쓰는 원본 표들
     var m = METRICS[key];
@@ -295,7 +305,7 @@
   // 지표들을 기간·단위(·묶음)로 집계
   // opt: { metrics, grain, range{from,to}, dim?, top?, topMetric? }
   // → { keys: [묶음 키], rows: { 키: { 지표: 값 } }, labels: { 키: 이름 }, days: { 키: 날짜 수 } }
-  function dimSrc(src) { return src === "goods" || src === "custgoods"; }   // 상품·브랜드 묶음을 쓸 수 있는 소스
+  function dimSrc(src) { return src === "goods" || src === "custgoods" || src === "adgoods"; }   // 상품·브랜드 묶음을 쓸 수 있는 소스
 
   function query(opt) {
     var bk = baseKeys(opt.metrics);

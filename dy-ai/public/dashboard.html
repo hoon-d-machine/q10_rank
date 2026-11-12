@@ -181,10 +181,44 @@
         </div>
       </section>
       <section class="inni-pane" data-pane="onsite" hidden>
-        <div class="inni-card inni-todo">
-          <h2>ONSITE AD <small>온사이트 광고</small></h2>
-          <p class="inni-state">준비 중</p>
-          <p>월별 광고 종류별 광고비·광고 매출·ROAS, 광고비 투입률, 전체 ROI.</p>
+        <div class="inni-bar" role="toolbar" aria-label="ONSITE AD 설정">
+          <label class="dash-bar-item"><span>회계연도</span><select class="js-o-fy"></select></label>
+          <label class="dash-bar-item"><span>기준 월</span><select class="js-o-month"></select></label>
+          <button class="dash-btn js-o-manual" type="button" aria-haspopup="dialog" title="광고센터에 없는 광고(Beauty AD · Spotlight AD · Singleone)의 월별 광고비 입력">월별 광고비 입력</button>
+          <span class="dash-bar-gap"></span>
+          <button class="dash-btn js-help" data-help="onsite" type="button" aria-haspopup="dialog" title="이 화면과 코멘트 기준 설명">설명</button>
+          <button class="dash-btn js-o-note-btn" type="button" aria-haspopup="dialog" title="이 달 코멘트 직접 입력">코멘트 입력</button>
+          <button class="dash-btn js-o-reload" type="button" title="DB 에서 다시 불러오기">새로고침</button>
+        </div>
+        <p class="dash-msg js-o-msg" role="alert" hidden></p>
+        <p class="inni-notice js-o-notice" role="status" hidden></p>
+
+        <div class="inni-card inni-report">
+          <header class="inni-rhead">
+            <p class="logs-eyebrow">Qoo10 ON-SITE AD</p>
+            <h2 class="js-o-title">ONSITE AD</h2>
+            <p class="inni-unit">(K JPY) · 광고센터 기준 · 총매출 기준 투입율</p>
+          </header>
+
+          <div class="inni-comment">
+            <div class="inni-comment-head"><h3>코멘트</h3></div>
+            <div class="inni-auto js-o-auto"></div>
+            <div class="inni-manual js-o-manual-box" hidden>
+              <p class="inni-manual-body js-o-manual-body"></p>
+              <small class="inni-note js-o-manual-meta"></small>
+            </div>
+          </div>
+
+          <h3>월별 광고비 · 광고 매출 · ROAS</h3>
+          <div class="inni-chart"><canvas class="js-o-chart"></canvas></div>
+
+          <h3 class="js-o-t1">광고비 (Spend)</h3>
+          <div class="inni-scroll"><table class="inni-table js-o-spend"></table></div>
+          <h3 class="js-o-t2">광고 매출 (AD Sales)</h3>
+          <div class="inni-scroll"><table class="inni-table js-o-sales"></table></div>
+          <h3 class="js-o-t3">ROAS (광고 매출 ÷ 광고비)</h3>
+          <div class="inni-scroll"><table class="inni-table js-o-roas"></table></div>
+          <p class="inni-note js-o-note"></p>
         </div>
       </section>
       <section class="inni-pane" data-pane="megapo" hidden>
@@ -211,6 +245,7 @@
 <script src="/assets/inni.js"></script>
 <script src="/assets/inni-sales.js"></script>
 <script src="/assets/inni-product.js"></script>
+<script src="/assets/inni-onsite.js"></script>
 <script src="/assets/inni-help.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {

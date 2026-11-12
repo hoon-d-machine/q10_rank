@@ -1359,6 +1359,23 @@ if __name__ == "__main__":
         logger.error(f"추가 수집 실패: {e}")
         failures.append("추가수집(상품PV·고객)")
 
+    # 10. 광고센터(ads.qoo10.jp) 일별 광고비·광고 매출 → Supabase (ads_extra.py)
+    #     QSM 로그인 쿠키로 광고센터 토큰을 받아 전전월 1일~어제를 구간 교체. 실패해도 위 단계 결과는 그대로 둔다.
+    logger.info(chr(10) + "="*60)
+    logger.info("광고센터 수집 (광고비 · 광고 매출)")
+    logger.info("="*60)
+    try:
+        import ads_extra
+        ads_token = ads_extra.get_ads_token(log=logger.info)
+        if not ads_token:
+            raise RuntimeError("광고센터 토큰을 받지 못했어요")
+        logger.info(f"광고센터 수집 완료: {ads_extra.sync_range(ads_token, start_month, end_date, log=logger.info)}행")
+        logger.info(f"광고 키워드(노출·클릭·구매) 수집 완료: {ads_extra.sync_keywords(ads_token, start_month, end_date, log=logger.info)}행")
+        logger.info(f"광고 상품별 수집 완료: {ads_extra.sync_goods(ads_token, start_month, end_date, log=logger.info)}행")
+    except Exception as e:
+        logger.error(f"광고센터 수집 실패: {e}")
+        failures.append("광고센터(광고비)")
+
     if failures:
         logger.error(f"\n일부 단계 실패: {failures}")
         sys.exit(1)

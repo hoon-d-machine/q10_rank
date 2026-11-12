@@ -876,7 +876,7 @@
   function renderBounds() {
     var parts = [];
     D.loadBounds().then(function (bd) {
-      ["sales", "pageview", "goods", "customer", "custgoods", "rank"].forEach(function (k) {
+      ["sales", "pageview", "goods", "customer", "custgoods", "adgoods", "rank"].forEach(function (k) {
         if (bd[k] && bd[k].min) parts.push(D.SRC_LABEL[k] + " " + bd[k].min + " ~ " + bd[k].max);
       });
       $(".js-bounds").textContent = parts.length ? "데이터: " + parts.join(" · ") : "DB 에 아직 데이터가 없어요. 수집기에서 Q10 수집을 한 번 하면 채워져요.";

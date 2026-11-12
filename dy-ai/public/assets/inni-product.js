@@ -76,7 +76,8 @@
 
   // ---------- 데이터 ----------
   var MET = ["g_net_amt", "g_net_qty", "g_pv"];
-  function qr(from, to) { return D.query({ metrics: MET, grain: "all", range: { from: from, to: to }, dim: "gd_no", top: 200, topMetric: "g_net_amt" }); }
+  var MET_AD = MET.concat(["ad_spend", "ad_sales"]);   // 당월에만 광고 값을 같이 받는다 (온사이트 광고 열)
+  function qr(from, to, met) { return D.query({ metrics: met || MET, grain: "all", range: { from: from, to: to }, dim: "gd_no", top: 200, topMetric: "g_net_amt" }); }
 
   function loadMaster() {
     if (S.master) return Promise.resolve();
@@ -105,7 +106,7 @@
     var lk = addM(k, -12), lyFrom = lk, lyTo = ymd(lk, Math.min(dayEnd, lastDay(lk)));
     var fyStart = ym(S.fy - 1, 7), ytdFrom = fyStart, lyYtdFrom = addM(fyStart, -12);
     S.busy = true;
-    return Promise.all([qr(tyFrom, tyTo), qr(lyFrom, lyTo), qr(ytdFrom, tyTo), qr(lyYtdFrom, lyTo)]).then(function (r) {
+    return Promise.all([qr(tyFrom, tyTo, MET_AD), qr(lyFrom, lyTo), qr(ytdFrom, tyTo), qr(lyYtdFrom, lyTo)]).then(function (r) {
       var ty = r[0], ly = r[1], ytd = r[2], lyy = r[3], ids = {};
       [ty, ly, ytd, lyy].forEach(function (x) { Object.keys(x.rows).forEach(function (id) { ids[id] = 1; }); });
       var nameOf = function (id) { var m = S.master[id]; return (m && m.product_name) || ty.labels[id] || ytd.labels[id] || ly.labels[id] || lyy.labels[id] || id; };
@@ -116,7 +117,8 @@
           gd: id, name: nameOf(id), line: m.line || UNCLASS, cat: m.category ? (CAT_KO[m.category] || m.category) : UNCLASS,
           sales: g(ty, id, "g_net_amt"), qty: g(ty, id, "g_net_qty"), pv: g(ty, id, "g_pv"),
           lySales: g(ly, id, "g_net_amt"), lyQty: g(ly, id, "g_net_qty"), lyPv: g(ly, id, "g_pv"),
-          ytd: g(ytd, id, "g_net_amt"), lyYtd: g(lyy, id, "g_net_amt")
+          ytd: g(ytd, id, "g_net_amt"), lyYtd: g(lyy, id, "g_net_amt"),
+          spend: g(ty, id, "ad_spend"), adSales: g(ty, id, "ad_sales")
         };
         return it;
       }).filter(function (it) { return it.sales > 0; });                       // 당월 매출이 있는 상품만 (시트와 같음)
@@ -126,10 +128,11 @@
         it.no = i + 1; it.yoy = it.lySales ? growth(it.sales, it.lySales) : null; it.pvYoy = it.lyPv ? growth(it.pv, it.lyPv) : null;
         it.cvr = it.pv ? it.qty / it.pv * 100 : null; it.lyCvr = it.lyPv ? it.lyQty / it.lyPv * 100 : null;
         it.gap = it.cvr != null && it.lyCvr != null ? it.cvr - it.lyCvr : null;
+        it.roas = it.spend ? it.adSales / it.spend * 100 : null;
         it.ytdYoy = it.lyYtd ? growth(it.ytd, it.lyYtd) : null; it.share = ytdTotal ? it.ytd / ytdTotal * 100 : null;
       });
       // 합계 (당월 매출이 있는 상품 기준)
-      var T = { sales: 0, qty: 0, pv: 0, lySales: 0, lyQty: 0, lyPv: 0, ytd: 0, lyYtd: 0 };
+      var T = { sales: 0, qty: 0, pv: 0, lySales: 0, lyQty: 0, lyPv: 0, ytd: 0, lyYtd: 0, spend: 0, adSales: 0 };
       items.forEach(function (it) { Object.keys(T).forEach(function (f) { T[f] += it[f]; }); });
       // 라인·카테고리 요약 (분류 합산은 당월 매출이 있는 상품 + 작년·누계만 있는 상품도 포함해서 모든 상품)
       var allIt = Object.keys(ids).map(function (id) {
@@ -215,7 +218,7 @@
       case "sales": return it.sales; case "qty": return it.qty; case "lyqty": return it.lyQty || null; case "lysales": return it.lySales || null; case "yoy": return it.yoy;
       case "pv": return it.pv; case "lypv": return it.lyPv || null; case "pvyoy": return it.pvYoy;
       case "cvr": return it.cvr; case "lycvr": return it.lyCvr; case "cvrgap": return it.gap;
-      case "spend": case "adsales": case "roas": return null;                          // 광고 데이터 연결 전
+      case "spend": return it.spend || null; case "adsales": return it.spend || it.adSales ? it.adSales : null; case "roas": return it.roas;
       case "ytd": return it.ytd; case "lyytd": return it.lyYtd || null; case "ytdyoy": return it.ytdYoy; case "share": return it.share;
     }
     return null;
@@ -238,6 +241,7 @@
       case "sales": return T.sales; case "qty": return T.qty; case "lyqty": return T.lyQty || null; case "lysales": return T.lySales || null; case "yoy": return T.lySales ? growth(T.sales, T.lySales) : null;
       case "pv": return T.pv; case "lypv": return T.lyPv || null; case "pvyoy": return T.lyPv ? growth(T.pv, T.lyPv) : null;
       case "cvr": return cvr; case "lycvr": return lyCvr; case "cvrgap": return cvr != null && lyCvr != null ? cvr - lyCvr : null;
+      case "spend": return T.spend || null; case "adsales": return T.spend || T.adSales ? T.adSales : null; case "roas": return T.spend ? T.adSales / T.spend * 100 : null;
       case "ytd": return T.ytd; case "lyytd": return T.lyYtd || null; case "ytdyoy": return T.lyYtd ? growth(T.ytd, T.lyYtd) : null; case "share": return 100;
     }
     return null;
@@ -279,13 +283,13 @@
     var tf = h("tfoot"), fr = h("tr");
     cols.forEach(function (c, k) {
       var v = c.text ? (c.id === "name" ? "합계" : "") : totalVal(d.total, c.id);
-      var td = h("td", c.text ? "t" : (c.type === "gr" || c.type === "gap" ? cls(v) : ""), c.text ? v : (c.id === "spend" || c.id === "adsales" || c.id === "roas" ? "-" : fmtItem(c.type, v)));
+      var td = h("td", c.text ? "t" : (c.type === "gr" || c.type === "gap" ? cls(v) : ""), c.text ? v : fmtItem(c.type, v));
       td.dataset.col = c.id; fr.appendChild(td);
     });
     tf.appendChild(fr); el.items.appendChild(tf);
     applyHl(el.items, S.cfg.items);
     fitWrap();
-    el.itemsNote.textContent = "온사이트 광고(Spend · AD Sales · ROAS)는 아직 DB 에 광고 데이터가 없어서 '-' 로 비어 있어요. 라인·카테고리는 상품코드표 기준(분류가 없는 상품은 " + UNCLASS + "), CVR = 상품수량 ÷ PV, 누계 = " + fyLabel(S.fy) + " 7월부터 기준 월까지.";
+    el.itemsNote.textContent = "온사이트 광고(Spend · AD Sales · ROAS)는 광고센터 상품별 값이고 당월(진행 중이면 같은 일수) 기준이에요. 광고가 없던 상품은 '-' 이고 합계는 표에 나온 상품만 더한 값이에요. 라인·카테고리는 상품코드표 기준(분류가 없는 상품은 " + UNCLASS + "), CVR = 상품수량 ÷ PV, 누계 = " + fyLabel(S.fy) + " 7월부터 기준 월까지.";
   }
 
   // ---------- 그래프 ----------
@@ -551,7 +555,7 @@
       cols.forEach(function (cd, ci) {
         var cc = C(r, ci + 1); cc.font = { bold: true, size: 10 }; cc.border = { top: { style: "thin", color: { argb: "FF888888" } }, bottom: { style: "medium", color: { argb: "FF888888" } } };
         if (cd.text) { if (cd.id === "name") cc.value = "합계"; return; }
-        var v = (cd.id === "spend" || cd.id === "adsales" || cd.id === "roas") ? null : totalVal(d.total, cd.id);
+        var v = totalVal(d.total, cd.id);
         cc.value = xv(cd.type, v); cc.numFmt = XFMT[cd.type]; cc.alignment = { horizontal: "right" };
       });
       r += 2;

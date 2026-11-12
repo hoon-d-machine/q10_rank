@@ -49,6 +49,8 @@ begin
     when 'goods' then tbl := 'inni_goods_daily'; dcol := 'base_date';
     when 'customer' then tbl := 'inni_customer_daily'; dcol := 'base_date';        -- inni_RPA/supabase_schema_extra.sql
     when 'custgoods' then tbl := 'inni_customer_goods'; dcol := 'snapshot_date';  -- 찜·장바구니 스냅샷(누적값)
+    when 'ad' then tbl := 'inni_ad_daily'; dcol := 'base_date';                    -- inni_RPA/supabase_schema_ads.sql (광고유형별 일자)
+    when 'adgoods' then tbl := 'inni_ad_goods_daily'; dcol := 'base_date';         -- 상품 × 광고유형 일자
     when 'rank_d' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''daily''';     -- supabase/rank_log.sql 먼저 실행
     when 'rank_w' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''weekly''';
     when 'rank_m' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''monthly''';
@@ -79,8 +81,9 @@ begin
 
   if p_dim is null then dexpr := 'null::text'; lexpr := 'null::text';
   elsif p_dim = 'weekday' then dexpr := format('extract(isodow from %I)::int::text', dcol); lexpr := 'null::text';
-  elsif p_dim = 'brand_nm' and p_source in ('goods', 'custgoods') then dexpr := 'coalesce(brand_nm, ''(없음)'')'; lexpr := 'null::text';
-  elsif p_dim = 'gd_no' and p_source in ('goods', 'custgoods') then dexpr := 'gd_no'; lexpr := 'max(gd_nm)';
+  elsif p_dim = 'ad_type' and p_source in ('ad', 'adgoods') then dexpr := 'ad_type'; lexpr := 'null::text';
+  elsif p_dim = 'brand_nm' and p_source in ('goods', 'custgoods', 'adgoods') then dexpr := 'coalesce(brand_nm, ''(없음)'')'; lexpr := 'null::text';
+  elsif p_dim = 'gd_no' and p_source in ('goods', 'custgoods', 'adgoods') then dexpr := 'gd_no'; lexpr := 'max(gd_nm)';
   elsif p_dim = 'category' and p_source like 'rank\_%' then dexpr := 'category'; lexpr := 'null::text';
   else raise exception 'bad dim %', p_dim;
   end if;
@@ -117,6 +120,8 @@ as $$
     'goods', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_sales_goods),
     'customer', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_customer_daily),
     'custgoods', (select jsonb_build_object('min', min(snapshot_date), 'max', max(snapshot_date)) from inni_customer_goods),
+    'ad', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_ad_daily),
+    'adgoods', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_ad_goods_daily),
     'rank', (select jsonb_build_object('min', min(rank_date), 'max', max(rank_date)) from q10_rank_log)
   ) end;
 $$;

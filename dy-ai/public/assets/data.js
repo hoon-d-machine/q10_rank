@@ -61,12 +61,27 @@
     ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"], ["wish_cnt", "찜 수"], ["basket_cnt", "장바구니 수"]
   ];
 
+  // 광고센터 (inni_RPA/ads_extra.py): 광고비·광고 매출은 엔 단위. ad_type 'all' 은 전체(스토어 총 매출 포함)라서 유형별 행과 더하면 두 번 세어진다
+  var AD_TYPE_KO = { all: "전체", keywordplus: "키워드플러스", cps: "스마트세일즈", power_rankup: "파워랭크업", timesale: "타임세일", horidashimono: "호리다시모노",
+    mega: "Mega AD", dailydeal: "데일리딜", dealplus: "딜플러스", categoryplus: "카테고리플러스", groupbuy: "공동구매", groupbuyplus: "공동구매플러스" };
+  var ADDAILY = [
+    ["base_date", "날짜"], ["ad_type", "광고 유형"], ["ad_price", "광고비(엔)"], ["ad_sales", "광고 매출(엔)"], ["total_sales", "스토어 총 매출(엔, 전체 행만)"]
+  ];
+  var ADKEYWORD = [
+    ["base_date", "날짜"], ["ad_type", "광고 유형"], ["keyword", "검색 키워드"], ["rank_in_window", "7일 구간 순위"],
+    ["expose_cnt", "노출"], ["click_cnt", "클릭"], ["purchase_cnt", "구매수량"]
+  ];
+  var ADGOODS = [
+    ["base_date", "날짜"], ["gd_no", "상품코드"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"], ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"],
+    ["ad_type", "광고 유형"], ["ad_price", "광고비(엔)"], ["ad_sales", "광고 매출(엔)"], ["expose_cnt", "노출"], ["click_cnt", "클릭"], ["cart_cnt", "장바구니"], ["purchase_cnt", "구매수량"]
+  ];
+
   // 랭킹 기록 (루트 data/*.csv 3개와 같은 내용, q10_rank_log)
   var RANK = [["rank_date", "일자"], ["category", "카테고리"], ["rank", "순위"], ["brand", "브랜드"], ["product_name", "상품명"], ["price", "가격"], ["period", "구분"]];
 
   // 쉼표를 넣지 않는 숫자 열 (연도·요일 번호 등)
   var PLAIN = { rank: 1, base_year: 1, base_weekday_no: 1, base_week: 1, base_month: 1 };
-  var TEXTY = { gd_nm: 1, brand: 1, product_name: 1, brand_nm: 1 };
+  var TEXTY = { gd_nm: 1, brand: 1, product_name: 1, brand_nm: 1, keyword: 1 };
 
   var SOURCES = {
     goods:    { label: "일자·품목별 거래", cols: GOODS,    dated: true,  file: "품목별거래",
@@ -78,13 +93,19 @@
     customer: { label: "고객(일자별)",   cols: CUSTOMER, dated: true,  file: "고객일자별", hint: "" },
     custgoods:{ label: "찜·장바구니(스냅샷)", cols: CUSTGOODS, dated: true, file: "찜장바구니",
                 hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
+    ad_daily: { label: "광고비·광고 매출", cols: ADDAILY, dated: true, file: "광고일자별",
+                hint: "광고 유형 검색 (예: keywordplus, cps, power_rankup, all)" },
+    ad_goods: { label: "상품별 광고",     cols: ADGOODS, dated: true, file: "상품별광고",
+                hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
+    ad_keyword:{ label: "광고 키워드(노출·클릭·구매)", cols: ADKEYWORD, dated: true, file: "광고키워드",
+                hint: "검색 키워드 검색" },
     rank:     { label: "랭킹(일·주·월)", cols: RANK,   dated: true,  file: "랭킹",
                 hint: "상품명 · 브랜드 · 카테고리 검색" },
     products: { label: "상품코드",        cols: PRODUCTS, dated: false, file: "상품코드",
                 hint: "상품번호 · 제품명 · 라인 · 카테고리 검색" }
   };
-  var ORDER = ["goods", "pvgoods", "sales", "pageview", "customer", "custgoods", "rank", "products"];
-  var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview", pvgoods: "goods", customer: "customer", custgoods: "custgoods", rank: "rank" };
+  var ORDER = ["goods", "pvgoods", "sales", "pageview", "customer", "custgoods", "ad_daily", "ad_goods", "ad_keyword", "rank", "products"];
+  var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview", pvgoods: "goods", customer: "customer", custgoods: "custgoods", ad_daily: "ad", ad_goods: "adgoods", ad_keyword: "ad", rank: "rank" };
 
   // ---- DOM ----
   var $ = function (s) { return document.querySelector(s); };
@@ -151,6 +172,7 @@
   // ---- 표 그리기 ----
   function cellText(c, v) {
     if (v == null || v === "") return "";
+    if (c === "ad_type") return AD_TYPE_KO[v] || String(v);
     if (typeof v === "number") return PLAIN[c] ? String(v) : (Number.isInteger(v) ? fmt(v) : String(v));
     return String(v);
   }

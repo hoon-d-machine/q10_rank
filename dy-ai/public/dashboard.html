@@ -135,10 +135,49 @@
         </div>
       </section>
       <section class="inni-pane" data-pane="product" hidden>
-        <div class="inni-card inni-todo">
-          <h2>PRODUCT <small>상품별 월간 실적</small></h2>
-          <p class="inni-state">준비 중</p>
-          <p>라인별·카테고리별 올해 대비 작년, 상품별 매출·수량·PV·CVR·온사이트 광고(Spend·AD Sales·ROAS)·회계연도 누적.</p>
+        <div class="inni-bar" role="toolbar" aria-label="PRODUCT 설정">
+          <label class="dash-bar-item"><span>회계연도</span><select class="js-p-fy"></select></label>
+          <label class="dash-bar-item"><span>기준 월</span><select class="js-p-month"></select></label>
+          <span class="dash-bar-gap"></span>
+          <button class="dash-btn js-p-set" type="button" aria-haspopup="dialog" title="코멘트 · 강조 · 그래프 설정">설정</button>
+          <button class="dash-btn js-p-xlsx" type="button" title="이 리포트를 서식이 들어간 엑셀로 내려받기">엑셀 다운로드</button>
+          <button class="dash-btn js-p-reload" type="button" title="DB 에서 다시 불러오기">새로고침</button>
+        </div>
+        <p class="dash-msg js-p-msg" role="alert" hidden></p>
+        <p class="inni-notice js-p-notice" role="status" hidden></p>
+
+        <div class="inni-card inni-report">
+          <header class="inni-rhead">
+            <p class="logs-eyebrow">by Product · Qoo10</p>
+            <h2 class="js-p-title">PRODUCT</h2>
+            <p class="inni-unit js-p-unit">(JPY) · 순매출 기준</p>
+          </header>
+
+          <div class="inni-comment">
+            <div class="inni-comment-head"><h3>코멘트</h3></div>
+            <div class="inni-auto js-p-auto"></div>
+            <div class="inni-manual js-p-manual" hidden>
+              <p class="inni-manual-body js-p-manual-body"></p>
+              <small class="inni-note js-p-manual-meta"></small>
+            </div>
+          </div>
+
+          <div class="inni-two">
+            <div>
+              <h3>라인별 <small class="js-p-line-sub"></small></h3>
+              <div class="inni-chart is-sm"><canvas class="js-p-chart-line"></canvas></div>
+              <div class="inni-scroll"><table class="inni-table js-p-line"></table></div>
+            </div>
+            <div>
+              <h3>카테고리별 <small class="js-p-cat-sub"></small></h3>
+              <div class="inni-chart is-sm"><canvas class="js-p-chart-cat"></canvas></div>
+              <div class="inni-scroll"><table class="inni-table js-p-cat"></table></div>
+            </div>
+          </div>
+
+          <h3 class="js-p-items-title">상품별 상세</h3>
+          <div class="inni-scroll inni-wide"><table class="inni-table inni-items js-p-items"></table></div>
+          <p class="inni-note js-p-items-note"></p>
         </div>
       </section>
       <section class="inni-pane" data-pane="onsite" hidden>
@@ -171,6 +210,7 @@
 <script src="/assets/dash.js"></script>
 <script src="/assets/inni.js"></script>
 <script src="/assets/inni-sales.js"></script>
+<script src="/assets/inni-product.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });

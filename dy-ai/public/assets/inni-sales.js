@@ -15,11 +15,11 @@
   var el = {
     fy: $(".js-s-fy"), month: $(".js-s-month"), reload: $(".js-s-reload"), tgtBtn: $(".js-s-tgt-btn"), msg: $(".js-s-msg"),
     tgt: $(".js-s-tgt"), tgtTable: $(".js-s-tgt-table"), tgtSave: $(".js-s-tgt-save"), tgtCancel: $(".js-s-tgt-cancel"), tgtNote: $(".js-s-tgt-note"),
-    title: $(".js-s-title"), unit: $(".js-s-unit"), auto: $(".js-s-auto"), note: $(".js-s-note"), noteSave: $(".js-s-note-save"), noteMeta: $(".js-s-note-meta"),
+    title: $(".js-s-title"), unit: $(".js-s-unit"), auto: $(".js-s-auto"), noteBtn: $(".js-s-note-btn"), manual: $(".js-s-manual"), manualBody: $(".js-s-manual-body"), manualMeta: $(".js-s-manual-meta"),
     kpiTitle: $(".js-s-kpi-title"), kpi: $(".js-s-kpi"), chart: $(".js-s-chart"), trend: $(".js-s-trend")
   };
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  var S = { ready: false, loading: false, rows: {}, targets: {}, anchor: null, minYm: null, endYm: null, partialYm: null, lyPart: null, pmPart: null, fy: null, ym: null };
+  var S = { note: null, ready: false, loading: false, rows: {}, targets: {}, anchor: null, minYm: null, endYm: null, partialYm: null, lyPart: null, pmPart: null, fy: null, ym: null };
   var chart = null;
 
   // ---------- 날짜 ----------
@@ -127,14 +127,57 @@
     L.push({ t: "PV " + num(m.pv) + (m.pvYoy != null ? " (YoY " + gstr(m.pvYoy) + ")" : "") + " · ORDERS " + num(m.orders) + " · CVR " + pctv(m.cvr, 1) + " · AOV ¥" + num(m.aov) + (m.aovYoy != null ? " (YoY " + gstr(m.aovYoy) + ")" : "") });
     return L;
   }
+  function showManual(c) {
+    S.note = c && c.body ? c : null;
+    el.manual.hidden = !S.note;
+    el.manualBody.textContent = S.note ? S.note.body : "";
+    el.manualMeta.textContent = S.note ? "직접 입력 · " + (S.note.by || "") + (S.note.at ? " · " + String(S.note.at).slice(0, 16).replace("T", " ") : "") : "";
+    el.noteBtn.textContent = S.note ? "코멘트 수정" : "코멘트 입력";
+  }
   function renderComment(k) {
     el.auto.innerHTML = "";
     autoLines(k).forEach(function (l) { var p = h("p"); var sp = h("span", l.c || "", l.t); p.appendChild(sp); el.auto.appendChild(p); });
-    el.note.value = ""; el.noteMeta.textContent = "";
+    showManual(null);
     rpc("dy_inni_comment_get", { p_report: "sales", p_ym: k }).then(function (c) {
-      if (k !== S.ym) return;
-      if (c) { el.note.value = c.body || ""; el.noteMeta.textContent = (c.by || "") + (c.at ? " · " + String(c.at).slice(0, 16).replace("T", " ") : ""); }
-    }).catch(function (e) { el.noteMeta.textContent = friendly(e); });
+      if (k === S.ym) showManual(c);
+    }).catch(function (e) { el.manualMeta.textContent = friendly(e); el.manual.hidden = false; });
+  }
+
+  // 코멘트 입력 모달 (브라우저 기본 창 대신)
+  function openNoteModal() {
+    var k = S.ym, prev = document.activeElement;
+    var ov = h("div", "inni-modal"), card = h("div", "inni-modal-card");
+    ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "코멘트 입력");
+    card.appendChild(h("h3", null, "코멘트 입력 · " + k.slice(0, 4) + " " + MON[mOf(k) - 1]));
+    card.appendChild(h("p", null, "자동 코멘트 아래에 같이 보여요. 줄바꿈은 그대로 보여요."));
+    var ta = h("textarea"); ta.maxLength = 4000; ta.value = S.note ? S.note.body : ""; ta.placeholder = "예: 메가와리 기간 차이로 YoY -17%...";
+    card.appendChild(ta);
+    var err = h("div", "inni-modal-err"); card.appendChild(err);
+    var acts = h("div", "inni-modal-acts");
+    var del = h("button", "dash-btn", "지우기"); del.type = "button"; del.hidden = !S.note;
+    var gap = h("span", "inni-gap");
+    var cancel = h("button", "dash-btn", "취소"); cancel.type = "button";
+    var save = h("button", "dash-btn is-primary", "저장"); save.type = "button";
+    [del, gap, cancel, save].forEach(function (x) { acts.appendChild(x); });
+    card.appendChild(acts); ov.appendChild(card); document.body.appendChild(ov);
+    ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+    function close() { document.removeEventListener("keydown", onKey, true); if (ov.parentNode) ov.parentNode.removeChild(ov); if (prev && prev.focus) prev.focus(); }
+    function onKey(e) {
+      if (e.key === "Escape") { e.preventDefault(); close(); }
+      else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(ta.value); }
+    }
+    function commit(body) {
+      save.disabled = del.disabled = true; err.textContent = "";
+      rpc("dy_inni_comment_set", { p_report: "sales", p_ym: k, p_body: body }).then(function (c) {
+        if (k === S.ym) showManual(c);
+        toast(c ? "코멘트를 저장했어요" : "코멘트를 지웠어요"); close();
+      }).catch(function (e) { err.textContent = friendly(e); save.disabled = del.disabled = false; });
+    }
+    document.addEventListener("keydown", onKey, true);
+    ov.addEventListener("mousedown", function (e) { if (e.target === ov) close(); });
+    cancel.addEventListener("click", close);
+    save.addEventListener("click", function () { commit(ta.value); });
+    del.addEventListener("click", function () { commit(""); });
   }
 
   // ---------- 표·그래프 ----------
@@ -147,8 +190,8 @@
     return tr;
   }
   function renderKpi() {
-    var fy = S.fy, months = fyMonths(fy), ms = months.map(month);
-    el.kpiTitle.textContent = "월별 요약 · " + fyLabel(fy) + " (" + months[0].slice(0, 7) + " ~ " + months[11].slice(0, 7) + ")";
+    var fy = S.fy, months = fyMonths(fy), ms = months.map(function (k) { return k <= S.ym ? month(k) : null; });   // 기준 월 이후는 보이지 않게
+    el.kpiTitle.textContent = "월별 요약 · " + fyLabel(fy) + " (" + months[0].slice(0, 7) + " ~ " + S.ym.slice(0, 7) + " 기준)";
     el.kpi.innerHTML = "";
     var thead = h("thead"), hr = h("tr"); hr.appendChild(h("th", null, fyLabel(fy)));
     months.forEach(function (k, i) { var th = h("th", [ms[i] && ms[i].partial ? "is-part" : "", k === S.ym ? "is-sel" : ""].join(" ").trim(), MON[mOf(k) - 1]); if (ms[i] && ms[i].partial) th.title = S.anchor.slice(5) + "까지 · 같은 일수끼리 비교"; hr.appendChild(th); });
@@ -159,7 +202,7 @@
     var lyAll = have.length && have.every(function (m) { return m.ly; });
     var sSales = sum(function (m) { return m.sales; }), sPv = sum(function (m) { return m.pv; }), sOrd = sum(function (m) { return m.orders; });
     var lySales = lyAll ? sum(function (m) { return m.ly.net_sales; }) : null, lyPv = lyAll ? sum(function (m) { return m.ly.total_pv; }) : null;
-    var tgtMonths = months.filter(function (k) { return S.targets[k] != null; });
+    var tgtMonths = months.filter(function (k) { return k <= S.ym && S.targets[k] != null; });
     var sTgt = tgtMonths.reduce(function (a, k) { return a + S.targets[k]; }, 0);
     var tgtBase = tgtMonths.filter(function (k) { return month(k); });
     var sTgtDone = tgtBase.reduce(function (a, k) { return a + S.targets[k]; }, 0), sSalesDone = tgtBase.reduce(function (a, k) { return a + month(k).sales; }, 0);
@@ -171,7 +214,7 @@
     var tb = h("tbody");
     tb.appendChild(kpiRow("SALES", col(function (m) { return m ? { v: kj(m.sales) } : null; }, { v: have.length ? kj(sSales) : "", sum: true })));
     tb.appendChild(kpiRow("YoY", col(function (m) { return m && m.yoy != null ? { v: gstr(m.yoy), cls: cls(m.yoy) } : null; }, { v: yS != null ? gstr(yS) : "", cls: cls(yS), sum: true }), { sub: true }));
-    tb.appendChild(kpiRow("TGT", col(function (m, k) { return S.targets[k] != null ? { v: kj(S.targets[k]) } : null; }, { v: tgtMonths.length ? kj(sTgt) : "", sum: true })));
+    tb.appendChild(kpiRow("TGT", col(function (m, k) { return k <= S.ym && S.targets[k] != null ? { v: kj(S.targets[k]) } : null; }, { v: tgtMonths.length ? kj(sTgt) : "", sum: true })));
     tb.appendChild(kpiRow("TGT %", col(function (m) { return m && m.tgtPct != null ? { v: pctv(m.tgtPct) } : null; }, { v: sTgtDone ? pctv(sSalesDone / sTgtDone * 100) : "", sum: true }), { sub: true }));
     tb.appendChild(kpiRow("PV", col(function (m) { return m ? { v: num(m.pv) } : null; }, { v: have.length ? num(sPv) : "", sum: true })));
     tb.appendChild(kpiRow("YoY", col(function (m) { return m && m.pvYoy != null ? { v: gstr(m.pvYoy), cls: cls(m.pvYoy) } : null; }, { v: yP != null ? gstr(yP) : "", cls: cls(yP), sum: true }), { sub: true }));
@@ -193,14 +236,14 @@
     order.forEach(function (mm) { hr.appendChild(h("th", null, MON[mm - 1])); }); hr.appendChild(h("th", "is-sum", "합계")); thead.appendChild(hr); el.trend.appendChild(thead);
     var tb = h("tbody");
     fys.forEach(function (f, i) {
-      var vals = fyMonths(f).map(function (k) { var m = month(k); return m ? m.sales / 1000 : null; });
+      var vals = fyMonths(f).map(function (k) { if (f === fy && k > S.ym) return null; var m = month(k); return m ? m.sales / 1000 : null; });
       var tr = h("tr"); tr.appendChild(h("td", null, fyLabel(f)));
       vals.forEach(function (v) { tr.appendChild(h("td", v == null ? "is-empty" : "", v == null ? "·" : Math.round(v).toLocaleString("ko-KR"))); });
       var total = vals.reduce(function (a, v) { return a + (v || 0); }, 0);
       tr.appendChild(h("td", "is-sum", vals.some(function (v) { return v != null; }) ? Math.round(total).toLocaleString("ko-KR") : "·")); tb.appendChild(tr);
       datasets.push({ label: fyLabel(f), data: vals.map(function (v) { return v == null ? null : Math.round(v); }), borderColor: palette[(fys.length - 1 - i) % 4], backgroundColor: palette[(fys.length - 1 - i) % 4], tension: .25, pointRadius: 3, borderWidth: f === fy ? 2.6 : 1.6, spanGaps: false });
     });
-    var tg = fyMonths(fy).map(function (k) { return S.targets[k] != null ? Math.round(S.targets[k] / 1000) : null; });
+    var tg = fyMonths(fy).map(function (k) { return k <= S.ym && S.targets[k] != null ? Math.round(S.targets[k] / 1000) : null; });
     if (tg.some(function (v) { return v != null; })) {
       var tr2 = h("tr", "is-sub"); tr2.appendChild(h("td", null, "TGT " + fyLabel(fy)));
       tg.forEach(function (v) { tr2.appendChild(h("td", v == null ? "is-empty" : "", v == null ? "·" : v.toLocaleString("ko-KR"))); });
@@ -299,12 +342,7 @@
   });
   el.tgtCancel.addEventListener("click", function () { el.tgt.hidden = true; el.tgtBtn.setAttribute("aria-expanded", "false"); el.tgtBtn.textContent = "월별 목표 입력"; });
   el.tgtSave.addEventListener("click", saveTargets);
-  el.noteSave.addEventListener("click", function () {
-    var k = S.ym; el.noteSave.disabled = true;
-    rpc("dy_inni_comment_set", { p_report: "sales", p_ym: k, p_body: el.note.value }).then(function (c) {
-      el.noteMeta.textContent = c ? (c.by || "") + " · 방금" : "지웠어요"; toast(c ? "코멘트를 저장했어요" : "코멘트를 지웠어요");
-    }).catch(function (e) { el.noteMeta.textContent = friendly(e); }).then(function () { el.noteSave.disabled = false; });
-  });
+  el.noteBtn.addEventListener("click", openNoteModal);
 
   // ---------- 시작 ----------
   var started = false;

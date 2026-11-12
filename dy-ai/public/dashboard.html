@@ -113,12 +113,12 @@
           </header>
 
           <div class="inni-comment">
-            <h3>코멘트</h3>
+            <div class="inni-comment-head"><h3>코멘트</h3><button class="dash-btn js-s-note-btn" type="button" aria-haspopup="dialog">코멘트 입력</button></div>
             <div class="inni-auto js-s-auto"></div>
-            <label class="inni-note-lab">직접 입력 <small>(이 달 리포트에 같이 보여요)</small>
-              <textarea class="js-s-note" rows="3" maxlength="4000" placeholder="예: 메가와리 기간 차이로 YoY -17%..."></textarea>
-            </label>
-            <div class="inni-actions"><button class="dash-btn js-s-note-save" type="button">코멘트 저장</button><span class="inni-note js-s-note-meta"></span></div>
+            <div class="inni-manual js-s-manual" hidden>
+              <p class="inni-manual-body js-s-manual-body"></p>
+              <small class="inni-note js-s-manual-meta"></small>
+            </div>
           </div>
 
           <h3 class="js-s-kpi-title">월별 요약</h3>

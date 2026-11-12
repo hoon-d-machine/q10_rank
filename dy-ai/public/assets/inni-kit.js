@@ -140,7 +140,7 @@
   function argb(hex) { return "FF" + hex.replace("#", "").toUpperCase(); }
   function fill(c) { return { type: "pattern", pattern: "solid", fgColor: { argb: c } }; }
   // 열 종류별 엑셀 서식: text | int | gr(증감률, 값은 %) | pct1(%, 소수 1자리) | pct(%, 정수)
-  var XFMT = { int: "#,##0", gr: "+0%;-0%;0%", pct1: "0.0%", pct: "0%" };
+  var XFMT = { int: "#,##0", gr: "+0%;-0%;0%", pct1: "0.0%", pct: "0%", dec1: "#,##0.0", dec2: "#,##0.00" };
   function xv(type, v) { return v == null ? null : (type === "gr" || type === "pct1" || type === "pct") ? v / 100 : v; }
 
   // 머리글(눈썹글·제목·단위) + 코멘트(자동·직접 입력). 반환: 다음 행 번호
@@ -215,6 +215,9 @@
     });
   }
 
-  window.dyInniKit = { DEFAULT_HL: DEFAULT_HL, PRESETS: PRESETS, normSpec: normSpec, applyHl: applyHl, openSettings: openSettings,
+  // 시트 MEGAPO 의 유입 경로 표와 같은 [구분, 경로, 페이지뷰 열] (틱톡은 스토어 전체 표에 열이 없음)
+  var CH_SPEC = [["큐텐 구좌", "홈(메인페이지)_메가할인", "mn_megawari_pv"], ["큐텐 구좌", "홈(메인페이지)_메가포", "mn_megapo_pv"], ["오가닉", "홈(메인페이지)_나의관심상품", "mn_myinterest_pv"], ["큐텐 구좌", "홈(메인페이지)_주목 브랜드", "mn_spotlight_brand_pv"], ["오가닉", "홈(메인페이지)_랭킹", "mn_bestseller_pv"], ["오가닉", "홈(메인페이지)_공식 코스메 랭킹", "mn_beauty_ranking_pv"], ["큐텐 구좌", "홈(메인페이지)_코스메셀렉트", "mn_beauty_pv"], ["내부 광고", "홈(메인페이지)_타임세일", "mn_timesale_pv"], ["내부 광고", "홈(메인페이지)_데일리딜", "mn_dailydeal_pv"], ["구분 불가", "홈(메인페이지)_공동구매", "mn_groupbuy_pv"], ["내부 광고", "홈(메인페이지)_호리다시모노", "mn_chancedeal_pv"], ["구분 불가", "홈(메인페이지)_기타", "mn_etc_pv"], ["내부 광고", "검색결과_키워드플러스", "sch_keywordplus_pv"], ["내부 광고", "검색결과_파워랭크업", "sch_powerrank_pv"], ["내부 광고", "검색결과_스마트세일즈", "sch_cps_pv"], ["내부 광고", "검색결과_타임세일", "sch_timesale_pv"], ["오가닉", "검색결과_일반", "sch_etc_pv"], ["오가닉", "베스트셀러", "bestseller_pv"], ["큐텐 구좌", "뷰티", "beautyhub_pv"], ["큐텐 구좌", "이너뷰티", "supplementhub_pv"], ["내부 광고", "프로모션페이지_오늘의메가할인", "dl_todaysmega_pv"], ["내부 광고", "프로모션페이지_오늘의메가포", "dl_todaysmega_po_pv"], ["큐텐 구좌", "프로모션페이지_타임세일", "dl_timesale_pv"], ["큐텐 구좌", "프로모션페이지_데일리딜", "dl_dailydeal_pv"], ["큐텐 구좌", "프로모션페이지_공동구매", "dl_groupbuy_pv"], ["내부 광고", "프로모션페이지_호리다시모노", "dl_onedaychance_pv"], ["오가닉", "위시리스트", "wish_pv"], ["오가닉", "최근본상품", "todaysview_pv"], ["오가닉", "장바구니", "cart_pv"], ["외부 광고", "셀러샵", "sellershop_pv"], ["큐텐 구좌", "기획전", "special_pv"], ["내부 광고", "카테고리페이지", "category_pv"], ["구분 불가", "상품상세페이지", "vip_pv"], ["오가닉", "상품카탈로그", "catalog_pv"], ["오가닉", "마이페이지", "my_pv"], ["큐텐 구좌", "Live Shopping", "live_pv"], ["외부 광고", "외부유입_구글", "ext_google_pv"], ["외부 광고", "외부유입_페이스북", "ext_facebook_pv"], ["외부 광고", "외부유입_X(트위터)", "ext_twitter_pv"], ["외부 광고", "외부유입_Instagram", "ext_instagram_pv"], ["외부 광고", "외부유입_Tiktok", "ext_tiktok_pv"], ["외부 광고", "외부유입_야후", "ext_yahoo_pv"], ["외부 광고", "외부유입_카카쿠", "ext_kakaku_pv"], ["외부 광고", "외부유입_라인", "ext_line_pv"], ["외부 광고", "외부유입_이메일", "ext_email_pv"], ["외부 광고", "외부유입_기타", "ext_others_pv"], ["외부 광고", "URL직접입력", "directurl_pv"], ["구분 불가", "기타", "etc_pv"]];
+
+  window.dyInniKit = { CH_SPEC: CH_SPEC, DEFAULT_HL: DEFAULT_HL, PRESETS: PRESETS, normSpec: normSpec, applyHl: applyHl, openSettings: openSettings,
     loadExcelJs: loadExcelJs, XL: XL, argb: argb, fill: fill, xv: xv, writeHead: writeHead, writeComment: writeComment, writeTable: writeTable, imageOf: imageOf, download: download };
 })();

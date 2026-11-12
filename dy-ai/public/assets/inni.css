@@ -155,3 +155,20 @@ html[data-theme="nature"] .inni-modal-card, html[data-theme="dark"] .inni-modal-
 /* MEGAPO: 섹션 제목(요약·일별·제품별 실적·PV) */
 .inni-report h3.inni-sec { margin: 28px 0 10px; padding: 7px 12px; font-size: 15px; border-left: 4px solid var(--lg-accent); background: color-mix(in srgb, var(--lg-accent) 8%, transparent); border-radius: 0 8px 8px 0; }
 .inni-report h3.inni-sec:first-of-type { margin-top: 8px; }
+
+/* 대시보드 하위 보드(광고 효율 · 랭킹·판매 · 유입 경로 · 고객 구조 · 행사 비교 · 찜·장바구니 · 경영 요약) */
+.board-pane[hidden] { display: none; }
+.js-bsubs { margin-bottom: 14px; }
+.board-ctrls { display: inline-flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.board-body.is-loading { opacity: .45; pointer-events: none; transition: opacity .15s; }
+.board-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 6px 0 18px; }
+.board-kpi { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--lg-line); background: color-mix(in srgb, var(--lg-card) 92%, transparent); display: flex; flex-direction: column; gap: 3px; }
+.board-kpi small { color: var(--lg-muted); font-size: 12px; }
+.board-kpi strong { font-size: 22px; line-height: 1.2; }
+.board-kpi span { font-size: 12px; color: var(--lg-muted); }
+.board-kpi.is-up strong, .board-kpi.is-up span { color: var(--dash-up, #06a06f); }
+.board-kpi.is-down strong, .board-kpi.is-down span { color: var(--dash-down, #d0021b); }
+
+/* 보드 표: 텍스트 열(상품명·기간 등)은 왼쪽 정렬 */
+.board-body .inni-table td.t:not(:first-child), .board-body .inni-table th.t:not(:first-child) { text-align: left; font-weight: 400; }
+.board-body .inni-table td.t:not(:first-child) { max-width: 360px; overflow: hidden; text-overflow: ellipsis; }

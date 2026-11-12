@@ -63,6 +63,17 @@
     </div>
 
     <div id="view-dash">
+    <div class="inni-tabs inni-sub js-bsubs" role="tablist" aria-label="대시보드 종류">
+      <button class="inni-tab" type="button" role="tab" data-board="custom" aria-selected="true">커스텀</button>
+      <button class="inni-tab" type="button" role="tab" data-board="ad" aria-selected="false">광고 효율</button>
+      <button class="inni-tab" type="button" role="tab" data-board="rank" aria-selected="false">랭킹·판매</button>
+      <button class="inni-tab" type="button" role="tab" data-board="channel" aria-selected="false">유입 경로</button>
+      <button class="inni-tab" type="button" role="tab" data-board="customer" aria-selected="false">고객 구조</button>
+      <button class="inni-tab" type="button" role="tab" data-board="events" aria-selected="false">행사 비교</button>
+      <button class="inni-tab" type="button" role="tab" data-board="wish" aria-selected="false">찜·장바구니</button>
+      <button class="inni-tab" type="button" role="tab" data-board="exec" aria-selected="false">경영 요약</button>
+    </div>
+    <div class="board-pane" data-bpane="custom">
     <div class="dash-bar" role="toolbar" aria-label="대시보드 설정">
       <label class="dash-bar-item"><span>대시보드</span><select class="js-pick"></select></label>
       <label class="dash-bar-item"><span>기간</span><select class="js-range"></select></label>
@@ -79,6 +90,14 @@
     <p class="dash-msg js-msg" role="alert" hidden></p>
 
     <div class="dash-grid js-grid" aria-live="polite"></div>
+    </div>
+    <section class="board-pane" data-bpane="ad" hidden></section>
+    <section class="board-pane" data-bpane="rank" hidden></section>
+    <section class="board-pane" data-bpane="channel" hidden></section>
+    <section class="board-pane" data-bpane="customer" hidden></section>
+    <section class="board-pane" data-bpane="events" hidden></section>
+    <section class="board-pane" data-bpane="wish" hidden></section>
+    <section class="board-pane" data-bpane="exec" hidden></section>
     </div>
 
     <div id="view-inni" hidden>
@@ -286,6 +305,15 @@
 <script src="/assets/inni-kit.js"></script>
 <script src="/assets/inni-onsite.js"></script>
 <script src="/assets/inni-megapo.js"></script>
+<script src="/assets/inni-board.js"></script>
+<script src="/assets/board-ad.js"></script>
+<script src="/assets/board-rank.js"></script>
+<script src="/assets/board-channel.js"></script>
+<script src="/assets/board-customer.js"></script>
+<script src="/assets/board-events.js"></script>
+<script src="/assets/board-wish.js"></script>
+<script src="/assets/board-exec.js"></script>
+<script>window.dyBoard && window.dyBoard.ready();</script>
 <script src="/assets/inni-help.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {

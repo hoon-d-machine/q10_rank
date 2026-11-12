@@ -109,6 +109,16 @@ $$;
 revoke all on function dy_dash_agg(text, text, date, date, text[], text, int, text) from public, anon;
 grant execute on function dy_dash_agg(text, text, date, date, text[], text, int, text) to authenticated;
 
+-- 일간 랭킹 데이터가 있는 날짜 목록 (이니스프리가 한 개도 안 들어간 날도 '데이터 있음'으로 알기 위해)
+create or replace function dy_rank_days(p_from date, p_to date) returns jsonb
+language sql stable security definer set search_path = public
+as $$
+  select case when auth.uid() is null then null
+    else coalesce((select jsonb_agg(d order by d) from (select distinct rank_date d from q10_rank_log where period = 'daily' and rank_date between p_from and p_to) t), '[]'::jsonb) end
+$$;
+revoke all on function dy_rank_days(date, date) from public, anon;
+grant execute on function dy_rank_days(date, date) to authenticated;
+
 -- ============================================================
 -- 2) 데이터 범위
 -- ============================================================

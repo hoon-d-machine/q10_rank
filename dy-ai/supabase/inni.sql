@@ -77,7 +77,7 @@ as $$
 declare d date := date_trunc('month', p_ym)::date;
 begin
   if auth.uid() is null then raise exception 'login required'; end if;
-  if p_report !~ '^(sales|product|onsite|megapo|megawari)(_[a-z]+)?$' then raise exception 'bad report'; end if;
+  if p_report !~ '^((sales|product|onsite|megapo|megawari)(_[a-z]+)?|board_[a-z]+)$' then raise exception 'bad report'; end if;
   if length(coalesce(p_body, '')) > 4000 then raise exception 'too long'; end if;
   if coalesce(trim(p_body), '') = '' then
     delete from inni_comments where report = p_report and ym = d;
@@ -118,7 +118,7 @@ language plpgsql security definer set search_path = public
 as $$
 begin
   if auth.uid() is null then raise exception 'login required'; end if;
-  if p_report not in ('sales', 'product', 'onsite', 'megapo', 'megawari') then raise exception 'bad report'; end if;
+  if (p_report not in ('sales', 'product', 'onsite', 'megapo', 'megawari') and p_report !~ '^board_[a-z]+$') then raise exception 'bad report'; end if;
   if p_fy < 2000 or p_fy > 2100 then raise exception 'bad fy'; end if;
   if jsonb_typeof(p_config) <> 'object' or length(p_config::text) > 8000 then raise exception 'bad config'; end if;
   insert into inni_settings (report, fy, config, updated_by, updated_at)

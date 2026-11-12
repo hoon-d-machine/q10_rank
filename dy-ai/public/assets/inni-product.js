@@ -242,6 +242,15 @@
     }
     return null;
   }
+  // 표가 화면에 다 들어가면 overflow 를 풀어(is-fit) 열 이름이 페이지 스크롤을 따라오게 하고, 넘치면 가로 스크롤
+  function fitWrap() {
+    var w = pane.querySelector(".inni-wide"); if (!w || !w.offsetParent) return;
+    w.classList.remove("is-fit");
+    if (w.scrollWidth <= w.clientWidth + 1) w.classList.add("is-fit");
+  }
+  var fitTimer = null;
+  window.addEventListener("resize", function () { clearTimeout(fitTimer); fitTimer = setTimeout(fitWrap, 120); });
+
   function renderItems() {
     var d = S.data, cols = itemCols();
     el.itemsTitle.textContent = "상품별 상세 · " + tyLabel() + (d.part ? " (" + S.anchor.slice(5).replace("-", "/") + "까지)" : "") + " · " + d.items.length + "개 상품";
@@ -275,6 +284,7 @@
     });
     tf.appendChild(fr); el.items.appendChild(tf);
     applyHl(el.items, S.cfg.items);
+    fitWrap();
     el.itemsNote.textContent = "온사이트 광고(Spend · AD Sales · ROAS)는 아직 DB 에 광고 데이터가 없어서 '-' 로 비어 있어요. 라인·카테고리는 상품코드표 기준(분류가 없는 상품은 " + UNCLASS + "), CVR = 상품수량 ÷ PV, 누계 = " + fyLabel(S.fy) + " 7월부터 기준 월까지.";
   }
 
@@ -576,7 +586,7 @@
       return loadCfg(S.fy).then(recompute);
     });
   }
-  document.addEventListener("inni:show", function (e) { if (e.detail.view === "inni" && e.detail.sub === "product") start(); });
+  document.addEventListener("inni:show", function (e) { if (e.detail.view === "inni" && e.detail.sub === "product") { start(); setTimeout(fitWrap, 50); } });
   var h0 = location.hash || "";
   if (/^#inni\/product/.test(h0)) start();
 })();

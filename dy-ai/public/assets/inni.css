@@ -109,8 +109,9 @@ html[data-theme="nature"] .inni-modal-card, html[data-theme="dark"] .inni-modal-
 .inni-wide { max-height: 720px; overflow: auto; }
 .inni-items { font-size: 12.5px; }
 .inni-items th, .inni-items td { padding: 7px 10px; }
-.inni-items thead th { position: sticky; top: 0; z-index: 2; background: var(--lg-card); text-align: center; border-bottom: 1px solid var(--lg-line); }
-.inni-items thead tr:nth-child(2) th { top: 31px; z-index: 2; }
+.inni-items thead th, .inni-items thead th:first-child { position: sticky; left: auto; top: 0; z-index: 2; background: var(--lg-card); text-align: right; font-weight: 600; border-bottom: 1px solid var(--lg-line); }
+.inni-items thead th.is-grp, .inni-items thead th.is-grp:first-child { text-align: center; }   /* 묶음 제목(Sales·PV…)과 No.·상품명은 가운데 */
+.inni-items thead tr:nth-child(2) th, .inni-items thead tr:nth-child(2) th:first-child { top: 31px; }
 .inni-items thead th.is-grp { border-bottom: 1px solid var(--lg-line); font-weight: 700; color: var(--lg-text); }
 .inni-items td.t { text-align: left; font-weight: 400; }
 .inni-items td.name { max-width: 300px; overflow: hidden; text-overflow: ellipsis; text-align: left; font-weight: 400; }

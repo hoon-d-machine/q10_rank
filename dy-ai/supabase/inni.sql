@@ -77,7 +77,7 @@ as $$
 declare d date := date_trunc('month', p_ym)::date;
 begin
   if auth.uid() is null then raise exception 'login required'; end if;
-  if p_report not in ('sales', 'product', 'onsite', 'megapo', 'megawari') then raise exception 'bad report'; end if;
+  if p_report !~ '^(sales|product|onsite|megapo|megawari)(_[a-z]+)?$' then raise exception 'bad report'; end if;
   if length(coalesce(p_body, '')) > 4000 then raise exception 'too long'; end if;
   if coalesce(trim(p_body), '') = '' then
     delete from inni_comments where report = p_report and ym = d;

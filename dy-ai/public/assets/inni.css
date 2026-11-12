@@ -151,3 +151,7 @@ html[data-theme="nature"] .inni-modal-card, html[data-theme="dark"] .inni-modal-
 
 /* MEGAPO: 취소 비중이 큰 날(집계 이상 가능성)이 들어간 줄 */
 .inni-table tr.is-flag td { background: rgba(255, 214, 77, .28); }
+
+/* MEGAPO: 섹션 제목(요약·일별·제품별 실적·PV) */
+.inni-report h3.inni-sec { margin: 28px 0 10px; padding: 7px 12px; font-size: 15px; border-left: 4px solid var(--lg-accent); background: color-mix(in srgb, var(--lg-accent) 8%, transparent); border-radius: 0 8px 8px 0; }
+.inni-report h3.inni-sec:first-of-type { margin-top: 8px; }

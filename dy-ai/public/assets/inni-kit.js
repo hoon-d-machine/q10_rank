@@ -4,11 +4,12 @@
  * openSettings(o): 설정 모달
  *   o.title, o.desc, o.report('onsite'|'megapo'|'megawari'), o.fy
  *   o.note   : { ym: 'YYYY-MM-01', body, label } | null      코멘트 탭 (null 이면 탭 없음)
+ *   o.notes  : [{ key, label, ym, report, body }]               코멘트가 여러 칸(예: 요약·일별·제품별·PV)일 때 — 있으면 o.note 대신 쓴다. 칸마다 report 이름이 따로다
  *   o.cfg    : 현재 설정 객체 { <표키>: { rows:[], cols:[], color }, <선택키>: 값 }
  *   o.tables : [{ key, title, rows:[[id, 이름]], cols:[[id, 이름]], scroll }]    강조 탭
  *   o.selects: [{ key, label, options:[[값, 이름]] }]                           그래프 탭 (o.chartNote: 안내 문구)
  *   o.rpc(name, args) → Promise, o.toast(msg), o.friendly(err)
- *   o.onNote(c)  : 코멘트 저장 후, o.onCfg(draft) : 설정 저장 후 (화면 갱신)
+ *   o.onNote(c, key)  : 코멘트 저장 후 (key 는 o.notes 의 칸 이름), o.onCfg(draft) : 설정 저장 후 (화면 갱신)
  * 엑셀: loadExcelJs() → ExcelJS, header/comment/table 쓰기 도우미, imageOf(wb, chartConfig, w, h), download(wb, 파일명)
  */
 (function () {
@@ -38,24 +39,28 @@
 
   // ---------- 설정 모달 ----------
   function openSettings(o) {
-    var prev = document.activeElement, draft = JSON.parse(JSON.stringify(o.cfg)), cfg0 = JSON.stringify(o.cfg), note0 = o.note ? o.note.body || "" : "";
+    var prev = document.activeElement, draft = JSON.parse(JSON.stringify(o.cfg)), cfg0 = JSON.stringify(o.cfg);
+    var notes = o.notes || (o.note ? [{ key: "", label: o.note.label, ym: o.note.ym, report: o.report, body: o.note.body || "" }] : []);
     var ov = h("div", "inni-modal"), card = h("div", "inni-modal-card is-wide");
     ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "설정");
     card.appendChild(h("h3", null, o.title)); card.appendChild(h("p", null, o.desc));
     var tabs = h("div", "inni-mtabs"); tabs.setAttribute("role", "tablist");
     var panels = {}, tabBtns = {}, order = [];
-    var defs = []; if (o.note) defs.push(["note", "코멘트"]); if (o.tables && o.tables.length) defs.push(["hl", "강조"]); if (o.selects && o.selects.length) defs.push(["chart", "그래프"]);
+    var defs = []; if (notes.length) defs.push(["note", "코멘트"]); if (o.tables && o.tables.length) defs.push(["hl", "강조"]); if (o.selects && o.selects.length) defs.push(["chart", "그래프"]);
     defs.forEach(function (t) {
       var b = h("button", "inni-mtab", t[1]); b.type = "button"; b.setAttribute("role", "tab"); tabBtns[t[0]] = b; tabs.appendChild(b); order.push(t[0]);
       var p = h("div", "inni-mpanel"); p.setAttribute("role", "tabpanel"); panels[t[0]] = p;
     });
     card.appendChild(tabs);
 
-    var ta = null;
-    if (o.note) {
-      ta = h("textarea"); ta.maxLength = 4000; ta.value = note0;
-      panels.note.appendChild(h("p", null, (o.note.label || "") + " 리포트의 직접 입력 코멘트예요. 자동 코멘트 아래에 같이 보여요. 비우고 저장하면 지워져요."));
-      panels.note.appendChild(ta);
+    var tas = [];
+    if (notes.length) {
+      panels.note.appendChild(h("p", null, (o.note ? (o.note.label || "") + " 리포트의 " : "") + "직접 입력 코멘트예요. 자동 코멘트 아래에 같이 보여요. 비우고 저장하면 지워져요."));
+      notes.forEach(function (n) {
+        if (notes.length > 1) panels.note.appendChild(h("h5", null, n.label));
+        var t = h("textarea"); t.maxLength = 4000; t.value = n.body || ""; t.setAttribute("aria-label", n.label || "코멘트"); if (notes.length > 1) t.style.minHeight = "84px";
+        panels.note.appendChild(t); tas.push([n, t]);
+      });
     }
     (o.tables || []).forEach(function (td) {
       if (!draft[td.key]) draft[td.key] = normSpec(null);
@@ -98,7 +103,7 @@
       });
     }
     order.forEach(function (t) { card.appendChild(panels[t]); });
-    function showTab(t) { order.forEach(function (x) { panels[x].hidden = x !== t; tabBtns[x].setAttribute("aria-selected", String(x === t)); }); if (t === "note" && ta) ta.focus(); }
+    function showTab(t) { order.forEach(function (x) { panels[x].hidden = x !== t; tabBtns[x].setAttribute("aria-selected", String(x === t)); }); if (t === "note" && tas.length) tas[0][1].focus(); }
     order.forEach(function (t) { tabBtns[t].addEventListener("click", function () { showTab(t); }); });
     var err = h("div", "inni-modal-err"); card.appendChild(err);
     var acts = h("div", "inni-modal-acts"), gap = h("span", "inni-gap"), cancel = h("button", "dash-btn", "취소"), save = h("button", "dash-btn is-primary", "저장");
@@ -108,10 +113,10 @@
     function close() { document.removeEventListener("keydown", onKey, true); if (ov.parentNode) ov.parentNode.removeChild(ov); if (prev && prev.focus) prev.focus(); }
     function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(); } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(); } }
     function commit() {
-      var jobs = [], noteChanged = ta && ta.value !== note0, cfgChanged = JSON.stringify(draft) !== cfg0;
-      if (!noteChanged && !cfgChanged) { close(); return; }
+      var jobs = [], changed = tas.filter(function (x) { return x[1].value !== (x[0].body || ""); }), cfgChanged = JSON.stringify(draft) !== cfg0;
+      if (!changed.length && !cfgChanged) { close(); return; }
       save.disabled = true; err.textContent = "";
-      if (noteChanged) jobs.push(o.rpc("dy_inni_comment_set", { p_report: o.report, p_ym: o.note.ym, p_body: ta.value }).then(function (c) { if (o.onNote) o.onNote(c); }));
+      changed.forEach(function (x) { jobs.push(o.rpc("dy_inni_comment_set", { p_report: x[0].report, p_ym: x[0].ym, p_body: x[1].value }).then(function (c) { if (o.onNote) o.onNote(c, x[0].key); })); });
       if (cfgChanged) jobs.push(o.rpc("dy_inni_settings_set", { p_report: o.report, p_fy: o.fy, p_config: draft }).then(function () { if (o.onCfg) o.onCfg(draft); }));
       Promise.all(jobs).then(function () { o.toast("설정을 저장했어요"); close(); }).catch(function (e) { err.textContent = o.friendly(e); save.disabled = false; });
     }
@@ -144,7 +149,13 @@
     C(r, 1).value = o.eyebrow; C(r, 1).font = { size: 9, bold: true, color: { argb: "FF0072E4" } }; r++;
     ws.mergeCells(r, 1, r, W); C(r, 1).value = o.title; C(r, 1).font = { size: 20, bold: true }; ws.getRow(r).height = 30; r++;
     ws.mergeCells(r, 1, r, W); C(r, 1).value = o.unit; C(r, 1).font = { size: 9, color: { argb: XL.sub } }; r += 2;
-    C(r, 1).value = "코멘트"; C(r, 1).font = { size: 12, bold: true };
+    if (o.noComment) return r + 1;
+    return writeComment(ws, r, { title: "코멘트", lines: o.lines, note: o.note, width: W }) + 1;
+  }
+  // 코멘트 한 칸(제목 + 자동 코멘트 줄 + 직접 입력). 반환: 다음 행 번호
+  function writeComment(ws, r, o) {
+    var C = function (rr, c) { return ws.getCell(rr, c); }, W = o.width || 12, c;
+    C(r, 1).value = o.title; C(r, 1).font = { size: 12, bold: true };
     for (c = 1; c <= W; c++) C(r, c).border = { bottom: { style: "medium", color: { argb: "FF1F3A5F" } } };
     r++;
     (o.lines || []).forEach(function (l) {
@@ -157,7 +168,7 @@
       ws.getRow(r).height = Math.max(20, lines * 16 + 6); r++;
       ws.mergeCells(r, 1, r, W); C(r, 1).value = "직접 입력 · " + (o.note.by || "") + (o.note.at ? " · " + String(o.note.at).slice(0, 16).replace("T", " ") : ""); C(r, 1).font = { size: 9, color: { argb: XL.sub } }; r++;
     }
-    return r + 1;
+    return r;
   }
   // 표 쓰기. spec: { title, cols:[{id,label,type,text,align}], rows:[{id, vals:{열id:값}, strong, hidden}], hl:{rows,cols,color}, foot:true 이면 마지막 행을 합계 줄로 }
   function writeTable(ws, r, spec) {
@@ -205,5 +216,5 @@
   }
 
   window.dyInniKit = { DEFAULT_HL: DEFAULT_HL, PRESETS: PRESETS, normSpec: normSpec, applyHl: applyHl, openSettings: openSettings,
-    loadExcelJs: loadExcelJs, XL: XL, argb: argb, fill: fill, xv: xv, writeHead: writeHead, writeTable: writeTable, imageOf: imageOf, download: download };
+    loadExcelJs: loadExcelJs, XL: XL, argb: argb, fill: fill, xv: xv, writeHead: writeHead, writeComment: writeComment, writeTable: writeTable, imageOf: imageOf, download: download };
 })();

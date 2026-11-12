@@ -229,7 +229,6 @@
           <label class="dash-bar-item"><span>행사</span><select class="js-m-event"></select></label>
           <span class="dash-bar-gap"></span>
           <button class="dash-btn js-help" data-help="megapo" type="button" aria-haspopup="dialog" title="이 화면과 코멘트 기준 설명">설명</button>
-          <button class="dash-btn js-m-note-btn" type="button" aria-haspopup="dialog" title="이 행사 코멘트 직접 입력">코멘트 입력</button>
           <button class="dash-btn js-m-set" type="button" aria-haspopup="dialog" title="코멘트 · 강조 · 그래프 설정">설정</button>
           <button class="dash-btn js-m-xlsx" type="button" title="이 리포트를 서식이 들어간 엑셀로 내려받기">엑셀 다운로드</button>
           <button class="dash-btn js-m-reload" type="button" title="DB 에서 다시 불러오기">새로고침</button>
@@ -244,26 +243,26 @@
             <p class="inni-unit">(K JPY) · 순매출 기준 · 행사 기간(시작일~종료일) 합계</p>
           </header>
 
-          <div class="inni-comment">
-            <div class="inni-comment-head"><h3>코멘트</h3></div>
-            <div class="inni-auto js-m-auto"></div>
-            <div class="inni-manual js-m-manual-box" hidden>
-              <p class="inni-manual-body js-m-manual-body"></p>
-              <small class="inni-note js-m-manual-meta"></small>
-            </div>
-          </div>
+          <h3 class="inni-sec">요약</h3>
+          <div class="js-m-c-sum"></div>
 
-          <h3>일별 매출 (직전 행사 · 작년 행사와 같은 Day 비교)</h3>
+          <h3 class="inni-sec">일별</h3>
+          <div class="js-m-c-daily"></div>
+          <p class="inni-note">일별 매출 (직전 행사 · 작년 행사와 같은 Day 비교)</p>
           <div class="inni-chart"><canvas class="js-m-chart"></canvas></div>
-
-          <h3>일별</h3>
           <div class="inni-scroll"><table class="inni-table js-m-daily"></table></div>
 
-          <h3 class="js-m-chan-title">유입 경로별 PV</h3>
-          <div class="inni-scroll"><table class="inni-table js-m-chan"></table></div>
-
-          <h3 class="js-m-items-title">상품별 실적</h3>
+          <h3 class="inni-sec">제품별 실적</h3>
+          <div class="js-m-c-items"></div>
+          <p class="inni-note js-m-items-title">상품별 실적</p>
           <div class="inni-scroll"><table class="inni-table inni-items js-m-items"></table></div>
+
+          <h3 class="inni-sec">PV</h3>
+          <p class="inni-note">구분별 PV (이번 행사 · 직전 행사 · 작년 행사)</p>
+          <div class="inni-chart is-sm"><canvas class="js-m-pvchart"></canvas></div>
+          <div class="js-m-c-pv"></div>
+          <p class="inni-note js-m-chan-title">유입 경로별 PV</p>
+          <div class="inni-scroll"><table class="inni-table js-m-chan"></table></div>
           <p class="inni-note js-m-note"></p>
         </div>
       </section>

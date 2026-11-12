@@ -45,7 +45,8 @@
    ["cart_pv", "장바구니 페이지"], ["wish_pv", "찜"], ["todaysview_pv", "오늘 본 상품"], ["my_pv", "마이페이지"],
    ["external_pv", "외부 유입 합계"], ["ext_google_pv", "외부·구글"], ["ext_yahoo_pv", "외부·야후"], ["ext_instagram_pv", "외부·인스타그램"],
    ["ext_twitter_pv", "외부·X"], ["ext_facebook_pv", "외부·페이스북"], ["ext_line_pv", "외부·라인"], ["ext_kakaku_pv", "외부·가카쿠"],
-   ["directurl_pv", "직접 URL"], ["etc_pv", "기타"]
+   ["directurl_pv", "직접 URL"], ["etc_pv", "기타"],
+   ["mn_myinterest_pv", "홈·나의관심상품"], ["mn_spotlight_brand_pv", "홈·주목 브랜드"], ["mn_bestseller_pv", "홈·랭킹"], ["mn_beauty_pv", "홈·코스메셀렉트"], ["mn_groupbuy_pv", "홈·공동구매"], ["mn_chancedeal_pv", "홈·호리다시모노"], ["mn_etc_pv", "홈·기타"], ["sch_cps_pv", "검색·스마트세일즈"], ["sch_timesale_pv", "검색·타임세일"], ["sch_etc_pv", "검색·일반"], ["supplementhub_pv", "이너뷰티"], ["dl_todaysmega_pv", "프로모션·오늘의메가할인"], ["dl_todaysmega_po_pv", "프로모션·오늘의메가포"], ["dl_timesale_pv", "프로모션·타임세일"], ["dl_dailydeal_pv", "프로모션·데일리딜"], ["dl_groupbuy_pv", "프로모션·공동구매"], ["dl_onedaychance_pv", "프로모션·호리다시모노"], ["vip_pv", "상품상세페이지"], ["catalog_pv", "상품카탈로그"], ["ext_email_pv", "외부·이메일"], ["ext_others_pv", "외부·기타"]
   ];
   CHANNELS.forEach(function (x) { base("pv_" + x[0].replace(/_pv$/, ""), x[1] + " PV", "pageview", x[0], "int", "유입 경로(PV)"); });
 

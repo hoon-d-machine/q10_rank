@@ -19,9 +19,10 @@
     manualBox: $(".js-m-manual-box"), manualBody: $(".js-m-manual-body"), manualMeta: $(".js-m-manual-meta"),
     chart: $(".js-m-chart"), daily: $(".js-m-daily"), chan: $(".js-m-chan"), chanTitle: $(".js-m-chan-title"), items: $(".js-m-items"), itemsTitle: $(".js-m-items-title"), note: $(".js-m-note")
   };
-  var TOP_N = 20, CH_N = 12, FLAG_RATE = 0.5;
+  var TOP_N = 15, FLAG_RATE = 0.5;
   var TYPES = [["SUPERPOINT", "메가포"], ["MEGAWARI", "메가와리"]];
-  var CHKEYS = Object.keys(D.METRICS).filter(function (k) { return D.METRICS[k].group === "유입 경로(PV)"; });
+  var CH_SPEC = [["큐텐 구좌", "홈(메인페이지)_메가할인", "mn_megawari_pv"], ["큐텐 구좌", "홈(메인페이지)_메가포", "mn_megapo_pv"], ["오가닉", "홈(메인페이지)_나의관심상품", "mn_myinterest_pv"], ["큐텐 구좌", "홈(메인페이지)_주목 브랜드", "mn_spotlight_brand_pv"], ["오가닉", "홈(메인페이지)_랭킹", "mn_bestseller_pv"], ["오가닉", "홈(메인페이지)_공식 코스메 랭킹", "mn_beauty_ranking_pv"], ["큐텐 구좌", "홈(메인페이지)_코스메셀렉트", "mn_beauty_pv"], ["내부 광고", "홈(메인페이지)_타임세일", "mn_timesale_pv"], ["내부 광고", "홈(메인페이지)_데일리딜", "mn_dailydeal_pv"], ["구분 불가", "홈(메인페이지)_공동구매", "mn_groupbuy_pv"], ["내부 광고", "홈(메인페이지)_호리다시모노", "mn_chancedeal_pv"], ["구분 불가", "홈(메인페이지)_기타", "mn_etc_pv"], ["내부 광고", "검색결과_키워드플러스", "sch_keywordplus_pv"], ["내부 광고", "검색결과_파워랭크업", "sch_powerrank_pv"], ["내부 광고", "검색결과_스마트세일즈", "sch_cps_pv"], ["내부 광고", "검색결과_타임세일", "sch_timesale_pv"], ["오가닉", "검색결과_일반", "sch_etc_pv"], ["오가닉", "베스트셀러", "bestseller_pv"], ["큐텐 구좌", "뷰티", "beautyhub_pv"], ["큐텐 구좌", "이너뷰티", "supplementhub_pv"], ["내부 광고", "프로모션페이지_오늘의메가할인", "dl_todaysmega_pv"], ["내부 광고", "프로모션페이지_오늘의메가포", "dl_todaysmega_po_pv"], ["큐텐 구좌", "프로모션페이지_타임세일", "dl_timesale_pv"], ["큐텐 구좌", "프로모션페이지_데일리딜", "dl_dailydeal_pv"], ["큐텐 구좌", "프로모션페이지_공동구매", "dl_groupbuy_pv"], ["내부 광고", "프로모션페이지_호리다시모노", "dl_onedaychance_pv"], ["오가닉", "위시리스트", "wish_pv"], ["오가닉", "최근본상품", "todaysview_pv"], ["오가닉", "장바구니", "cart_pv"], ["외부 광고", "셀러샵", "sellershop_pv"], ["큐텐 구좌", "기획전", "special_pv"], ["내부 광고", "카테고리페이지", "category_pv"], ["구분 불가", "상품상세페이지", "vip_pv"], ["오가닉", "상품카탈로그", "catalog_pv"], ["오가닉", "마이페이지", "my_pv"], ["큐텐 구좌", "Live Shopping", "live_pv"], ["외부 광고", "외부유입_구글", "ext_google_pv"], ["외부 광고", "외부유입_페이스북", "ext_facebook_pv"], ["외부 광고", "외부유입_X(트위터)", "ext_twitter_pv"], ["외부 광고", "외부유입_Instagram", "ext_instagram_pv"], ["외부 광고", "외부유입_Tiktok", "ext_tiktok_pv"], ["외부 광고", "외부유입_야후", "ext_yahoo_pv"], ["외부 광고", "외부유입_카카쿠", "ext_kakaku_pv"], ["외부 광고", "외부유입_라인", "ext_line_pv"], ["외부 광고", "외부유입_이메일", "ext_email_pv"], ["외부 광고", "외부유입_기타", "ext_others_pv"], ["외부 광고", "URL직접입력", "directurl_pv"], ["구분 불가", "기타", "etc_pv"]];   // [구분, 경로, 열] — 시트 MEGAPO 의 유입 경로 표와 같은 순서·이름 (틱톡은 스토어 전체 표에 열이 없어 항상 ‘-’)
+  var CHKEYS = CH_SPEC.map(function (x) { return "pv_" + x[2].replace(/_pv$/, ""); }).filter(function (k) { return D.METRICS[k]; });
   var S = { ready: false, loading: false, all: [], events: [], type: "SUPERPOINT", ev: null, master: null, anchor: null, data: null, note: null, cfg: null, busy: false };
   var chart = null;
 
@@ -122,8 +123,9 @@
     S.busy = true;
     var pn = p ? Math.min(n, diffD(p.end_dt, p.start_dt) + 1) : 0, pRange = p ? [p.start_dt, addD(p.start_dt, pn - 1)] : null;
     return Promise.all([seriesOf(e), seriesOf(p, n), seriesOf(l, n), itemsOf(days[0], days[n - 1]), pRange ? itemsOf(pRange[0], pRange[1]) : Promise.resolve(null),
-      chansOf(days[0], days[n - 1]), pRange ? chansOf(pRange[0], pRange[1]) : Promise.resolve(null)]).then(function (r) {
-      var cur = r[0], prev = r[1], ly = r[2], it = r[3], itp = r[4], ch = r[5], chp = r[6];
+      chansOf(days[0], days[n - 1]), pRange ? chansOf(pRange[0], pRange[1]) : Promise.resolve(null),
+      l ? chansOf(l.start_dt, addD(l.start_dt, Math.min(n, diffD(l.end_dt, l.start_dt) + 1) - 1)) : Promise.resolve(null)]).then(function (r) {
+      var cur = r[0], prev = r[1], ly = r[2], it = r[3], itp = r[4], ch = r[5], chp = r[6], chl = r[7];
       var gm = function (x, id, k) { var v = x && x.rows[id]; return v && v[k] ? v[k] : 0; };
       var total = 0; Object.keys(it.rows).forEach(function (id) { total += gm(it, id, "g_net_amt"); });
       var items = Object.keys(it.rows).map(function (id) {
@@ -138,9 +140,14 @@
         o.cvr = o.pv ? o.qty / o.pv * 100 : null;
       });
       var storePv = sum(cur, "pv");
-      var chans = CHKEYS.map(function (k) { var v = ch[k] || 0, pvv = chp ? chp[k] || 0 : null; return { key: k, label: D.METRICS[k].label.replace(/ PV$/, ""), pv: v, share: storePv ? v / storePv * 100 : null, qoq: chp ? (pvv ? growth(v, pvv) : (v ? "NEW" : null)) : null }; })
-        .filter(function (c) { return c.pv > 0; }).sort(function (a, b) { return b.pv - a.pv; });
-      S.data = { e: e, p: p, l: l, days: days, n: n, part: part, cur: cur, prev: prev, ly: ly, items: items, itemsTotal: total, chans: chans, storePv: storePv };
+      // 시트와 같은 순서·구분·경로. QoQ·YoY 는 %가 아니라 PV 증감 수(이번 − 직전/작년)
+      var chans = CH_SPEC.map(function (x) {
+        var k = "pv_" + x[2].replace(/_pv$/, ""), has = !!D.METRICS[k], v = has ? ch[k] || 0 : 0;
+        return { key: x[2], group: x[0], label: x[1], pv: v, has: has, share: storePv ? v / storePv * 100 : null,
+          qoq: chp && has ? v - (chp[k] || 0) : null, yoy: chl && has ? v - (chl[k] || 0) : null };
+      });
+      var chTot = { pv: storePv, qoq: p ? storePv - sum(prev, "pv") : null, yoy: l ? storePv - sum(ly, "pv") : null };
+      S.data = { e: e, p: p, l: l, days: days, n: n, part: part, cur: cur, prev: prev, ly: ly, items: items, itemsTotal: total, chans: chans, chTot: chTot, storePv: storePv };
     }).then(function () { S.busy = false; }, function (err) { S.busy = false; throw err; });
   }
 
@@ -165,8 +172,8 @@
       else if (pos) L.push({ t: "모든 날이 직전 행사 같은 일차보다 매출이 높았어요 (QoQ 플러스)" });
     }
     if (d.chans.length) {
-      var topc = d.chans.filter(function (x) { return x.key !== "pv_main"; }).slice(0, 3);   // 홈은 항상 크므로 제외하고 상위 경로를 말한다
-      if (topc.length) L.push({ t: "유입 경로 상위: " + topc.map(function (x) { return x.label + " " + man(x.pv) + (typeof x.qoq === "number" ? " (QoQ " + gs(x.qoq) + ")" : ""); }).join(" · ") });
+      var topc = d.chans.filter(function (x) { return x.group !== "구분 불가"; }).sort(function (a, b) { return b.pv - a.pv; }).slice(0, 3);   // 상품상세페이지·기타(구분 불가)는 빼고 상위 경로를 말한다
+      if (topc.length && topc[0].pv > 0) L.push({ t: "유입 경로 상위: " + topc.map(function (x) { return x.label + " " + man(x.pv) + (x.qoq != null ? " (QoQ " + (x.qoq >= 0 ? "+" : "") + num(x.qoq) + ")" : ""); }).join(" · ") });
     }
     if (d.items.length >= 3) {
       var top = d.items.slice(0, 3), sh = top.reduce(function (t, o) { return t + o.sales; }, 0) / d.itemsTotal * 100;
@@ -238,18 +245,31 @@
     t.appendChild(tb); K.applyHl(t, S.cfg.daily);
   }
 
-  var CCOLS = [["name", "유입 경로", "text"], ["pv", "PV", "int"], ["share", "스토어 PV 대비", "pct1"], ["qoq", "QoQ", "gr"]];
+  var CCOLS = [["group", "구분", "text"], ["name", "경로", "text"], ["pv", "PV", "int"], ["share", "%", "pct"], ["qoq", "QoQ", "int"], ["yoy", "YoY", "int"]];
+  function chanVals(c) { return c.has ? { group: c.group, name: c.label, pv: c.pv, share: c.share, qoq: c.qoq, yoy: c.yoy } : { group: c.group, name: c.label, pv: null }; }   // 열이 없는 경로(틱톡)는 시트처럼 PV 만 ‘-’ 이고 나머지는 빈칸
+  function chanTotal() { var t = S.data.chTot; return { group: "전체", name: "합계(총페이지뷰)", pv: t.pv, share: 100, qoq: t.qoq, yoy: t.yoy }; }
+  // 시트와 같은 표시: PV 가 0 이면 ‘-’, 비중은 정수 %, QoQ·YoY 는 PV 증감 수(부호 포함)
+  function chanCell(id, v, c) {
+    if (id === "group" || id === "name") return String(v);
+    if (id === "pv") return v == null || v === 0 ? "-" : num(v);
+    if (v === undefined) return "";
+    if (id === "share") return v == null ? "-" : v.toFixed(0) + "%";
+    return v == null ? "-" : (v === 0 ? "0" : (v > 0 ? "+" : "") + num(v));
+  }
   function renderChans() {
     var d = S.data, t = el.chan; t.innerHTML = "";
-    el.chanTitle.textContent = "유입 경로별 PV · 상위 " + Math.min(CH_N, d.chans.length) + "개 · 스토어 전체 PV " + num(d.storePv);
+    el.chanTitle.textContent = "유입 경로별 PV · 스토어 전체 " + num(d.storePv) + " · QoQ·YoY 는 PV 증감 수";
     var thead = h("thead"), tr = h("tr"); CCOLS.forEach(function (c) { var th = h("th", null, c[1]); th.dataset.col = c[0]; tr.appendChild(th); }); thead.appendChild(tr); t.appendChild(thead);
     var tb = h("tbody");
-    d.chans.slice(0, CH_N).forEach(function (c) {
-      var row = h("tr"); row.dataset.id = c.key;
-      var q = typeof c.qoq === "string" ? c.qoq : c.qoq == null ? "-" : gs(c.qoq);
-      [["name", c.label, "t"], ["pv", num(c.pv), ""], ["share", c.share == null ? "-" : c.share.toFixed(1) + "%", ""], ["qoq", q, typeof c.qoq === "number" ? cls(c.qoq) : ""]].forEach(function (x) { var td = h("td", x[2], x[1]); td.dataset.col = x[0]; row.appendChild(td); });
+    function line(id, vals, strong) {
+      var row = h("tr", strong ? "is-total" : ""); row.dataset.id = id;
+      CCOLS.forEach(function (c) {
+        var v = vals[c[0]], td = h("td", c[2] === "text" ? "t" : (c[0] === "qoq" || c[0] === "yoy") && typeof v === "number" && v !== 0 ? cls(v) : "", chanCell(c[0], v)); td.dataset.col = c[0]; row.appendChild(td);
+      });
       tb.appendChild(row);
-    });
+    }
+    d.chans.forEach(function (c) { line(c.key, chanVals(c)); });
+    line("total", chanTotal(), true);
     t.appendChild(tb); K.applyHl(t, S.cfg.chan);
   }
 
@@ -354,7 +374,7 @@
       report: report(), fy: fy, note: { ym: k, body: S.note ? S.note.body : "", label: evLabel(ev) }, cfg: S.cfg,
       tables: [
         { key: "daily", title: "일별 표", rows: dRows, cols: DCOLS.filter(function (c) { return c[2] !== "text"; }).map(function (c) { return [c[0], c[1] + (c[0] === "sq" || c[0] === "pq" ? " (SALES/PV QoQ)" : c[0] === "sy" || c[0] === "py" ? " (SALES/PV YoY)" : c[0] === "sales" ? "" : "")]; }) },
-        { key: "chan", title: "유입 경로 표", rows: d.chans.slice(0, CH_N).map(function (c) { return [c.key, c.label]; }), cols: CCOLS.filter(function (c) { return c[2] !== "text"; }).map(function (c) { return [c[0], c[1]]; }) },
+        { key: "chan", title: "유입 경로 표", rows: d.chans.map(function (c) { return [c.key, c.group + " · " + c.label]; }).concat([["total", "합계(총페이지뷰)"]]), cols: CCOLS.filter(function (c) { return c[2] !== "text"; }).map(function (c) { return [c[0], c[1]]; }), scroll: true },
         { key: "items", title: "상품별 실적 표", rows: d.items.slice(0, TOP_N).map(function (o) { return [o.gd, o.no + ". " + o.name.slice(0, 28)]; }), cols: ICOLS.filter(function (c) { return c[2] !== "text"; }).map(function (c) { return [c[0], c[1]]; }), scroll: true }
       ],
       selects: [{ key: "type", label: "그래프 종류", options: [["line", "꺾은선"], ["bar", "막대"]] }, { key: "compare", label: "비교 행사 표시", options: [["both", "직전 + 작년"], ["prev", "직전만"], ["ly", "작년만"], ["none", "이번 행사만"]] }],
@@ -377,7 +397,7 @@
       r = K.writeTable(ws, r, { title: "일별", cols: DCOLS.map(function (c) { return { id: c[0], label: c[1], type: c[2], text: c[2] === "text" }; }),
         rows: dailyRows().map(function (x) { return { id: x.id, vals: x.vals, strong: x.strong }; }), hl: S.cfg.daily });
       r = K.writeTable(ws, r, { title: el.chanTitle.textContent, cols: CCOLS.map(function (c) { return { id: c[0], label: c[1], type: c[2], text: c[2] === "text" }; }),
-        rows: d.chans.slice(0, CH_N).map(function (c) { return { id: c.key, vals: { name: c.label, pv: c.pv, share: c.share, qoq: c.qoq } }; }), hl: S.cfg.chan });
+        rows: d.chans.map(function (c) { return { id: c.key, vals: chanVals(c) }; }).concat([{ id: "total", vals: chanTotal(), strong: true }]), hl: S.cfg.chan });
       r = K.writeTable(ws, r, { title: el.itemsTitle.textContent, cols: ICOLS.map(function (c) { return { id: c[0], label: c[1], type: c[2], text: c[2] === "text" }; }),
         rows: d.items.slice(0, TOP_N).map(function (o) { return { id: o.gd, vals: itemVals(o) }; }), hl: S.cfg.items });
       ws.mergeCells(r, 1, r, 11); ws.getCell(r, 1).value = el.note.textContent; ws.getCell(r, 1).font = { size: 9, color: { argb: K.XL.sub } }; ws.getCell(r, 1).alignment = { wrapText: true, vertical: "top" }; ws.getRow(r).height = 44;

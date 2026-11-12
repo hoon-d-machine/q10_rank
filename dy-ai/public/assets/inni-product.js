@@ -198,12 +198,13 @@
   }
   // 상품별 상세 표의 열 정의
   function itemCols() {
-    var ty = tyLabel(), ly = lyLabel();
+    var ty = tyLabel();
     return [
-      { id: "no", label: "No.", type: "int", w: 6, text: true }, { id: "gd", label: "상품번호", w: 13, text: true }, { id: "line", label: "라인", w: 12, text: true }, { id: "cat", label: "카테고리", w: 12, text: true }, { id: "name", label: "상품명", w: 36, text: true },
-      { id: "sales", label: ty, group: "Sales", type: "yen" }, { id: "qty", label: "상품수량", group: "Sales", type: "int" }, { id: "lyqty", label: "LY 상품수량", group: "Sales", type: "int" }, { id: "lysales", label: ly, group: "Sales", type: "yen" }, { id: "yoy", label: "YoY", group: "Sales", type: "gr" },
-      { id: "pv", label: ty, group: "PV", type: "int" }, { id: "lypv", label: ly, group: "PV", type: "int" }, { id: "pvyoy", label: "YoY", group: "PV", type: "gr" },
-      { id: "cvr", label: ty, group: "CVR", type: "cvr" }, { id: "lycvr", label: ly, group: "CVR", type: "cvr" }, { id: "cvrgap", label: "YoY GAP(%p)", group: "CVR", type: "gap" },
+      // 시트에서 '숨김 영역'이던 열(상품번호·라인·카테고리, Sales·PV·CVR 의 작년 동월)은 표에서 뺀다 (값은 계산에 그대로 쓰임)
+      { id: "no", label: "No.", type: "int", w: 6, text: true }, { id: "name", label: "상품명", w: 38, text: true },
+      { id: "sales", label: ty, group: "Sales", type: "yen" }, { id: "qty", label: "상품수량", group: "Sales", type: "int" }, { id: "lyqty", label: "LY 상품수량", group: "Sales", type: "int" }, { id: "yoy", label: "YoY", group: "Sales", type: "gr" },
+      { id: "pv", label: ty, group: "PV", type: "int" }, { id: "pvyoy", label: "YoY", group: "PV", type: "gr" },
+      { id: "cvr", label: ty, group: "CVR", type: "cvr" }, { id: "cvrgap", label: "YoY GAP(%p)", group: "CVR", type: "gap" },
       { id: "spend", label: "Spend", group: "On Site AD", type: "yen" }, { id: "adsales", label: "AD Sales", group: "On Site AD", type: "yen" }, { id: "roas", label: "ROAS", group: "On Site AD", type: "pct" },
       { id: "ytd", label: "Sales", group: "YTD", type: "yen" }, { id: "lyytd", label: "LY", group: "YTD", type: "yen" }, { id: "ytdyoy", label: "YoY", group: "YTD", type: "gr" }, { id: "share", label: "%", group: "YTD", type: "pct1" }
     ];
@@ -268,7 +269,7 @@
     el.items.appendChild(tb);
     var tf = h("tfoot"), fr = h("tr");
     cols.forEach(function (c, k) {
-      var v = c.text ? (k === 4 ? "합계" : "") : totalVal(d.total, c.id);
+      var v = c.text ? (c.id === "name" ? "합계" : "") : totalVal(d.total, c.id);
       var td = h("td", c.text ? "t" : (c.type === "gr" || c.type === "gap" ? cls(v) : ""), c.text ? v : (c.id === "spend" || c.id === "adsales" || c.id === "roas" ? "-" : fmtItem(c.type, v)));
       td.dataset.col = c.id; fr.appendChild(td);
     });

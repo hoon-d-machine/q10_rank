@@ -15,7 +15,7 @@
   var $ = function (s) { return pane.querySelector(s); };
   var el = {
     fy: $(".js-s-fy"), month: $(".js-s-month"), reload: $(".js-s-reload"), tgtBtn: $(".js-s-tgt-btn"), msg: $(".js-s-msg"),
-    tgt: $(".js-s-tgt"), tgtTable: $(".js-s-tgt-table"), tgtSave: $(".js-s-tgt-save"), tgtCancel: $(".js-s-tgt-cancel"), tgtNote: $(".js-s-tgt-note"),
+    notice: $(".js-s-notice"), noticeText: $(".js-s-notice-text"), noticeBtn: $(".js-s-notice-btn"), tgt: $(".js-s-tgt"), tgtTable: $(".js-s-tgt-table"), tgtSave: $(".js-s-tgt-save"), tgtCancel: $(".js-s-tgt-cancel"), tgtNote: $(".js-s-tgt-note"),
     title: $(".js-s-title"), unit: $(".js-s-unit"), auto: $(".js-s-auto"), setBtn: $(".js-s-set"), xlsxBtn: $(".js-s-xlsx"),
     manual: $(".js-s-manual"), manualBody: $(".js-s-manual-body"), manualMeta: $(".js-s-manual-meta"),
     kpiTitle: $(".js-s-kpi-title"), kpi: $(".js-s-kpi"), chart: $(".js-s-chart"), trend: $(".js-s-trend")
@@ -147,7 +147,7 @@
       var n = streak(k), neg = m.yoy < 0;
       L.push({ t: n >= 3 ? "YoY " + gstr(m.yoy) + ", " + n + "개월 연속 " + (neg ? "마이너스 — 마이너스 트렌드 지속중" : "플러스 — 성장 트렌드 지속중") : "YoY " + gstr(m.yoy) + (neg ? " 감소" : " 성장"), c: neg ? "is-neg" : "is-pos" });
     }
-    L.push({ t: m.tgt ? "목표 " + kj(m.tgt) + "K 대비 " + pctv(m.tgtPct) + " 달성" + (m.partial ? " (진행 중)" : "") : "목표가 입력되지 않았어요 (월별 목표 입력)" });
+    if (m.tgt) L.push({ t: "목표 " + kj(m.tgt) + "K 대비 " + pctv(m.tgtPct) + " 달성" + (m.partial ? " (진행 중)" : "") });   // 목표가 모자란 경우의 안내는 renderNotice 가 따로 보여 줌
     L.push({ t: "PV " + num(m.pv) + (m.pvYoy != null ? " (YoY " + gstr(m.pvYoy) + ")" : "") + " · ORDERS " + num(m.orders) + " · CVR " + pctv(m.cvr, 1) + " · AOV ¥" + num(m.aov) + (m.aovYoy != null ? " (YoY " + gstr(m.aovYoy) + ")" : "") });
     return L;
   }
@@ -315,11 +315,19 @@
     if (window.Chart) chart = new window.Chart(el.chart, chartConfig(md, S.cfg.chart, false));
   }
 
+  // 회계연도 시작~기준 월 중 목표가 비어 있는 달이 있으면 알림 (회계연도·기준 월 아래, 리포트 위)
+  function renderNotice() {
+    var miss = fyMonths(S.fy).filter(function (k) { return k <= S.ym && k >= S.minYm && S.targets[k] == null; });
+    el.notice.hidden = !miss.length;
+    if (!miss.length) return;
+    el.noticeText.textContent = "기준 월(" + S.ym.slice(0, 4) + " " + MON[mOf(S.ym) - 1] + ")까지 목표가 입력되지 않은 달이 있어요: " + miss.map(function (k) { return MON[mOf(k) - 1]; }).join(", ") + " —";
+  }
+
   function render() {
     var k = S.ym, parts = k.slice(0, 4) + " " + MON[mOf(k) - 1];
     el.title.textContent = "Qoo10 Monthly Report · " + parts + (k === S.partialYm ? " (" + S.anchor.slice(5).replace("-", "/") + "까지)" : "");
     el.unit.textContent = "(K JPY / Unit) · 순매출(GMV) 기준 · 회계연도 " + fyLabel(S.fy) + " (7월~6월) · 데이터 " + S.minYm.slice(0, 7) + " ~ " + S.anchor;
-    renderComment(k); renderKpi(); renderTrend();
+    renderNotice(); renderComment(k); renderKpi(); renderTrend();
   }
 
   // ---------- 선택 상자 ----------
@@ -644,6 +652,7 @@
     var open = el.tgt.hidden; el.tgt.hidden = !open; el.tgtBtn.setAttribute("aria-expanded", String(open));
     el.tgtBtn.textContent = open ? "월별 목표 닫기" : "월별 목표 입력"; if (open) buildTargets();
   });
+  el.noticeBtn.addEventListener("click", function () { if (el.tgt.hidden) el.tgtBtn.click(); el.tgt.scrollIntoView({ block: "nearest", behavior: "smooth" }); });
   el.tgtCancel.addEventListener("click", function () { el.tgt.hidden = true; el.tgtBtn.setAttribute("aria-expanded", "false"); el.tgtBtn.textContent = "월별 목표 입력"; });
   el.tgtSave.addEventListener("click", saveTargets);
   el.setBtn.addEventListener("click", function () { if (S.ready && S.cfg) openSettings("note"); });

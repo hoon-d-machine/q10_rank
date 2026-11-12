@@ -518,11 +518,19 @@
       }
       r++;
 
-      // 라인별·카테고리별: 그림
-      [["라인", d.lines], ["카테고리", d.cats]].forEach(function (blk) {
-        C(r, 1).value = blk[0] + "별 · " + (S.cfg.basis === "ytd" ? "누계 vs 작년 누계" : "당월 vs 작년 동월"); C(r, 1).font = { size: 12, bold: true }; r++;
-        ws.addImage(imageOf(wb, blk[1]), { tl: { col: 0, row: r - 1 }, ext: { width: 720, height: 322 } }); r += 17;
+      // 라인별·카테고리별: 그림 두 장을 가로로 나란히 (둘째 그림 시작 위치는 열 너비(문자 수 × 7 + 5 픽셀)로 계산)
+      var IMG_W = 720, IMG_H = 322, GAP = 24, colX = function (px) {
+        var x = 0, i = 0, w;
+        for (; i < ws.columns.length; i++) { w = ws.columns[i].width * 7 + 5; if (px < x + w) return i + (px - x) / w; x += w; }
+        return ws.columns.length + (px - x) / 90;
+      };
+      var basisTxt = S.cfg.basis === "ytd" ? "누계 vs 작년 누계" : "당월 vs 작년 동월";
+      [["라인", d.lines, 0], ["카테고리", d.cats, IMG_W + GAP]].forEach(function (blk) {
+        var cx = colX(blk[2]), ci = Math.floor(cx);
+        C(r, ci + 1).value = blk[0] + "별 · " + basisTxt; C(r, ci + 1).font = { size: 12, bold: true };
+        ws.addImage(imageOf(wb, blk[1]), { tl: { col: cx, row: r }, ext: { width: IMG_W, height: IMG_H } });
       });
+      r += 17;
       r++;
 
       // 상품별 상세

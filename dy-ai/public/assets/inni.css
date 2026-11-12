@@ -111,7 +111,10 @@ html[data-theme="nature"] .inni-modal-card, html[data-theme="dark"] .inni-modal-
 .inni-items th, .inni-items td { padding: 7px 10px; }
 .inni-items thead th, .inni-items thead th:first-child { position: sticky; left: auto; top: 0; z-index: 2; background: var(--lg-card); text-align: right; font-weight: 600; border-bottom: 1px solid var(--lg-line); }
 .inni-items thead th.is-grp, .inni-items thead th.is-grp:first-child { text-align: center; }   /* 묶음 제목(Sales·PV…)과 No.·상품명은 가운데 */
-.inni-items thead tr:nth-child(2) th, .inni-items thead tr:nth-child(2) th:first-child { top: 31px; }
+/* 머리글 두 줄은 높이를 고정해서 위 줄 바로 아래에 붙인다 (틈이 생기면 스크롤할 때 아래 행 글자가 비쳐 보임) */
+.inni-items thead th { box-sizing: border-box; height: 30px; line-height: 18px; white-space: nowrap; }
+.inni-items thead tr:nth-child(2) th, .inni-items thead tr:nth-child(2) th:first-child { top: 30px; }
+.inni-items thead th[rowspan] { height: 60px; }
 .inni-items thead th.is-grp { border-bottom: 1px solid var(--lg-line); font-weight: 700; color: var(--lg-text); }
 .inni-items td.t { text-align: left; font-weight: 400; }
 .inni-items td.name { max-width: 300px; overflow: hidden; text-overflow: ellipsis; text-align: left; font-weight: 400; }

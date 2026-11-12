@@ -24,6 +24,39 @@ as $$ select to_jsonb(c) - 'id' from dy_event_config c where id = 1 $$;
 revoke all on function dy_event_config_read() from public, anon, authenticated;
 grant execute on function dy_event_config_read() to service_role;
 
+-- 행사 달력(inni_mega_event, 광고센터에서 수집)의 메가와리 행사 중 p_date(한국 날짜)에 진행 중인 것. Worker 전용.
+--   calendar: 달력에 있는 메가와리 행사 수 (0 이면 달력이 비어 있으니 기간을 판단하지 않는다)
+create or replace function dy_event_active(p_date date) returns jsonb
+language sql stable security definer set search_path = public
+as $$
+  select jsonb_build_object(
+    'calendar', (select count(*) from inni_mega_event where promotion_type = 'MEGAWARI'),
+    'active', coalesce((select jsonb_agg(jsonb_build_object('no', promotion_no, 'nm', promotion_nm, 'start', start_dt, 'end', end_dt) order by start_dt)
+                        from inni_mega_event where promotion_type = 'MEGAWARI' and p_date between start_dt and end_dt), '[]'::jsonb))
+$$;
+revoke all on function dy_event_active(date) from public, anon, authenticated;
+grant execute on function dy_event_active(date) to service_role;
+
+-- 예전에 수집에 쓴 SID (최근 수집 순). 행사 페이지가 재사용되는 경우 자동 탐색의 첫 후보가 된다. Worker 전용.
+create or replace function dy_event_past_sids() returns jsonb
+language sql stable security definer set search_path = public
+as $$ select coalesce(jsonb_agg(event_sid order by m desc), '[]'::jsonb) from (select event_sid, max(collected_at) m from qoo10_rankings group by event_sid) t $$;
+revoke all on function dy_event_past_sids() from public, anon, authenticated;
+grant execute on function dy_event_past_sids() to service_role;
+
+-- 자동 탐색으로 찾은 SID 를 수집 설정에 넣고 켠다. Worker 전용.
+create or replace function dy_event_config_auto(p_sid text, p_by text) returns jsonb
+language plpgsql security definer set search_path = public
+as $$
+declare r jsonb;
+begin
+  update dy_event_config set event_sid = p_sid, enabled = true, updated_at = now(), updated_by = left(coalesce(p_by, '자동 탐색'), 200) where id = 1;
+  select to_jsonb(c) - 'id' into r from dy_event_config c where id = 1;
+  return r;
+end; $$;
+revoke all on function dy_event_config_auto(text, text) from public, anon, authenticated;
+grant execute on function dy_event_config_auto(text, text) to service_role;
+
 create or replace function dy_event_recent_count(p_sid text, p_since timestamp) returns bigint
 language sql stable security definer set search_path = public
 as $$ select count(*) from qoo10_rankings where event_sid = p_sid and collected_at >= p_since $$;

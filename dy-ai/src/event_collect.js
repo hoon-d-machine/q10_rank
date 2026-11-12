@@ -70,19 +70,97 @@ async function getDetail(jar, goodsNo, largeByMedium) {
   } catch (e) { return null; }
 }
 
-// 한 번 실행. opt.sid 로 SID 지정, opt.dry 면 DB 에 쓰지 않음, opt.force 면 최근 수집 여부와 상관없이
+const HEADERS_MAIN = {
+  "user-agent": UA_MAIN, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "accept-language": "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3", "upgrade-insecure-requests": "1",
+};
+const specialUrl = (sid) => "https://www.qoo10.jp/gmkt.inc/Special/Special.aspx?sid=" + encodeURIComponent(sid);
+const RANK_URL = "https://www.qoo10.jp/gmkt.inc/swe_SpecialAjaxService.asmx/GetPromotionRankingData";
+
+// 행사 SID 후보 하나를 시험한다: 행사 페이지가 열리고(기간 밖이면 메인으로 리다이렉트됨) 랭킹 API 가 상품을 돌려주는지.
+// 반환: { sid, ok, items, wari(페이지에 'メガ割' 문구가 있는지), why }
+export async function probeSid(sid) {
+  const jar = new Jar();
+  try {
+    const init = await fetch(specialUrl(sid), { headers: HEADERS_MAIN, signal: AbortSignal.timeout(15000) });
+    jar.absorb(init);
+    const text = await init.text();
+    if (!init.url.includes("Special.aspx")) return { sid, ok: false, why: "행사 기간이 아니에요(리다이렉트)" };
+    if (text.includes("Queue-it")) return { sid, ok: false, why: "Queue-it 대기열" };
+    const res = await fetch(RANK_URL, {
+      method: "POST", signal: AbortSignal.timeout(15000),
+      headers: { ...HEADERS_MAIN, accept: "application/json, text/javascript, */*; q=0.01", "content-type": "application/json; charset=UTF-8", origin: "https://www.qoo10.jp", referer: specialUrl(sid), "x-requested-with": "XMLHttpRequest", cookie: jar.header() },
+      body: JSON.stringify({ mobileYn: "N", type: "Q", tab: "C", groupCode: 2, age: 0, ___cache_expire___: String(Date.now()) }),
+    });
+    if (res.status !== 200) return { sid, ok: false, why: "랭킹 API HTTP " + res.status };
+    const d = await res.json();
+    const root = "d" in d ? (typeof d.d === "string" ? JSON.parse(d.d) : d.d) : d;
+    const items = root ? (root.firstItem ? 1 : 0) + (root.items ? root.items.length : 0) : 0;
+    return { sid, ok: items >= 10, items, wari: text.includes("メガ割"), why: items >= 10 ? "" : "랭킹 상품이 " + items + "개뿐이에요" };
+  } catch (e) { return { sid, ok: false, why: String((e && e.message) || e).slice(0, 80) }; }
+}
+
+// 행사 SID 자동 탐색 (메가와리 행사 기간 중에만 부른다). 후보: ① 예전에 수집에 쓴 SID(행사 페이지가 재사용되는 경우)
+// ② Qoo10 메인에 걸린 행사 링크의 SID. 랭킹 API 가 실제로 상품을 돌려주는 페이지 중에서 'メガ割' 문구가 있는 것을 고른다.
+// 문구가 있는 후보가 없을 때는 시험을 통과한 후보가 딱 하나일 때만 고르고, 여럿이면 고르지 않고 후보를 알려 준다.
+export async function discoverSid(env, past) {
+  const cand = [];
+  const add = (v) => { v = String(v); if (/^\d+$/.test(v) && !cand.includes(v)) cand.push(v); };
+  (past || []).slice(0, 5).forEach(add);
+  try {
+    const main = await fetch("https://www.qoo10.jp/", { headers: HEADERS_MAIN, signal: AbortSignal.timeout(15000) });
+    const html = await main.text();
+    for (const m of html.matchAll(/Special\.aspx\?sid=(\d+)/g)) add(m[1]);
+  } catch (e) { /* 메인을 못 열어도 예전 SID 후보는 시험한다 */ }
+  const tried = [], good = [];
+  for (const sid of cand.slice(0, 22)) {
+    const r = await probeSid(sid);
+    tried.push(r);
+    if (r.ok) good.push(r);
+    await sleep(300);
+  }
+  const wari = good.filter((g) => g.wari);
+  const pick = wari.length ? wari.sort((a, b) => b.items - a.items)[0] : good.length === 1 ? good[0] : null;
+  return { sid: pick ? pick.sid : null, tried, good: good.map((g) => g.sid), ambiguous: !pick && good.length > 1 };
+}
+
+// 한 번 실행. opt.sid 로 SID 지정, opt.dry 면 DB 에 쓰지 않음, opt.force 면 최근 수집 여부·행사 기간과 상관없이
+// cron(기본)에서는 ① 달력의 메가와리 행사 기간이 아니면 수집하지 않고(행사 사이에 페이지가 열려 있어도 섞이지 않게)
+// ② 설정의 SID 가 비어 있거나 페이지가 닫혀 있으면 행사 기간 중에 SID 를 자동으로 찾는다.
 export async function collectEvent(env, now = Date.now(), opt = {}) {
   const out = { steps: [], failures: [] };
   if (opt.probe) { // 상세 페이지 파싱만 시험 (진단용)
     const r = await getDetail(new Jar(), opt.probe, null);
     return { probe: r };
   }
-  let sid = opt.sid;
+  const cron = !opt.sid && !opt.force;
+  let sid = opt.sid, cfg = null, act = null;
   if (!sid) {
-    const cfg = await rpc(env, "dy_event_config_read");
-    if (!cfg || !cfg.enabled || !cfg.event_sid) { out.skipped = "행사 수집이 꺼져 있거나 SID 가 비어 있어요"; return out; }
-    sid = String(cfg.event_sid);
+    cfg = await rpc(env, "dy_event_config_read");
+    if (!cfg || !cfg.enabled) { out.skipped = "행사 수집이 꺼져 있어요"; return out; }
+    sid = cfg.event_sid ? String(cfg.event_sid) : "";
   }
+  if (cron) {
+    const kst = new Date(now + 9 * 3600 * 1000).toISOString().slice(0, 10);
+    try { act = await rpc(env, "dy_event_active", { p_date: kst }); } catch (e) { out.guardWarn = String((e && e.message) || e); }
+    out.kst = kst;
+    if (act && act.calendar > 0 && !(act.active || []).length) { out.skipped = "메가와리 행사 기간이 아니에요 (" + kst + ")"; return out; }
+    if (act && act.active && act.active[0]) out.event = act.active[0].nm;
+  }
+  const discover = async (why) => {
+    let past = [];
+    try { past = await rpc(env, "dy_event_past_sids"); } catch (e) { /* 없어도 진행 */ }
+    const d = await discoverSid(env, past);
+    out.discover = { why, sid: d.sid, good: d.good, tried: d.tried.map((t) => t.sid + (t.ok ? "✓" + t.items : "✗" + t.why)).slice(0, 25) };
+    if (!d.sid) {
+      out.skipped = "행사 SID 를 못 찾았어요 — " + (d.ambiguous ? "후보가 여럿이라 고르지 않았어요 (" + d.good.join(", ") + ")" : "열려 있는 행사 랭킹 페이지가 없어요");
+      if (act && (act.active || []).length) out.failures.push({ label: "SID 자동 탐색", error: out.skipped + ". 사이트 '행사 랭킹' 화면에서 SID 를 직접 넣어 주세요." });
+      return null;
+    }
+    if (!opt.dry) { try { await rpc(env, "dy_event_config_auto", { p_sid: d.sid, p_by: "자동 탐색 " + (out.event || "") }); } catch (e) { out.failures.push({ label: "SID 저장", error: String((e && e.message) || e) }); } }
+    return d.sid;
+  };
+  if (!sid) { sid = await discover("SID 가 비어 있음"); if (!sid) return out; }
   out.sid = sid;
   const nowTs = new Date(now).toISOString().replace("Z", "");   // UTC, 예전 datetime.now().isoformat() 과 같은 꼴
 
@@ -92,14 +170,20 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
   }
 
   const jar = new Jar();
-  const hMain = {
-    "user-agent": UA_MAIN, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "accept-language": "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3", "upgrade-insecure-requests": "1",
-  };
-  const init = await fetch("https://www.qoo10.jp/gmkt.inc/Special/Special.aspx?sid=" + encodeURIComponent(sid), { headers: hMain });
+  const hMain = HEADERS_MAIN;
+  let init = await fetch(specialUrl(sid), { headers: hMain });
   jar.absorb(init);
-  const text = await init.text();
+  let text = await init.text();
   out.initStatus = init.status;
+  if (!init.url.includes("Special.aspx") && cron && act && (act.active || []).length) {   // 행사 기간인데 설정된 SID 페이지가 닫혀 있다 → 다른 SID 를 찾는다
+    const found = await discover("설정된 SID(" + sid + ") 페이지가 닫혀 있음");
+    if (!found) return out;
+    sid = found; out.sid = sid;
+    init = await fetch(specialUrl(sid), { headers: hMain });
+    jar.absorb(init);
+    text = await init.text();
+    out.initStatus = init.status;
+  }
   if (!init.url.includes("Special.aspx")) { out.skipped = "현재 이벤트 기간이 아니에요 (리다이렉트 발생)"; return out; }
   if (text.includes("Queue-it")) throw new Error("Queue-it 대기열 페이지가 떴어요 (Cloudflare IP 가 차단됐거나 대기열)");
 

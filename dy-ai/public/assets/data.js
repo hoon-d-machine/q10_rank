@@ -71,6 +71,15 @@
     ["base_date", "날짜"], ["ad_type", "광고 유형"], ["keyword", "검색 키워드"], ["rank_in_window", "7일 구간 순위"],
     ["expose_cnt", "노출"], ["click_cnt", "클릭"], ["purchase_cnt", "구매수량"]
   ];
+  // Beauty Brand AD (QSM 화면, inni_RPA/qsm_cpm.py): 캠페인 단위 CPM 광고
+  var CPMCAMPAIGN = [
+    ["campaign_no", "캠페인 번호"], ["title", "캠페인 제목"], ["status", "상태"], ["campaign_type", "타입"], ["max_amt", "광고당 최대 금액(엔)"],
+    ["daily_budget", "일 예산(엔)"], ["total_budget", "전체 예산(엔)"], ["start_dt", "시작일"], ["end_dt", "종료일"]
+  ];
+  var CPMDAILY = [
+    ["base_date", "날짜"], ["campaign_no", "캠페인 번호"], ["impressions", "광고 노출 수"], ["ad_cost", "광고비(엔)"], ["detail_cnt", "상품 열람 시작 수"], ["purchase_cnt", "구매 수"]
+  ];
+  var CPMKEYWORD = [["base_date", "날짜"], ["campaign_no", "캠페인 번호"], ["keyword", "키워드"], ["impressions", "광고 노출 수"]];
   var ADGOODS = [
     ["base_date", "날짜"], ["gd_no", "상품코드"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"], ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"],
     ["ad_type", "광고 유형"], ["ad_price", "광고비(엔)"], ["ad_sales", "광고 매출(엔)"], ["expose_cnt", "노출"], ["click_cnt", "클릭"], ["cart_cnt", "장바구니"], ["purchase_cnt", "구매수량"]
@@ -80,7 +89,7 @@
   var RANK = [["rank_date", "일자"], ["category", "카테고리"], ["rank", "순위"], ["brand", "브랜드"], ["product_name", "상품명"], ["price", "가격"], ["period", "구분"]];
 
   // 쉼표를 넣지 않는 숫자 열 (연도·요일 번호 등)
-  var PLAIN = { rank: 1, base_year: 1, base_weekday_no: 1, base_week: 1, base_month: 1 };
+  var PLAIN = { campaign_no: 1, rank: 1, base_year: 1, base_weekday_no: 1, base_week: 1, base_month: 1 };
   var TEXTY = { gd_nm: 1, brand: 1, product_name: 1, brand_nm: 1, keyword: 1 };
 
   var SOURCES = {
@@ -97,6 +106,9 @@
                 hint: "광고 유형 검색 (예: keywordplus, cps, power_rankup, all)" },
     ad_goods: { label: "상품별 광고",     cols: ADGOODS, dated: true, file: "상품별광고",
                 hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
+    cpm_daily: { label: "Beauty Brand AD(일자별)", cols: CPMDAILY, dated: true, file: "BeautyBrandAD일자별", hint: "" },
+    cpm_keyword:{ label: "Beauty Brand AD 키워드", cols: CPMKEYWORD, dated: true, file: "BeautyBrandAD키워드", hint: "키워드 검색" },
+    cpm_campaign:{ label: "Beauty Brand AD 캠페인", cols: CPMCAMPAIGN, dated: true, file: "BeautyBrandAD캠페인", hint: "캠페인 제목 · 번호 검색 (날짜는 시작일 기준)" },
     ad_keyword:{ label: "광고 키워드(노출·클릭·구매)", cols: ADKEYWORD, dated: true, file: "광고키워드",
                 hint: "검색 키워드 검색" },
     rank:     { label: "랭킹(일·주·월)", cols: RANK,   dated: true,  file: "랭킹",
@@ -104,8 +116,8 @@
     products: { label: "상품코드",        cols: PRODUCTS, dated: false, file: "상품코드",
                 hint: "상품번호 · 제품명 · 라인 · 카테고리 검색" }
   };
-  var ORDER = ["goods", "pvgoods", "sales", "pageview", "customer", "custgoods", "ad_daily", "ad_goods", "ad_keyword", "rank", "products"];
-  var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview", pvgoods: "goods", customer: "customer", custgoods: "custgoods", ad_daily: "ad", ad_goods: "adgoods", ad_keyword: "ad", rank: "rank" };
+  var ORDER = ["goods", "pvgoods", "sales", "pageview", "customer", "custgoods", "ad_daily", "ad_goods", "ad_keyword", "cpm_daily", "cpm_keyword", "cpm_campaign", "rank", "products"];
+  var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview", pvgoods: "goods", customer: "customer", custgoods: "custgoods", ad_daily: "ad", ad_goods: "adgoods", ad_keyword: "ad", cpm_daily: "cpm", cpm_keyword: "cpm", cpm_campaign: "cpm", rank: "rank" };
 
   // ---- DOM ----
   var $ = function (s) { return document.querySelector(s); };

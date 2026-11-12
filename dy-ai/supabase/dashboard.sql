@@ -122,6 +122,7 @@ as $$
     'custgoods', (select jsonb_build_object('min', min(snapshot_date), 'max', max(snapshot_date)) from inni_customer_goods),
     'ad', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_ad_daily),
     'adgoods', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_ad_goods_daily),
+    'cpm', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_cpm_daily),
     'rank', (select jsonb_build_object('min', min(rank_date), 'max', max(rank_date)) from q10_rank_log)
   ) end;
 $$;

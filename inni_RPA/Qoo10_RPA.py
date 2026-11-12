@@ -1376,6 +1376,17 @@ if __name__ == "__main__":
         logger.error(f"광고센터 수집 실패: {e}")
         failures.append("광고센터(광고비)")
 
+    # 11. Beauty Brand AD(CPM) 캠페인·일자별 성과·키워드 노출 → Supabase (qsm_cpm.py). QSM 화면 호출이라 같은 로그인 세션을 쓴다.
+    logger.info(chr(10) + "="*60)
+    logger.info("Beauty Brand AD(CPM) 수집")
+    logger.info("="*60)
+    try:
+        import qsm_cpm
+        logger.info(f"CPM 수집 완료: {qsm_cpm.sync_range(session, start_month, end_date, log=logger.info)}")
+    except Exception as e:
+        logger.error(f"CPM 수집 실패: {e}")
+        failures.append("Beauty Brand AD(CPM)")
+
     if failures:
         logger.error(f"\n일부 단계 실패: {failures}")
         sys.exit(1)

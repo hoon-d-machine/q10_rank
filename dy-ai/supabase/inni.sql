@@ -90,3 +90,41 @@ begin
 end; $$;
 revoke all on function dy_inni_comment_set(text, date, text) from public, anon;
 grant execute on function dy_inni_comment_set(text, date, text) to authenticated;
+
+-- ---- 화면 설정 (강조 행·열·색, 그래프 종류): 리포트 종류 + 회계연도마다 하나, 모두가 같이 봄 ----
+create table if not exists inni_settings (
+  report text not null,                -- sales | product | onsite | megapo
+  fy int not null,                     -- 회계연도 (BY27 = 2027)
+  config jsonb not null default '{}'::jsonb,
+  updated_by text,
+  updated_at timestamptz not null default now(),
+  primary key (report, fy)
+);
+alter table inni_settings enable row level security;
+revoke all on inni_settings from anon, authenticated;
+
+create or replace function dy_inni_settings_get(p_report text, p_fy int) returns jsonb
+language plpgsql stable security definer set search_path = public
+as $$
+begin
+  if auth.uid() is null then raise exception 'login required'; end if;
+  return (select config from inni_settings where report = p_report and fy = p_fy);
+end; $$;
+revoke all on function dy_inni_settings_get(text, int) from public, anon;
+grant execute on function dy_inni_settings_get(text, int) to authenticated;
+
+create or replace function dy_inni_settings_set(p_report text, p_fy int, p_config jsonb) returns jsonb
+language plpgsql security definer set search_path = public
+as $$
+begin
+  if auth.uid() is null then raise exception 'login required'; end if;
+  if p_report not in ('sales', 'product', 'onsite', 'megapo') then raise exception 'bad report'; end if;
+  if p_fy < 2000 or p_fy > 2100 then raise exception 'bad fy'; end if;
+  if jsonb_typeof(p_config) <> 'object' or length(p_config::text) > 8000 then raise exception 'bad config'; end if;
+  insert into inni_settings (report, fy, config, updated_by, updated_at)
+  values (p_report, p_fy, p_config, auth.jwt() ->> 'email', now())
+  on conflict (report, fy) do update set config = excluded.config, updated_by = excluded.updated_by, updated_at = now();
+  return p_config;
+end; $$;
+revoke all on function dy_inni_settings_set(text, int, jsonb) from public, anon;
+grant execute on function dy_inni_settings_set(text, int, jsonb) to authenticated;

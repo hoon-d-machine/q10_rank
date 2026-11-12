@@ -16,7 +16,7 @@
   var el = {
     fy: $(".js-p-fy"), month: $(".js-p-month"), reload: $(".js-p-reload"), setBtn: $(".js-p-set"), xlsxBtn: $(".js-p-xlsx"), msg: $(".js-p-msg"), notice: $(".js-p-notice"),
     title: $(".js-p-title"), unit: $(".js-p-unit"), auto: $(".js-p-auto"), manual: $(".js-p-manual"), manualBody: $(".js-p-manual-body"), manualMeta: $(".js-p-manual-meta"),
-    line: $(".js-p-line"), cat: $(".js-p-cat"), lineSub: $(".js-p-line-sub"), catSub: $(".js-p-cat-sub"), chartLine: $(".js-p-chart-line"), chartCat: $(".js-p-chart-cat"),
+    lineSub: $(".js-p-line-sub"), catSub: $(".js-p-cat-sub"), chartLine: $(".js-p-chart-line"), chartCat: $(".js-p-chart-cat"),
     items: $(".js-p-items"), itemsTitle: $(".js-p-items-title"), itemsNote: $(".js-p-items-note")
   };
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -196,28 +196,6 @@
       });
     });
   }
-  // 요약표 열: 당월 · 작년 동월 · YoY · 누계 · 작년 누계 · YoY
-  var SUM_COLS = [["ty", "당월", "yen"], ["ly", "작년 동월", "yen"], ["yoy", "YoY", "gr"], ["ytd", "누계", "yen"], ["lyytd", "작년 누계", "yen"], ["ytdyoy", "누계 YoY", "gr"]];
-  function fmtSum(type, v) { return v == null ? "" : type === "gr" ? gstr(v) : num(v); }
-  function renderSummary(table, rows, title, spec) {
-    table.innerHTML = "";
-    var thead = h("thead"), hr = h("tr"); hr.appendChild(h("th", null, title));
-    SUM_COLS.forEach(function (c) { var th = h("th", null, c[1]); th.dataset.col = c[0]; hr.appendChild(th); });
-    thead.appendChild(hr); table.appendChild(thead);
-    var tb = h("tbody");
-    rows.forEach(function (r) {
-      var tr = h("tr"); tr.dataset.id = r.name; tr.appendChild(h("td", null, r.name));
-      SUM_COLS.forEach(function (c) { var v = r[c[0]]; var td = h("td", c[2] === "gr" ? cls(v) : "", v == null ? "-" : fmtSum(c[2], v)); td.dataset.col = c[0]; tr.appendChild(td); });
-      tb.appendChild(tr);
-    });
-    var tot = rows.reduce(function (a, r) { ["ty", "ly", "ytd", "lyytd"].forEach(function (f) { a[f] += r[f]; }); return a; }, { ty: 0, ly: 0, ytd: 0, lyytd: 0 });
-    var ft = h("tfoot"), fr = h("tr"); fr.appendChild(h("td", null, "합계"));
-    var tv = { ty: tot.ty, ly: tot.ly, yoy: tot.ly ? growth(tot.ty, tot.ly) : null, ytd: tot.ytd, lyytd: tot.lyytd, ytdyoy: tot.lyytd ? growth(tot.ytd, tot.lyytd) : null };
-    SUM_COLS.forEach(function (c) { var v = tv[c[0]]; fr.appendChild(h("td", c[2] === "gr" ? cls(v) : "", v == null ? "-" : fmtSum(c[2], v))); });
-    ft.appendChild(fr); table.appendChild(tb); table.appendChild(ft);
-    applyHl(table, spec);
-  }
-
   // 상품별 상세 표의 열 정의
   function itemCols() {
     var ty = tyLabel(), ly = lyLabel();
@@ -307,16 +285,28 @@
     var kt = basis === "ytd" ? "ytd" : "ty", kl = basis === "ytd" ? "lyytd" : "ly";
     var list = rows.slice(0, 12);
     var horiz = dir !== "v";
-    var valAxis = { beginAtZero: true, ticks: { color: tick, callback: function (v) { return v >= 1e6 ? (v / 1e6) + "M" : v >= 1e3 ? (v / 1e3) + "K" : v; } }, grid: { color: grid } };
+    var valAxis = { beginAtZero: true, min: 0, grace: "8%", ticks: { color: tick, callback: function (v) { return v >= 1e6 ? (v / 1e6) + "M" : v >= 1e3 ? (v / 1e3) + "K" : v; } }, grid: { color: grid } };
     var catAxis = { ticks: { color: tick }, grid: { display: false } };
+    var short = function (v) { return v >= 1e6 ? (v / 1e6).toFixed(1) + "M" : v >= 1e3 ? Math.round(v / 1e3) + "K" : String(Math.round(v)); };
+    var labels = { id: "valueLabels", afterDatasetsDraw: function (ch) {   // 막대 끝에 값 표시 (표를 없앤 대신)
+      var x = ch.ctx; x.save(); x.font = "11px sans-serif"; x.fillStyle = tick;
+      ch.data.datasets.forEach(function (ds, i) {
+        var meta = ch.getDatasetMeta(i); if (meta.hidden) return;
+        meta.data.forEach(function (bar, j) {
+          var v = ds.data[j]; if (!v || v <= 0) return;
+          if (horiz) { x.textAlign = "left"; x.textBaseline = "middle"; x.fillText(short(v), bar.x + 4, bar.y); }
+          else { x.textAlign = "center"; x.textBaseline = "bottom"; x.fillText(short(v), bar.x, bar.y - 3); }
+        });
+      }); x.restore();
+    } };
     return {
-      type: "bar",
+      type: "bar", plugins: [labels],
       data: { labels: list.map(function (r) { return r.name; }), datasets: [
         { label: basis === "ytd" ? "누계" : "당월", data: list.map(function (r) { return Math.round(r[kt]); }), backgroundColor: c1, borderRadius: 2 },
         { label: basis === "ytd" ? "작년 누계" : "작년 동월", data: list.map(function (r) { return Math.round(r[kl]); }), backgroundColor: alpha(cmp.charAt(0) === "#" ? cmp : "#a19a82", .75), borderRadius: 2 }
       ] },
       options: {
-        indexAxis: horiz ? "y" : "x", responsive: !light, maintainAspectRatio: false, animation: { duration: light ? 0 : 300 }, interaction: { mode: "index", intersect: false },
+        indexAxis: horiz ? "y" : "x", layout: { padding: horiz ? { right: 44 } : { top: 18 } }, responsive: !light, maintainAspectRatio: false, animation: { duration: light ? 0 : 300 }, interaction: { mode: "index", intersect: false },
         plugins: { legend: { labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 11 } } }, tooltip: { callbacks: { label: function (c) { return " " + c.dataset.label + ": " + Math.round(c.parsed[horiz ? "x" : "y"]).toLocaleString("ko-KR"); } } } },
         scales: horiz ? { x: valAxis, y: catAxis } : { x: catAxis, y: valAxis }
       }
@@ -338,14 +328,14 @@
     el.lineSub.textContent = basisTxt; el.catSub.textContent = basisTxt;
     var unc = d.items.filter(function (i) { return i.line === UNCLASS || i.cat === UNCLASS; });
     el.notice.hidden = !unc.length;
-    if (unc.length) el.notice.textContent = "상품코드표에 라인 또는 카테고리가 없는 상품이 " + unc.length + "개 있어요(" + UNCLASS + "로 표시): " + unc.slice(0, 4).map(function (i) { return i.name; }).join(", ") + (unc.length > 4 ? " 외" : "") + ". 분류가 시트와 다르게 보이면 상품코드표를 고쳐 주세요.";
+    if (unc.length) el.notice.textContent = "상품코드표에 라인 또는 카테고리가 없는 상품이 " + unc.length + "개 있어요(" + UNCLASS + "로 표시): " + unc.slice(0, 4).map(function (i) { return i.name.length > 22 ? i.name.slice(0, 22) + "…" : i.name; }).join(", ") + (unc.length > 4 ? " 외" : "") + ". 분류가 시트와 다르게 보이면 상품코드표를 고쳐 주세요.";
     renderComment(); renderTables();
   }
   function renderTables() { // 설정(강조·그래프)만 바뀐 때는 코멘트는 다시 읽지 않는다 (코멘트 저장과 겹치지 않게)
     var d = S.data;
     var basisTxt = S.cfg.basis === "ytd" ? "그래프: 누계 vs 작년 누계" : "그래프: 당월 vs 작년 동월";
     el.lineSub.textContent = basisTxt; el.catSub.textContent = basisTxt;
-    renderSummary(el.line, d.lines, "라인", S.cfg.lines); renderSummary(el.cat, d.cats, "카테고리", S.cfg.cats); renderItems(); drawCharts();
+    renderItems(); drawCharts();
   }
   function recompute() {
     if (S.busy) return Promise.resolve();
@@ -390,11 +380,8 @@
     panels.note.appendChild(h("p", null, k.slice(0, 4) + " " + MON[mOf(k) - 1] + " 리포트의 직접 입력 코멘트예요. 자동 코멘트 아래에 같이 보여요. 비우고 저장하면 지워져요."));
     panels.note.appendChild(ta);
 
-    var sumCols = SUM_COLS.map(function (c) { return [c[0], c[1]]; });
     var itemCfgCols = itemCols().filter(function (c) { return !c.text; }).map(function (c) { return [c.id, (c.group ? c.group + " · " : "") + c.label]; });
     var tableDefs = [
-      { key: "lines", title: "라인별 표", rows: S.data.lines.map(function (r) { return [r.name, r.name]; }), cols: sumCols },
-      { key: "cats", title: "카테고리별 표", rows: S.data.cats.map(function (r) { return [r.name, r.name]; }), cols: sumCols },
       { key: "items", title: "상품별 상세 표", rows: S.data.items.map(function (r) { return [r.gd, r.no + ". " + r.name.slice(0, 28)]; }), cols: itemCfgCols, scroll: true }
     ];
     tableDefs.forEach(function (td) {
@@ -481,7 +468,7 @@
     var cv = document.createElement("canvas"); cv.width = 760; cv.height = 340; cv.style.cssText = "position:fixed;left:-3000px;top:0;width:760px;height:340px";
     document.body.appendChild(cv);
     var cfg = chartConfig(rows, S.cfg.basis, S.cfg.dir, true);
-    cfg.plugins = [{ id: "bg", beforeDraw: function (ch) { var x = ch.ctx; x.save(); x.globalCompositeOperation = "destination-over"; x.fillStyle = "#ffffff"; x.fillRect(0, 0, ch.width, ch.height); x.restore(); } }];
+    cfg.plugins = (cfg.plugins || []).concat([{ id: "bg", beforeDraw: function (ch) { var x = ch.ctx; x.save(); x.globalCompositeOperation = "destination-over"; x.fillStyle = "#ffffff"; x.fillRect(0, 0, ch.width, ch.height); x.restore(); } }]);
     cfg.options.responsive = false; cfg.options.devicePixelRatio = 1;
     var tmp = new window.Chart(cv, cfg); tmp.update("none");
     var id = wb.addImage({ base64: tmp.toBase64Image("image/png", 1), extension: "png" });
@@ -516,36 +503,12 @@
       }
       r++;
 
-      // 라인별·카테고리별: 그림 + 표
-      [["라인", d.lines, "lines", imageOf(wb, d.lines)], ["카테고리", d.cats, "cats", imageOf(wb, d.cats)]].forEach(function (blk) {
-        var title = blk[0], rows = blk[1], spec = S.cfg[blk[2]], img = blk[3];
-        C(r, 1).value = title + "별 · " + (S.cfg.basis === "ytd" ? "누계 vs 작년 누계" : "당월 vs 작년 동월") + " (그래프)"; C(r, 1).font = { size: 12, bold: true }; r++;
-        ws.addImage(img, { tl: { col: 0, row: r - 1 }, ext: { width: 720, height: 322 } }); r += 17;
-        C(r, 1).value = title; SUM_COLS.forEach(function (sc, i) { C(r, 3 + i).value = sc[1]; });
-        for (c = 1; c <= 8; c++) { var hc = C(r, c); hc.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 }; hc.fill = fill(XL.head); hc.alignment = { horizontal: c <= 2 ? "left" : "right", vertical: "middle" }; }
-        ws.mergeCells(r, 1, r, 2);
-        SUM_COLS.forEach(function (sc, i) { if (spec.cols.indexOf(sc[0]) >= 0) { var q = C(r, 3 + i); q.fill = fill(argb(spec.color)); q.font = { bold: true, size: 10, color: { argb: "FF1B1B1B" } }; } });
-        r++;
-        var sums = { ty: 0, ly: 0, ytd: 0, lyytd: 0 };
-        rows.forEach(function (row) {
-          ws.mergeCells(r, 1, r, 2); C(r, 1).value = row.name;
-          var rowHl = spec.rows.indexOf(row.name) >= 0;
-          SUM_COLS.forEach(function (sc, i) {
-            var cc = C(r, 3 + i), v = row[sc[0]]; cc.value = xv(sc[2] === "gr" ? "gr" : "yen", v); cc.numFmt = XFMT[sc[2] === "gr" ? "gr" : "yen"]; cc.alignment = { horizontal: "right" };
-            cc.font = { size: 10, color: { argb: sc[2] === "gr" && v != null ? (v >= 0 ? XL.up : XL.down) : "FF222222" } };
-            if (rowHl || spec.cols.indexOf(sc[0]) >= 0) { cc.fill = fill(argb(spec.color)); cc.font = { size: 10, bold: rowHl, color: { argb: "FF1B1B1B" } }; }
-          });
-          ["ty", "ly", "ytd", "lyytd"].forEach(function (f) { sums[f] += row[f]; });
-          var lc = C(r, 1); lc.font = { bold: true, size: 10 }; if (rowHl) { lc.fill = fill(argb(spec.color)); C(r, 2).fill = fill(argb(spec.color)); }
-          for (c = 1; c <= 8; c++) C(r, c).border = { bottom: thin };
-          r++;
-        });
-        ws.mergeCells(r, 1, r, 2); C(r, 1).value = "합계"; C(r, 1).font = { bold: true, size: 10 };
-        var tv = { ty: sums.ty, ly: sums.ly, yoy: sums.ly ? growth(sums.ty, sums.ly) : null, ytd: sums.ytd, lyytd: sums.lyytd, ytdyoy: sums.lyytd ? growth(sums.ytd, sums.lyytd) : null };
-        SUM_COLS.forEach(function (sc, i) { var cc = C(r, 3 + i), v = tv[sc[0]]; cc.value = xv(sc[2] === "gr" ? "gr" : "yen", v); cc.numFmt = XFMT[sc[2] === "gr" ? "gr" : "yen"]; cc.font = { bold: true, size: 10 }; cc.alignment = { horizontal: "right" }; });
-        for (c = 1; c <= 8; c++) C(r, c).border = { top: { style: "thin", color: { argb: "FF888888" } }, bottom: { style: "medium", color: { argb: "FF888888" } } };
-        r += 2;
+      // 라인별·카테고리별: 그림
+      [["라인", d.lines], ["카테고리", d.cats]].forEach(function (blk) {
+        C(r, 1).value = blk[0] + "별 · " + (S.cfg.basis === "ytd" ? "누계 vs 작년 누계" : "당월 vs 작년 동월"); C(r, 1).font = { size: 12, bold: true }; r++;
+        ws.addImage(imageOf(wb, blk[1]), { tl: { col: 0, row: r - 1 }, ext: { width: 720, height: 322 } }); r += 17;
       });
+      r++;
 
       // 상품별 상세
       C(r, 1).value = el.itemsTitle.textContent; C(r, 1).font = { size: 12, bold: true }; r++;

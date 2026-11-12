@@ -17,6 +17,7 @@
   }
   function show(view, sub, push) {
     views.forEach(function (b) { b.setAttribute("aria-selected", b.dataset.view === view ? "true" : "false"); });
+    var inner = document.querySelector(".dash-inner"); if (inner) inner.classList.toggle("is-wide", view === "inni" && sub === "product");   // PRODUCT 화면만 넓게
     viewDash.hidden = view !== "dash";
     viewInni.hidden = view !== "inni";
     subs.forEach(function (b) { b.setAttribute("aria-selected", b.dataset.sub === sub ? "true" : "false"); });

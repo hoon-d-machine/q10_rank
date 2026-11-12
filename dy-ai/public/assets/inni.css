@@ -119,3 +119,13 @@ html[data-theme="nature"] .inni-modal-card, html[data-theme="dark"] .inni-modal-
 .inni-items td:first-child, .inni-items th:first-child { position: static; }
 @media (max-width: 960px) { .inni-two { grid-template-columns: 1fr; } }
 .inni-checks.is-scroll { max-height: 170px; overflow: auto; padding: 4px 2px; }
+
+/* PRODUCT 화면은 카드 폭을 화면 가득(가로스크롤은 화면이 작을 때만) */
+.dash-inner.is-wide { max-width: none; }
+.dash-page:has(.dash-inner.is-wide) { padding-left: 12px; padding-right: 12px; }
+.inni-chart.is-sm { height: 340px; }
+.inni-items { width: 100%; font-size: 11.5px; }
+.inni-items th, .inni-items td { padding: 5px 4px; }
+.inni-items td.name { max-width: 136px; }
+.dash-inner.is-wide .inni-card { padding: 18px 14px; }
+.inni-items td:nth-child(1), .inni-items th:nth-child(1) { padding-left: 4px; padding-right: 4px; }

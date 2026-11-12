@@ -40,6 +40,27 @@
   var PAGEVIEW = PV_NAMES.map(function (n) { return [snake(n), PV_RENAME[n] || n]; });
   var PRODUCTS = [["gd_no", "상품번호"], ["product_name", "제품명"], ["line", "라인"], ["category", "카테고리"]];
 
+  // 상품별 일자 PV (판매자센터 pageview/date-goods). 유입 경로 54개 중 주요 경로만 보여 준다 (전부는 DB·대시보드 지표에 있음)
+  var PVGOODS = [
+    ["base_date", "날짜"], ["gd_no", "상품코드"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"],
+    ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"],
+    ["total_pv", "총 PV"], ["main_pv", "홈"], ["mn_megawari_pv", "메가와리"], ["mn_megapo_pv", "메가포"],
+    ["search_pv", "검색"], ["sch_keywordplus_pv", "키워드플러스"], ["sch_powerrank_pv", "파워랭크업"], ["sch_cps_pv", "스마트세일즈"],
+    ["bestseller_pv", "베스트셀러"], ["beautyhub_pv", "뷰티허브"], ["deal_pv", "딜"], ["wish_pv", "찜"], ["todaysview_pv", "오늘 본 상품"],
+    ["cart_pv", "장바구니"], ["sellershop_pv", "셀러샵"], ["special_pv", "기획전"], ["category_pv", "카테고리"], ["vip_pv", "상품상세"],
+    ["catalog_pv", "카탈로그"], ["my_pv", "마이페이지"], ["live_pv", "라이브"], ["external_pv", "외부 유입"], ["directurl_pv", "직접 URL"], ["etc_pv", "기타"]
+  ];
+  // 고객 (일자별)
+  var CUSTOMER = [
+    ["base_date", "날짜"], ["newbuyer_cnt", "신규 구매자"], ["newbuyer_rate", "신규 비율(%)"], ["existingbuyer_cnt", "기존 구매자"],
+    ["existingbuyer_rate", "기존 비율(%)"], ["buyer_cnt", "구매자 수"], ["shop_follower_inc", "팔로워 증감"], ["shop_follower_cnt", "팔로워 수"], ["shop_page_view", "샵 방문(PV)"]
+  ];
+  // 상품별 찜·장바구니: 판매자센터는 현재 누적값만 줘서 수집한 날의 스냅샷으로 쌓는다
+  var CUSTGOODS = [
+    ["snapshot_date", "스냅샷 날짜"], ["gd_no", "상품코드"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"],
+    ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"], ["wish_cnt", "찜 수"], ["basket_cnt", "장바구니 수"]
+  ];
+
   // 랭킹 기록 (루트 data/*.csv 3개와 같은 내용, q10_rank_log)
   var RANK = [["rank_date", "일자"], ["category", "카테고리"], ["rank", "순위"], ["brand", "브랜드"], ["product_name", "상품명"], ["price", "가격"], ["period", "구분"]];
 
@@ -52,13 +73,18 @@
                 hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
     sales:    { label: "일자별 거래",     cols: SALES,    dated: true,  file: "일자별거래", hint: "" },
     pageview: { label: "일자별 페이지뷰", cols: PAGEVIEW, dated: true,  file: "페이지뷰",   hint: "" },
+    pvgoods:  { label: "일자·상품별 PV", cols: PVGOODS,  dated: true,  file: "상품별PV",
+                hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
+    customer: { label: "고객(일자별)",   cols: CUSTOMER, dated: true,  file: "고객일자별", hint: "" },
+    custgoods:{ label: "찜·장바구니(스냅샷)", cols: CUSTGOODS, dated: true, file: "찜장바구니",
+                hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
     rank:     { label: "랭킹(일·주·월)", cols: RANK,   dated: true,  file: "랭킹",
                 hint: "상품명 · 브랜드 · 카테고리 검색" },
     products: { label: "상품코드",        cols: PRODUCTS, dated: false, file: "상품코드",
                 hint: "상품번호 · 제품명 · 라인 · 카테고리 검색" }
   };
-  var ORDER = ["goods", "sales", "pageview", "rank", "products"];
-  var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview", rank: "rank" };
+  var ORDER = ["goods", "pvgoods", "sales", "pageview", "customer", "custgoods", "rank", "products"];
+  var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview", pvgoods: "goods", customer: "customer", custgoods: "custgoods", rank: "rank" };
 
   // ---- DOM ----
   var $ = function (s) { return document.querySelector(s); };
@@ -167,7 +193,7 @@
     qIn.placeholder = src.hint || "";
     if (qIn.value !== s.q) qIn.value = s.q;
     sizeSel.value = String(s.size);
-    dlAll.title = "표 5개를 시트로 나눠 한 파일로 받아요 (기간 필터는 날짜가 있는 표 4개에 적용돼요)";
+    dlAll.title = "표 8개를 시트로 나눠 한 파일로 받아요 (기간 필터는 날짜가 있는 표 7개에 적용돼요)";
   }
 
   function setStatus(msg, kind) {

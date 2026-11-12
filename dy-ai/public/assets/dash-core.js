@@ -10,7 +10,7 @@
   // fmt: int | money | pct | dec
   // ============================================================
   var METRICS = {};
-  function base(key, label, src, col, fmt, group, hidden) { METRICS[key] = { key: key, label: label, src: src, col: col, fmt: fmt || "int", group: group, hidden: !!hidden }; }
+  function base(key, label, src, col, fmt, group, hidden, avg) { METRICS[key] = { key: key, label: label, src: src, col: col, fmt: fmt || "int", group: group, hidden: !!hidden, avg: !!avg }; }
   function ratio(key, label, num, den, fmt, group, scale) { METRICS[key] = { key: key, label: label, num: num, den: den, fmt: fmt, group: group, scale: scale || 1 }; }
 
   // 판매 (일자별 거래)
@@ -37,8 +37,8 @@
   ratio("pv_per_visitor", "방문자당 PV", "total_pv", "visitors", "dec", "방문·전환");
   ratio("sales_per_visitor", "방문자당 매출", "net_sales", "visitors", "money", "방문·전환");
 
-  // 유입 경로별 PV
-  [["main_pv", "홈"], ["search_pv", "검색"], ["sch_keywordplus_pv", "검색·키워드플러스"], ["sch_powerrank_pv", "검색·파워랭크"],
+  // 유입 경로별 PV (스토어 전체: 일자별 페이지뷰 / 상품별: 일자·상품별 PV)
+  var CHANNELS = [["main_pv", "홈"], ["search_pv", "검색"], ["sch_keywordplus_pv", "검색·키워드플러스"], ["sch_powerrank_pv", "검색·파워랭크"],
    ["mn_megawari_pv", "메가와리"], ["mn_megapo_pv", "메가포"], ["mn_timesale_pv", "타임세일(메인)"], ["mn_dailydeal_pv", "데일리딜(메인)"],
    ["bestseller_pv", "베스트셀러"], ["mn_beauty_ranking_pv", "뷰티 랭킹"], ["beautyhub_pv", "뷰티허브"], ["deal_pv", "딜"],
    ["category_pv", "카테고리"], ["sellershop_pv", "셀러샵"], ["special_pv", "기획전"], ["live_pv", "라이브"],
@@ -46,7 +46,8 @@
    ["external_pv", "외부 유입 합계"], ["ext_google_pv", "외부·구글"], ["ext_yahoo_pv", "외부·야후"], ["ext_instagram_pv", "외부·인스타그램"],
    ["ext_twitter_pv", "외부·X"], ["ext_facebook_pv", "외부·페이스북"], ["ext_line_pv", "외부·라인"], ["ext_kakaku_pv", "외부·가카쿠"],
    ["directurl_pv", "직접 URL"], ["etc_pv", "기타"]
-  ].forEach(function (x) { base("pv_" + x[0].replace(/_pv$/, ""), x[1] + " PV", "pageview", x[0], "int", "유입 경로(PV)"); });
+  ];
+  CHANNELS.forEach(function (x) { base("pv_" + x[0].replace(/_pv$/, ""), x[1] + " PV", "pageview", x[0], "int", "유입 경로(PV)"); });
 
   // 상품별 (일자·품목별 거래) — 순위·브랜드 분석용
   base("g_net_amt", "상품 순수금액", "goods", "net_bpv", "money", "상품별");
@@ -56,6 +57,28 @@
   base("g_buy_qty", "상품 수주수량", "goods", "buy_cnt", "int", "상품별");
   base("g_cancel_qty", "상품 취소수량", "goods", "cancel_cnt", "int", "상품별");
   ratio("g_unit_price", "상품 평균 단가", "g_net_amt", "g_net_qty", "money", "상품별");
+  // 상품별 PV (일자·상품별 PV, inni_pageview_goods). 상품 CVR = 상품 순수량 ÷ 상품 PV (시트 PRODUCT 탭과 같은 정의)
+  base("g_pv", "상품 PV", "goods", "total_pv", "int", "상품별");
+  ratio("g_cvr", "상품 CVR", "g_net_qty", "g_pv", "pct", "상품별", 100);
+  ratio("g_pv_per_order", "상품 PV당 금액", "g_net_amt", "g_pv", "money", "상품별");
+  CHANNELS.concat([["ext_tiktok_pv", "외부·틱톡"]]).forEach(function (x) { base("gp_" + x[0].replace(/_pv$/, ""), "상품 " + x[1] + " PV", "goods", x[0], "int", "상품 유입 경로(PV)"); });
+  // 찜·장바구니: 판매자센터는 '현재 누적값'만 줘서 매일 스냅샷으로 쌓는다. 기간에 스냅샷이 여러 개면 평균을 보여 준다.
+  base("g_wish", "상품 찜 수 (스냅샷 평균)", "custgoods", "wish_cnt", "int", "상품별 찜·장바구니", false, true);
+  base("g_basket", "상품 장바구니 수 (스냅샷 평균)", "custgoods", "basket_cnt", "int", "상품별 찜·장바구니", false, true);
+
+  // 고객 (일자별): 신규·기존 구매자, 팔로워, 샵 방문
+  (function () {
+    var g = "고객·팔로워";
+    base("c_new", "신규 구매자", "customer", "newbuyer_cnt", "int", g);
+    base("c_exist", "기존 구매자", "customer", "existingbuyer_cnt", "int", g);
+    base("c_buyers", "구매자 수", "customer", "buyer_cnt", "int", g);
+    ratio("c_new_rate", "신규 구매자 비중", "c_new", "c_buyers", "pct", g, 100);
+    ratio("c_exist_rate", "기존 구매자 비중", "c_exist", "c_buyers", "pct", g, 100);
+    base("c_follow_inc", "팔로워 증감", "customer", "shop_follower_inc", "int", g);
+    base("c_follow_cnt", "팔로워 수 (기간 평균)", "customer", "shop_follower_cnt", "int", g, false, true);
+    base("c_shop_pv", "샵 방문(PV)", "customer", "shop_page_view", "int", g);
+    ratio("c_shop_to_buyer", "샵 방문당 구매자", "c_buyers", "c_shop_pv", "pct", g, 100);
+  })();
 
   // 랭킹 (data/*.csv → q10_rank_log → inni_rank_cat 뷰): 이니스프리(イニスフリー) 상품의 랭킹 진입 수량·평균 순위
   // 묶음(dim) '랭킹 카테고리'를 고르면 전체·스킨케어·베이스… 카테고리마다 선이 따로 나온다. 묶음 없이 쓰면 카테고리 합계.
@@ -67,7 +90,7 @@
     ratio("r_" + p + "_avg", x[1] + " 평균 순위", "r_" + p + "_ranksum", "r_" + p + "_cnt", "dec", g);
   });
 
-  var SRC_LABEL = { sales: "일자별 거래", pageview: "일자별 페이지뷰", goods: "일자·상품별 거래", rank: "랭킹 기록", rank_d: "일간 랭킹", rank_w: "주간 랭킹", rank_m: "월간 랭킹" };
+  var SRC_LABEL = { sales: "일자별 거래", pageview: "일자별 페이지뷰", goods: "일자·상품별 거래·PV", customer: "고객(일자별)", custgoods: "찜·장바구니(스냅샷)", rank: "랭킹 기록", rank_d: "일간 랭킹", rank_w: "주간 랭킹", rank_m: "월간 랭킹" };
 
   function srcOf(key) { // 지표가 쓰는 원본 표들
     var m = METRICS[key];
@@ -224,12 +247,12 @@
   // 기준일: 매출 데이터 마지막 날 (없으면 어제)
   function anchor() {
     var b = bounds || {};
-    var max = (b.sales && b.sales.max) || (b.pageview && b.pageview.max) || (b.goods && b.goods.max) || (b.rank && b.rank.max);
+    var max = (b.sales && b.sales.max) || (b.pageview && b.pageview.max) || (b.goods && b.goods.max) || (b.customer && b.customer.max) || (b.rank && b.rank.max);
     return max || ymd(addDays(new Date(), -1));
   }
   function minDate() {
     var b = bounds || {};
-    var mins = ["sales", "pageview", "goods", "rank"].map(function (k) { return b[k] && b[k].min; }).filter(Boolean).sort();
+    var mins = ["sales", "pageview", "goods", "customer", "rank"].map(function (k) { return b[k] && b[k].min; }).filter(Boolean).sort();
     return mins[0] || null;
   }
 
@@ -272,16 +295,18 @@
   // 지표들을 기간·단위(·묶음)로 집계
   // opt: { metrics, grain, range{from,to}, dim?, top?, topMetric? }
   // → { keys: [묶음 키], rows: { 키: { 지표: 값 } }, labels: { 키: 이름 }, days: { 키: 날짜 수 } }
+  function dimSrc(src) { return src === "goods" || src === "custgoods"; }   // 상품·브랜드 묶음을 쓸 수 있는 소스
+
   function query(opt) {
     var bk = baseKeys(opt.metrics);
     var bySrc = {};
     bk.forEach(function (k) { var m = METRICS[k]; (bySrc[m.src] = bySrc[m.src] || []).push(k); });
-    var topBase = opt.topMetric ? baseKeys([opt.topMetric]).filter(function (k) { return METRICS[k].src === "goods" || /^rank_/.test(METRICS[k].src) || !opt.dim || opt.dim === "weekday"; })[0] : null;
+    var topBase = opt.topMetric ? baseKeys([opt.topMetric]).filter(function (k) { return dimSrc(METRICS[k].src) || /^rank_/.test(METRICS[k].src) || !opt.dim || opt.dim === "weekday"; })[0] : null;
     var srcs = Object.keys(bySrc);
     return loadBounds().then(function () {
       return Promise.all(srcs.map(function (s) {
         var cols = bySrc[s].map(function (k) { return METRICS[k].col; });
-        var useDim = opt.dim && (opt.dim === "weekday" || (s === "goods" && opt.dim !== "category") || (opt.dim === "category" && /^rank_/.test(s))) ? opt.dim : null;
+        var useDim = opt.dim && (opt.dim === "weekday" || (dimSrc(s) && opt.dim !== "category") || (opt.dim === "category" && /^rank_/.test(s))) ? opt.dim : null;
         var topCol = opt.top && useDim && useDim !== "weekday" ? (topBase && METRICS[topBase].src === s ? METRICS[topBase].col : cols[0]) : null;
         if (topCol && cols.indexOf(topCol) < 0) cols.push(topCol);
         return agg(s, opt.grain, opt.range, cols, useDim, topCol ? opt.top : null, topCol).then(function (data) { return { src: s, dim: useDim, data: data }; });
@@ -293,7 +318,7 @@
           var key = opt.dim ? String(r.d) : String(r.p).slice(0, 10);
           if (opt.dim && opt.grain !== "all") key = String(r.p).slice(0, 10) + "|" + r.d;
           var row = rows[key] = rows[key] || {};
-          bySrc[part.src].forEach(function (k) { row[k] = (row[k] || 0) + (r[METRICS[k].col] || 0); });
+          bySrc[part.src].forEach(function (k) { row[k] = (row[k] || 0) + (r[METRICS[k].col] || 0) / (METRICS[k].avg ? (r.n || 1) : 1); });
           if (r.l) labels[key] = r.l;
           dayCount[key] = Math.max(dayCount[key] || 0, r.n || 0);
         });
@@ -308,7 +333,7 @@
   }
 
   window.dyDash = {
-    METRICS: METRICS, SRC_LABEL: SRC_LABEL, PRESETS: PRESETS, GRAINS: GRAINS, WEEKDAYS: WEEKDAYS,
+    METRICS: METRICS, dimSrc: dimSrc, SRC_LABEL: SRC_LABEL, PRESETS: PRESETS, GRAINS: GRAINS, WEEKDAYS: WEEKDAYS,
     srcOf: srcOf, resolve: resolve, shift: shift, buckets: buckets, bucketLabel: bucketLabel,
     fmt: fmt, delta: delta, days: days, parse: parse, ymd: ymd,
     loadBounds: loadBounds, anchor: anchor, minDate: minDate, query: query, friendly: friendly,

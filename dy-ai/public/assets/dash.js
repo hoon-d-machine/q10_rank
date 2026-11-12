@@ -87,6 +87,16 @@
         W("trend", { metric: "r_m_avg", dim: "category", top: 8, grain: "month", chart: "line", w: 3, range: { preset: "last12m" }, title: "월간 랭킹 카테고리별 평균 순위 (낮을수록 좋음)" }),
         W("table", { metrics: ["net_sales", "orders", "r_d_cnt", "r_d_avg", "r_w_cnt", "r_w_avg", "r_m_cnt", "r_m_avg"], grain: "month", title: "월별 매출과 랭킹" })
       ] } },
+      { key: "t-customer", name: "고객·상품 PV", config: { range: { preset: "last30" }, widgets: [
+        W("kpi", { metric: "c_buyers", compare: "prev" }), W("kpi", { metric: "c_new_rate", compare: "prev" }), W("kpi", { metric: "c_follow_cnt", compare: "prev" }),
+        W("trend", { metric: "c_new", metric2: "c_exist", grain: "auto", compare: "none", chart: "bar", title: "신규 vs 기존 구매자" }),
+        W("trend", { metric: "c_follow_inc", grain: "auto", compare: "prev", chart: "bar", title: "팔로워 증감 추이" }),
+        W("rank", { metric: "g_pv", dim: "gd_no", top: 20, compare: "prev", w: 4, title: "상품 PV 상위 20" }),
+        W("rank", { metric: "g_cvr", dim: "gd_no", top: 20, compare: "none", w: 2, title: "판매 상위 20 상품의 CVR" }),
+        W("trend", { metric: "g_pv", dim: "brand_nm", top: 5, grain: "auto", chart: "line", title: "상위 5개 브랜드 PV 추이" }),
+        W("rank", { metric: "g_wish", dim: "gd_no", top: 20, compare: "none", w: 3, title: "찜 많은 상품 (최근 스냅샷)" }),
+        W("table", { metrics: ["visitors", "c_buyers", "c_new_rate", "c_shop_pv", "c_follow_inc"], grain: "month", title: "월별 고객 지표" })
+      ] } },
       { key: "t-goods", name: "상품 분석", config: { range: { preset: "last30" }, widgets: [
         W("kpi", { metric: "g_net_amt", compare: "prev" }), W("kpi", { metric: "g_net_qty", compare: "prev" }), W("kpi", { metric: "g_unit_price", compare: "prev" }),
         W("trend", { metric: "g_net_amt", dim: "brand_nm", top: 5, grain: "auto", chart: "line", title: "상위 5개 브랜드 매출 추이" }),
@@ -520,7 +530,7 @@
 
     rank: function (w, rg, body, sub) {
       var k = w.metric, dim = w.dim || "brand_nm", top = w.top || 10, mode = w.compare || "none";
-      if (M[k].src !== "goods" && !(M[k].num && D.srcOf(k).every(function (s) { return s === "goods"; }))) {
+      if (!D.dimSrc(M[k].src) && !(M[k].num && D.srcOf(k).every(D.dimSrc))) {
         body.innerHTML = ""; body.appendChild(el("p", "dash-error", "순위표는 '상품별' 지표만 쓸 수 있어요 (브랜드·상품 정보가 그 표에만 있어요)")); return;
       }
       sub.textContent += cmpNote(mode, rg);
@@ -802,7 +812,7 @@
       var goodsOnly = t === "rank" || (t === "trend" && dimS.value && !byRank);
       var keep = metric.value || w.metric;
       metricOptions(metric, byRank ? function (m) { return /^rank_/.test(D.srcOf(m.key)[0] || ""); }
-        : goodsOnly ? function (m) { return (m.src || "") === "goods" || (m.num && D.srcOf(m.key).join() === "goods"); } : null);
+        : goodsOnly ? function (m) { return D.dimSrc(m.src) || (m.num && D.srcOf(m.key).every(D.dimSrc)); } : null);
       metric.value = keep; if (!metric.value) metric.selectedIndex = 0;
       F.dim.querySelector("small").hidden = t !== "trend" && t !== "rank";
       dimS.querySelector("option[value='']").disabled = t === "rank";
@@ -866,7 +876,7 @@
   function renderBounds() {
     var parts = [];
     D.loadBounds().then(function (bd) {
-      ["sales", "pageview", "goods", "rank"].forEach(function (k) {
+      ["sales", "pageview", "goods", "customer", "custgoods", "rank"].forEach(function (k) {
         if (bd[k] && bd[k].min) parts.push(D.SRC_LABEL[k] + " " + bd[k].min + " ~ " + bd[k].max);
       });
       $(".js-bounds").textContent = parts.length ? "데이터: " + parts.join(" · ") : "DB 에 아직 데이터가 없어요. 수집기에서 Q10 수집을 한 번 하면 채워져요.";

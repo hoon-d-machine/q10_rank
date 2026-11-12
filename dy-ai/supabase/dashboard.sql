@@ -5,8 +5,24 @@
 -- inni_* 표는 계속 잠겨 있고, 로그인 사용자는 이 함수들로만 합계를 읽는다.
 
 -- ============================================================
+-- 0) 상품별 일자 뷰: 판매(inni_sales_goods) + 상품별 PV(inni_pageview_goods)를 (날짜, 상품)으로 합침
+--    'goods' 소스가 이 뷰를 읽어서, 상품 매출 지표와 상품 PV·CVR 지표를 같은 묶음(상품·브랜드)으로 쓸 수 있다.
+--    (inni_RPA/supabase_schema_extra.sql 을 먼저 실행해 inni_pageview_goods 가 있어야 함)
+-- ============================================================
+create or replace view inni_goods_daily as
+select coalesce(s.base_date, p.base_date) as base_date,
+       coalesce(s.gd_no, p.gd_no) as gd_no,
+       coalesce(s.brand_nm, p.brand_nm) as brand_nm,
+       coalesce(s.gd_nm, p.gd_nm) as gd_nm,
+       s.buy_cnt, s.cancel_cnt, s.net_cnt, s.buy_bpv, s.cancel_bpv, s.net_bpv,
+       p.main_pv, p.mn_megawari_pv, p.mn_megapo_pv, p.mn_myinterest_pv, p.mn_spotlight_brand_pv, p.mn_bestseller_pv, p.mn_beauty_ranking_pv, p.mn_beauty_pv, p.mn_timesale_pv, p.mn_dailydeal_pv, p.mn_groupbuy_pv, p.mn_chancedeal_pv, p.mn_etc_pv, p.search_pv, p.sch_keywordplus_pv, p.sch_powerrank_pv, p.sch_cps_pv, p.sch_timesale_pv, p.sch_etc_pv, p.bestseller_pv, p.beautyhub_pv, p.supplementhub_pv, p.deal_pv, p.dl_todaysmega_pv, p.dl_todaysmega_po_pv, p.dl_timesale_pv, p.dl_dailydeal_pv, p.dl_groupbuy_pv, p.dl_onedaychance_pv, p.wish_pv, p.todaysview_pv, p.cart_pv, p.sellershop_pv, p.special_pv, p.category_pv, p.vip_pv, p.catalog_pv, p.my_pv, p.live_pv, p.external_pv, p.ext_google_pv, p.ext_facebook_pv, p.ext_twitter_pv, p.ext_instagram_pv, p.ext_tiktok_pv, p.ext_yahoo_pv, p.ext_kakaku_pv, p.ext_line_pv, p.ext_email_pv, p.ext_others_pv, p.directurl_pv, p.etc_pv, p.total_pv
+from inni_sales_goods s
+full join inni_pageview_goods p on p.base_date = s.base_date and p.gd_no = s.gd_no;
+revoke all on inni_goods_daily from anon, authenticated;
+
+-- ============================================================
 -- 1) 집계 함수
---   p_source : 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'goods'(inni_sales_goods) | 'rank_d'·'rank_w'·'rank_m'(inni_rank_cat 뷰의 일간·주간·월간)
+--   p_source : 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'goods'(inni_goods_daily 뷰: 상품 판매+PV) | 'customer'(inni_customer_daily) | 'custgoods'(inni_customer_goods 스냅샷) | 'rank_d'·'rank_w'·'rank_m'(inni_rank_cat 뷰의 일간·주간·월간)
 --   p_grain  : 'day' | 'week' | 'month' | 'quarter' | 'year' | 'all'
 --   p_cols   : 합계를 낼 숫자 열 (표의 숫자 열만 허용)
 --   p_dim    : null | 'weekday' | 'brand_nm' | 'gd_no' | 'category'  (brand_nm·gd_no 는 goods 만, category 는 rank_* 만)
@@ -30,7 +46,9 @@ begin
   case p_source
     when 'sales' then tbl := 'inni_sales_daily'; dcol := 'base_start_dt';
     when 'pageview' then tbl := 'inni_pageview_daily'; dcol := 'base_start_dt';
-    when 'goods' then tbl := 'inni_sales_goods'; dcol := 'base_date';
+    when 'goods' then tbl := 'inni_goods_daily'; dcol := 'base_date';
+    when 'customer' then tbl := 'inni_customer_daily'; dcol := 'base_date';        -- inni_RPA/supabase_schema_extra.sql
+    when 'custgoods' then tbl := 'inni_customer_goods'; dcol := 'snapshot_date';  -- 찜·장바구니 스냅샷(누적값)
     when 'rank_d' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''daily''';     -- supabase/rank_log.sql 먼저 실행
     when 'rank_w' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''weekly''';
     when 'rank_m' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''monthly''';
@@ -61,8 +79,8 @@ begin
 
   if p_dim is null then dexpr := 'null::text'; lexpr := 'null::text';
   elsif p_dim = 'weekday' then dexpr := format('extract(isodow from %I)::int::text', dcol); lexpr := 'null::text';
-  elsif p_dim = 'brand_nm' and p_source = 'goods' then dexpr := 'coalesce(brand_nm, ''(없음)'')'; lexpr := 'null::text';
-  elsif p_dim = 'gd_no' and p_source = 'goods' then dexpr := 'gd_no'; lexpr := 'max(gd_nm)';
+  elsif p_dim = 'brand_nm' and p_source in ('goods', 'custgoods') then dexpr := 'coalesce(brand_nm, ''(없음)'')'; lexpr := 'null::text';
+  elsif p_dim = 'gd_no' and p_source in ('goods', 'custgoods') then dexpr := 'gd_no'; lexpr := 'max(gd_nm)';
   elsif p_dim = 'category' and p_source like 'rank\_%' then dexpr := 'category'; lexpr := 'null::text';
   else raise exception 'bad dim %', p_dim;
   end if;
@@ -79,7 +97,8 @@ begin
     'select %s as p, %s as d, %s as l, count(distinct %I)::int as n, %s from %I where %I between $1 and $2%s%s group by 1, 2' ||
     ') t',
     pexpr, dexpr, lexpr, dcol, sums, tbl, dcol, extra, topw);
-  execute q into res using p_from, p_to;
+  -- 찜·장바구니 스냅샷은 수집한 날 아침에 찍혀서(전날 마감 기준) 기준일(어제)의 하루 뒤까지 포함한다
+  execute q into res using p_from, case when p_source = 'custgoods' then p_to + 1 else p_to end;
   return res;
 end;
 $$;
@@ -96,6 +115,8 @@ as $$
     'sales', (select jsonb_build_object('min', min(base_start_dt), 'max', max(base_start_dt)) from inni_sales_daily),
     'pageview', (select jsonb_build_object('min', min(base_start_dt), 'max', max(base_start_dt)) from inni_pageview_daily),
     'goods', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_sales_goods),
+    'customer', (select jsonb_build_object('min', min(base_date), 'max', max(base_date)) from inni_customer_daily),
+    'custgoods', (select jsonb_build_object('min', min(snapshot_date), 'max', max(snapshot_date)) from inni_customer_goods),
     'rank', (select jsonb_build_object('min', min(rank_date), 'max', max(rank_date)) from q10_rank_log)
   ) end;
 $$;

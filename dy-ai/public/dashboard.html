@@ -222,10 +222,41 @@
         </div>
       </section>
       <section class="inni-pane" data-pane="megapo" hidden>
-        <div class="inni-card inni-todo">
-          <h2>MEGAPO <small>행사 리포트</small></h2>
-          <p class="inni-state">준비 중</p>
-          <p>행사 기간 요약, 일별 매출·PV·ORDERS·CVR·AOV(이전 행사·작년 대비), 상위 상품, 유입 경로별 PV.</p>
+        <div class="inni-bar" role="toolbar" aria-label="MEGAPO 설정">
+          <label class="dash-bar-item"><span>행사</span><select class="js-m-event"></select></label>
+          <span class="dash-bar-gap"></span>
+          <button class="dash-btn js-help" data-help="megapo" type="button" aria-haspopup="dialog" title="이 화면과 코멘트 기준 설명">설명</button>
+          <button class="dash-btn js-m-note-btn" type="button" aria-haspopup="dialog" title="이 행사 코멘트 직접 입력">코멘트 입력</button>
+          <button class="dash-btn js-m-reload" type="button" title="DB 에서 다시 불러오기">새로고침</button>
+        </div>
+        <p class="dash-msg js-m-msg" role="alert" hidden></p>
+        <p class="inni-notice js-m-notice" role="status" hidden></p>
+
+        <div class="inni-card inni-report">
+          <header class="inni-rhead">
+            <p class="logs-eyebrow">Qoo10 MEGAPO</p>
+            <h2 class="js-m-title">MEGAPO</h2>
+            <p class="inni-unit">(K JPY) · 순매출 기준 · 행사 기간(시작일~종료일) 합계</p>
+          </header>
+
+          <div class="inni-comment">
+            <div class="inni-comment-head"><h3>코멘트</h3></div>
+            <div class="inni-auto js-m-auto"></div>
+            <div class="inni-manual js-m-manual-box" hidden>
+              <p class="inni-manual-body js-m-manual-body"></p>
+              <small class="inni-note js-m-manual-meta"></small>
+            </div>
+          </div>
+
+          <h3>일별 매출 (직전 행사 · 작년 행사와 같은 Day 비교)</h3>
+          <div class="inni-chart"><canvas class="js-m-chart"></canvas></div>
+
+          <h3>일별</h3>
+          <div class="inni-scroll"><table class="inni-table js-m-daily"></table></div>
+
+          <h3 class="js-m-items-title">상품별 실적</h3>
+          <div class="inni-scroll"><table class="inni-table inni-items js-m-items"></table></div>
+          <p class="inni-note js-m-note"></p>
         </div>
       </section>
     </div>
@@ -246,6 +277,7 @@
 <script src="/assets/inni-sales.js"></script>
 <script src="/assets/inni-product.js"></script>
 <script src="/assets/inni-onsite.js"></script>
+<script src="/assets/inni-megapo.js"></script>
 <script src="/assets/inni-help.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {

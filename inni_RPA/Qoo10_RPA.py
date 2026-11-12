@@ -1372,6 +1372,7 @@ if __name__ == "__main__":
         logger.info(f"광고센터 수집 완료: {ads_extra.sync_range(ads_token, start_month, end_date, log=logger.info)}행")
         logger.info(f"광고 키워드(노출·클릭·구매) 수집 완료: {ads_extra.sync_keywords(ads_token, start_month, end_date, log=logger.info)}행")
         logger.info(f"광고 상품별 수집 완료: {ads_extra.sync_goods(ads_token, start_month, end_date, log=logger.info)}행")
+        logger.info(f"행사 달력 수집 완료: {ads_extra.sync_mega_events(ads_token, log=logger.info)}건")
     except Exception as e:
         logger.error(f"광고센터 수집 실패: {e}")
         failures.append("광고센터(광고비)")

@@ -125,6 +125,34 @@ begin
   return n;
 end; $$;
 revoke all on function inni_replace_ad_goods_daily(date, date, jsonb) from public, anon, authenticated;
+
+-- 메가와리·메가포 행사 달력 (광고센터 /api/calendar/mega). promotion_type: MEGAWARI | SUPERPOINT(=메가포). 행사 리포트(MEGAPO 탭)의 기간 목록.
+create table if not exists inni_mega_event (
+  promotion_no integer primary key,
+  promotion_nm text,
+  promotion_type text,
+  start_at timestamp not null,
+  end_at timestamp not null,
+  start_dt date not null,
+  end_dt date not null,
+  collected_at timestamptz not null default now()
+);
+alter table inni_mega_event enable row level security;
+revoke all on inni_mega_event from anon, authenticated;
+
+create or replace function inni_upsert_mega_events(p_rows jsonb)
+returns integer language plpgsql as $$
+declare n integer;
+begin
+  insert into inni_mega_event (promotion_no, promotion_nm, promotion_type, start_at, end_at, start_dt, end_dt, collected_at)
+  select promotion_no, promotion_nm, promotion_type, start_at, end_at, start_at::date, end_at::date, now()
+  from jsonb_to_recordset(p_rows) as t(promotion_no integer, promotion_nm text, promotion_type text, start_at timestamp, end_at timestamp)
+  on conflict (promotion_no) do update set promotion_nm = excluded.promotion_nm, promotion_type = excluded.promotion_type,
+    start_at = excluded.start_at, end_at = excluded.end_at, start_dt = excluded.start_dt, end_dt = excluded.end_dt, collected_at = now();
+  get diagnostics n = row_count;
+  return n;
+end; $$;
+revoke all on function inni_upsert_mega_events(jsonb) from public, anon, authenticated;
 """
 
 
@@ -309,6 +337,21 @@ def sync_keywords(token, start, end, log=print):
     return tot
 
 
+def sync_mega_events(token, log=print):
+    """행사 달력(메가와리·메가포)을 받아 표에 넣는다. 반환: 행수"""
+    r = requests.post(API + "calendar/mega", headers=_headers(token), timeout=90)
+    if r.status_code in (401, 403):
+        raise PermissionError(f"광고센터 인증 실패({r.status_code}): 토큰이 만료됐어요")
+    j = r.json()
+    if str(j.get("resultCode")) != "1":
+        raise RuntimeError(f"행사 달력 응답 오류: {j.get('message')} {j.get('resultCode')}")
+    rows = [{"promotion_no": x["promotionNo"], "promotion_nm": x["promotionNm"], "promotion_type": x["promotionType"],
+             "start_at": x["startDt"], "end_at": x["endDt"]} for x in (j.get("datas") or [])]
+    n = rpc("inni_upsert_mega_events", {"p_rows": rows})
+    log(f"  행사 달력: {n}건")
+    return n
+
+
 def fetch_goods_day(token, day):
     """하루치 상품 × 광고유형 행. /api/goods/rank 는 offset·size(최대 100)로 나눠 받는다."""
     rows, off, size = [], 0, 100
@@ -381,14 +424,17 @@ if __name__ == "__main__":
     ap.add_argument("--dry", action="store_true")
     ap.add_argument("--keywords", action="store_true", help="키워드별 노출·클릭·구매만 수집")
     ap.add_argument("--goods", action="store_true", help="상품별 광고만 수집")
+    ap.add_argument("--mega", action="store_true", help="행사 달력(메가와리·메가포)만 수집")
     a = ap.parse_args()
     if a.print_sql:
         sys.stdout.write(schema_sql()); sys.exit(0)
-    if not (a.start and a.end):
+    if not (a.start and a.end) and not a.mega:
         ap.error("--from 과 --to 가 필요해요")
     tok = get_ads_token()
     if not tok:
         sys.exit("광고센터 토큰을 못 받았어요 (QSM 로그인 필요)")
+    if a.mega:
+        print("완료:", sync_mega_events(tok), "건"); sys.exit(0)
     if a.goods:
         print("완료:", sync_goods(tok, a.start, a.end), "행"); sys.exit(0)
     if a.keywords:

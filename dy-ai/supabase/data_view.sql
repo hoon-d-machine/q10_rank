@@ -2,7 +2,7 @@
 --  dy_data_page : 원본 표를 기간·검색·페이지로 읽는 읽기 전용 함수 (엑셀 다운로드도 이 함수를 페이지별로 호출)
 -- inni_* 표는 계속 잠겨 있고, 로그인 사용자는 이 함수로만 읽는다 (dashboard.sql 과 같은 방식).
 --
---   p_source : 'goods'(inni_sales_goods) | 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'pvgoods'(상품별 일자 PV) | 'customer'(고객 일자) | 'custgoods'(찜·장바구니 스냅샷) | 'products'(inni_product_codes) | 'ad_daily'(광고비·광고 매출 일자×유형) | 'ad_keyword'(광고 키워드별 노출·클릭·구매) | 'ad_goods'(상품별 광고) | 'cpm_campaign'·'cpm_daily'·'cpm_keyword'(Beauty Brand AD 캠페인·일자별·키워드) | 'rank'(q10_rank_log, 일간·주간·월간 랭킹)
+--   p_source : 'goods'(inni_sales_goods) | 'sales'(inni_sales_daily) | 'pageview'(inni_pageview_daily) | 'pvgoods'(상품별 일자 PV) | 'customer'(고객 일자) | 'custgoods'(찜·장바구니 스냅샷) | 'products'(inni_product_codes) | 'ad_daily'(광고비·광고 매출 일자×유형) | 'ad_keyword'(광고 키워드별 노출·클릭·구매) | 'ad_goods'(상품별 광고) | 'mega_event'(메가와리·메가포 행사 달력) | 'cpm_campaign'·'cpm_daily'·'cpm_keyword'(Beauty Brand AD 캠페인·일자별·키워드) | 'rank'(q10_rank_log, 일간·주간·월간 랭킹)
 --   p_from/p_to : 날짜 범위 (goods 는 base_date, sales·pageview 는 base_start_dt, rank 는 rank_date 기준, products 는 무시)
 --   p_q      : 검색어 (goods: 상품명·브랜드·상품코드·외부상품코드·제품명·라인·카테고리 / products: 상품번호·제품명·라인·카테고리)
 --   p_limit  : 한 번에 가져올 행 수 (1~1000), p_offset : 건너뛸 행 수
@@ -36,6 +36,7 @@ begin
     when 'custgoods' then tbl := 'inni_customer_goods'; dcol := 'snapshot_date'; ord := 't.snapshot_date desc, t.wish_cnt desc nulls last, t.gd_no';
     when 'ad_daily'   then tbl := 'inni_ad_daily';         dcol := 'base_date'; ord := 't.base_date desc, case when t.ad_type = ''all'' then 0 else 1 end, t.ad_price desc';   -- inni_RPA/supabase_schema_ads.sql
     when 'ad_keyword' then tbl := 'inni_ad_keyword_daily'; dcol := 'base_date'; ord := 't.base_date desc, t.ad_type, t.expose_cnt desc';
+    when 'mega_event'   then tbl := 'inni_mega_event';     dcol := 'start_dt';  ord := 't.start_dt desc';   -- inni_RPA/supabase_schema_ads.sql
     when 'cpm_campaign' then tbl := 'inni_cpm_campaign';   dcol := 'start_dt';  ord := 't.start_dt desc, t.campaign_no desc';   -- inni_RPA/supabase_schema_cpm.sql
     when 'cpm_daily'    then tbl := 'inni_cpm_daily';      dcol := 'base_date'; ord := 't.base_date desc, t.campaign_no desc';
     when 'cpm_keyword'  then tbl := 'inni_cpm_keyword_daily'; dcol := 'base_date'; ord := 't.base_date desc, t.campaign_no desc, t.impressions desc';
@@ -54,6 +55,8 @@ begin
     qq := '%' || replace(replace(replace(trim(p_q), '\', '\\'), '%', '\%'), '_', '\_') || '%';
     if p_source in ('ad_keyword', 'cpm_keyword') then
       w := w || ' and t.keyword ilike $3';
+    elsif p_source = 'mega_event' then
+      w := w || ' and (t.promotion_nm ilike $3 or t.promotion_type ilike $3)';
     elsif p_source = 'cpm_campaign' then
       w := w || ' and (t.title ilike $3 or t.campaign_no::text ilike $3)';
     elsif p_source = 'ad_daily' then

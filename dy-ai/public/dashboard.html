@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="/assets/help.css">
 <link rel="stylesheet" href="/assets/logs.css">
 <link rel="stylesheet" href="/assets/dash.css">
+<link rel="stylesheet" href="/assets/inni.css">
 </head>
 <body class="logs-body">
 
@@ -55,6 +56,13 @@
       <p class="logs-lead js-bounds">데이터 범위 확인 중…</p>
     </header>
 
+    <!-- 큰 탭: 기존 대시보드 / inni(월간 리포트 4종: SALES · PRODUCT · ONSITE AD · MEGAPO) -->
+    <div class="inni-tabs inni-main js-views" role="tablist" aria-label="대시보드 종류">
+      <button class="inni-tab" type="button" role="tab" data-view="dash" aria-selected="true">대시보드</button>
+      <button class="inni-tab" type="button" role="tab" data-view="inni" aria-selected="false">inni</button>
+    </div>
+
+    <div id="view-dash">
     <div class="dash-bar" role="toolbar" aria-label="대시보드 설정">
       <label class="dash-bar-item"><span>대시보드</span><select class="js-pick"></select></label>
       <label class="dash-bar-item"><span>기간</span><select class="js-range"></select></label>
@@ -71,6 +79,45 @@
     <p class="dash-msg js-msg" role="alert" hidden></p>
 
     <div class="dash-grid js-grid" aria-live="polite"></div>
+    </div>
+
+    <div id="view-inni" hidden>
+      <div class="inni-tabs inni-sub js-subs" role="tablist" aria-label="inni 대시보드">
+        <button class="inni-tab" type="button" role="tab" data-sub="sales" aria-selected="true">SALES</button>
+        <button class="inni-tab" type="button" role="tab" data-sub="product" aria-selected="false">PRODUCT</button>
+        <button class="inni-tab" type="button" role="tab" data-sub="onsite" aria-selected="false">ONSITE AD</button>
+        <button class="inni-tab" type="button" role="tab" data-sub="megapo" aria-selected="false">MEGAPO</button>
+      </div>
+
+      <section class="inni-pane" data-pane="sales">
+        <div class="inni-card inni-todo">
+          <h2>SALES <small>월간 매출 리포트</small></h2>
+          <p class="inni-state">준비 중 · 가장 먼저 만들 화면</p>
+          <p>회계연도(BY, 7월~6월) 기준 월별 SALES · YoY · 목표 · 목표 달성률 · PV · ORDERS · CVR · AOV, 그리고 BY별 월 매출 추이.</p>
+        </div>
+      </section>
+      <section class="inni-pane" data-pane="product" hidden>
+        <div class="inni-card inni-todo">
+          <h2>PRODUCT <small>상품별 월간 실적</small></h2>
+          <p class="inni-state">준비 중</p>
+          <p>라인별·카테고리별 올해 대비 작년, 상품별 매출·수량·PV·CVR·온사이트 광고(Spend·AD Sales·ROAS)·회계연도 누적.</p>
+        </div>
+      </section>
+      <section class="inni-pane" data-pane="onsite" hidden>
+        <div class="inni-card inni-todo">
+          <h2>ONSITE AD <small>온사이트 광고</small></h2>
+          <p class="inni-state">준비 중</p>
+          <p>월별 광고 종류별 광고비·광고 매출·ROAS, 광고비 투입률, 전체 ROI.</p>
+        </div>
+      </section>
+      <section class="inni-pane" data-pane="megapo" hidden>
+        <div class="inni-card inni-todo">
+          <h2>MEGAPO <small>행사 리포트</small></h2>
+          <p class="inni-state">준비 중</p>
+          <p>행사 기간 요약, 일별 매출·PV·ORDERS·CVR·AOV(이전 행사·작년 대비), 상위 상품, 유입 경로별 PV.</p>
+        </div>
+      </section>
+    </div>
   </div>
 </main>
 
@@ -84,6 +131,7 @@
 <script src="/assets/dy-cal.js"></script>
 <script src="/assets/dash-core.js"></script>
 <script src="/assets/dash.js"></script>
+<script src="/assets/inni.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });

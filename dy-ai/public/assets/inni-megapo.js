@@ -1,25 +1,28 @@
-/* inni 탭 · MEGAPO 행사 리포트 (AP Talk 시트의 MEGAPO 탭을 DB 로 대체)
- *   - 행사 달력(inni_mega_event, 광고센터 /api/calendar/mega)에서 메가포(SUPERPOINT) 행사를 고르면 그 행사 기간(시작일~종료일)의 매출로 리포트를 만든다
+/* inni 탭 · MEGAPO 행사 리포트 (AP Talk 시트의 MEGAPO 탭을 DB 로 대체) — 메가포(SUPERPOINT) · 메가와리(MEGAWARI) 행사 둘 다
+ *   - 행사 달력(inni_mega_event, 광고센터 /api/calendar/mega)에서 종류와 행사를 고르면 그 행사 기간(시작일~종료일)의 매출로 리포트를 만든다
  *   - 일별(Day 1~N): SALES · PV · ORDERS · CVR · AOV 를 직전 행사(QoQ)·작년 같은 행사(YoY)와 같은 Day 끼리 비교, 합계(SUM)는 같은 일수끼리
- *   - 상품별 실적(상위 20개): 행사 기간 매출·비중·직전 행사 대비·PV·CVR
- *   - 코멘트: 자동 생성 + 직접 입력(리포트 'megapo', 행사 시작 달 기준). 단위: 천 엔
+ *   - 유입 경로별 PV(스토어 전체) · 상품별 실적(상위 20개)
+ *   - 코멘트: 자동 생성 + 직접 입력, 강조·그래프는 '설정', 엑셀 다운로드. 저장 단위: 코멘트는 행사 시작 월(리포트 megapo / megawari), 설정은 행사가 속한 회계연도
  * 정의: SALES = 순매출(final_buy_bpv, 취소 제외), PV = 스토어 총 PV, ORDERS = 총상품수량(순)(final_total_buy_cnt), CVR = ORDERS ÷ PV, AOV = SALES ÷ ORDERS
- * 진행 중인 행사는 데이터가 있는 마지막 날까지만 보여 주고 비교도 같은 일수로 한다.
+ * 진행 중인 행사는 데이터가 있는 마지막 날까지만 보여 주고 비교도 같은 일수로 한다. 메가와리는 행사 첫날이 오후 5시 시작이라 첫날은 일부 시간만 행사다.
  */
 (function () {
   "use strict";
-  var D = window.dyDash;
+  var D = window.dyDash, K = window.dyInniKit;
   var pane = document.querySelector('.inni-pane[data-pane="megapo"]');
-  if (!D || !pane) return;
+  if (!D || !K || !pane) return;
 
   var $ = function (s) { return pane.querySelector(s); };
   var el = {
-    ev: $(".js-m-event"), reload: $(".js-m-reload"), noteBtn: $(".js-m-note-btn"), msg: $(".js-m-msg"), notice: $(".js-m-notice"),
-    title: $(".js-m-title"), auto: $(".js-m-auto"), manualBox: $(".js-m-manual-box"), manualBody: $(".js-m-manual-body"), manualMeta: $(".js-m-manual-meta"),
-    chart: $(".js-m-chart"), daily: $(".js-m-daily"), items: $(".js-m-items"), itemsTitle: $(".js-m-items-title"), note: $(".js-m-note")
+    type: $(".js-m-type"), ev: $(".js-m-event"), reload: $(".js-m-reload"), noteBtn: $(".js-m-note-btn"), setBtn: $(".js-m-set"), xlsxBtn: $(".js-m-xlsx"),
+    msg: $(".js-m-msg"), notice: $(".js-m-notice"), eyebrow: $(".js-m-eyebrow"), title: $(".js-m-title"), auto: $(".js-m-auto"),
+    manualBox: $(".js-m-manual-box"), manualBody: $(".js-m-manual-body"), manualMeta: $(".js-m-manual-meta"),
+    chart: $(".js-m-chart"), daily: $(".js-m-daily"), chan: $(".js-m-chan"), chanTitle: $(".js-m-chan-title"), items: $(".js-m-items"), itemsTitle: $(".js-m-items-title"), note: $(".js-m-note")
   };
-  var TOP_N = 20, FLAG_RATE = 0.5;
-  var S = { ready: false, loading: false, events: [], ev: null, master: null, anchor: null, data: null, note: null };
+  var TOP_N = 20, CH_N = 12, FLAG_RATE = 0.5;
+  var TYPES = [["SUPERPOINT", "메가포"], ["MEGAWARI", "메가와리"]];
+  var CHKEYS = Object.keys(D.METRICS).filter(function (k) { return D.METRICS[k].group === "유입 경로(PV)"; });
+  var S = { ready: false, loading: false, all: [], events: [], type: "SUPERPOINT", ev: null, master: null, anchor: null, data: null, note: null, cfg: null, busy: false };
   var chart = null;
 
   // ---------- 날짜·서식 ----------
@@ -29,6 +32,8 @@
   function addD(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return ymd(d); }
   function diffD(a, b) { return Math.round((parse(a) - parse(b)) / 86400000); }
   function md(s) { return +s.slice(5, 7) + "/" + +s.slice(8, 10); }
+  function fyOf(s) { return +s.slice(5, 7) >= 7 ? +s.slice(0, 4) + 1 : +s.slice(0, 4); }
+  function fyLabel(fy) { return "BY" + String(fy).slice(2); }
   function kv(yen) { return yen == null ? "-" : Math.round(yen / 1000).toLocaleString("ko-KR"); }
   function num(v) { return v == null ? "-" : Math.round(v).toLocaleString("ko-KR"); }
   function growth(a, b) { return b ? (a / b - 1) * 100 : null; }
@@ -48,28 +53,35 @@
   }
 
   // ---------- 행사 목록 ----------
-  function evLabel(e) { return e.start_dt.slice(0, 4) + " " + e.start_dt.slice(5, 7) + " MEGAPO"; }
+  function isWari() { return S.type === "MEGAWARI"; }
+  function report() { return isWari() ? "megawari" : "megapo"; }
+  function evLabel(e) {
+    if (e.type === "MEGAWARI") { var mid = addD(e.start_dt, Math.floor(diffD(e.end_dt, e.start_dt) / 2)); return mid.slice(0, 4) + " " + mid.slice(5, 7) + " MEGAWARI"; }   // 8/28~9/9 → 9월 메가와리
+    return e.start_dt.slice(0, 4) + " " + e.start_dt.slice(5, 7) + " MEGAPO";
+  }
   function evRange(e) { return md(e.start_dt) + "~" + md(e.end_dt); }
+  function typeName() { return isWari() ? "MEGAWARI" : "MEGAPO"; }
 
   function load() {
     if (S.loading) return Promise.resolve();
     S.loading = true; showMsg("");
     return window.dyAuth.requireLogin().then(function (sess) {
       if (!sess) return;
-      return Promise.all([D.loadBounds(), rpc("dy_data_page", { p_source: "mega_event", p_from: null, p_to: null, p_q: "SUPERPOINT", p_limit: 1000, p_offset: 0 }),
+      return Promise.all([D.loadBounds(), rpc("dy_data_page", { p_source: "mega_event", p_from: null, p_to: null, p_q: null, p_limit: 1000, p_offset: 0 }),
         rpc("dy_data_page", { p_source: "products", p_from: null, p_to: null, p_q: null, p_limit: 1000, p_offset: 0 })]).then(function (r) {
         S.anchor = D.anchor(); var minD = D.minDate() || "2024-01-01";
-        S.events = (r[1].rows || []).map(function (x) { return { no: x.promotion_no, nm: x.promotion_nm, start_dt: String(x.start_dt).slice(0, 10), end_dt: String(x.end_dt).slice(0, 10) }; })
+        S.all = (r[1].rows || []).map(function (x) { return { no: x.promotion_no, nm: x.promotion_nm, type: x.promotion_type, start_dt: String(x.start_dt).slice(0, 10), end_dt: String(x.end_dt).slice(0, 10) }; })
           .filter(function (e) { return e.start_dt <= S.anchor && e.end_dt >= minD; })
           .sort(function (a, b) { return a.start_dt < b.start_dt ? 1 : -1; });   // 최신 행사가 먼저
         S.master = {}; (r[2].rows || []).forEach(function (x) { S.master[String(x.gd_no)] = x; });
-        if (!S.events.length) throw new Error("행사 달력이 아직 없어요. 수집기에서 Q10 수집을 한 번 하면 채워져요.");
+        if (!S.all.length) throw new Error("행사 달력이 아직 없어요. 수집기에서 Q10 수집을 한 번 하면 채워져요.");
         S.ready = true;
       });
     }).catch(function (e) { showMsg(friendly(e)); }).then(function () { S.loading = false; });
   }
+  function pickType() { S.events = S.all.filter(function (e) { return e.type === S.type; }); S.ev = null; }
 
-  // 직전 행사(목록에서 바로 다음), 작년 같은 행사(시작일이 1년 전과 가장 가까운 행사, 40일 이내)
+  // 직전 행사(같은 종류에서 바로 다음), 작년 같은 행사(시작일이 1년 전과 가장 가까운 같은 종류 행사, 40일 이내)
   function prevOf(e) { var i = S.events.indexOf(e); return i >= 0 && i + 1 < S.events.length ? S.events[i + 1] : null; }
   function lyOf(e) {
     var tgt = addD(e.start_dt, -365), best = null, bd = 41;
@@ -77,11 +89,20 @@
     return best;
   }
 
+  // ---------- 설정 ----------
+  function normCfg(c) {
+    c = c || {};
+    return { daily: K.normSpec(c.daily), chan: K.normSpec(c.chan), items: K.normSpec(c.items), type: c.type === "bar" ? "bar" : "line", compare: ["both", "prev", "ly", "none"].indexOf(c.compare) >= 0 ? c.compare : "both" };
+  }
+  function cfgFy() { return fyOf(S.ev.start_dt); }
+  function loadCfg() {
+    var rp = report(), fy = cfgFy();
+    return rpc("dy_inni_settings_get", { p_report: rp, p_fy: fy }).then(function (c) { S.cfg = normCfg(c); }).catch(function (e) { S.cfg = normCfg(null); showMsg(friendly(e)); });
+  }
+
   // ---------- 집계 ----------
   var DM = ["net_sales", "total_pv", "net_qty", "gmv", "cancel_amt"];
-  function eventDays(e, limit) { // 행사 날짜 목록 (limit 일 수까지)
-    var out = [], d = e.start_dt; while (d <= e.end_dt && (limit == null || out.length < limit)) { out.push(d); d = addD(d, 1); } return out;
-  }
+  function eventDays(e, limit) { var out = [], d = e.start_dt; while (d <= e.end_dt && (limit == null || out.length < limit)) { out.push(d); d = addD(d, 1); } return out; }
   function seriesOf(e, n) { // e 의 앞 n 일(데이터 있는 날까지)의 일별 값 [{date, sales, pv, orders, gmv, cancel}|null]
     if (!e) return Promise.resolve(null);
     var days = eventDays(e, n).filter(function (d) { return d <= S.anchor; });
@@ -90,21 +111,19 @@
       return days.map(function (d) { var x = r.rows[d]; return x ? { date: d, sales: x.net_sales || 0, pv: x.total_pv || 0, orders: x.net_qty || 0, gmv: x.gmv || 0, cancel: x.cancel_amt || 0 } : null; });
     });
   }
-  function itemsOf(from, to) {
-    return D.query({ metrics: ["g_net_amt", "g_pv", "g_net_qty"], grain: "all", range: { from: from, to: to }, dim: "gd_no", top: 200, topMetric: "g_net_amt" });
-  }
+  function itemsOf(from, to) { return D.query({ metrics: ["g_net_amt", "g_pv", "g_net_qty"], grain: "all", range: { from: from, to: to }, dim: "gd_no", top: 200, topMetric: "g_net_amt" }); }
+  function chansOf(from, to) { return D.query({ metrics: CHKEYS, grain: "all", range: { from: from, to: to } }).then(function (r) { return r.rows[Object.keys(r.rows)[0]] || {}; }); }
   function sum(ser, f) { var t = 0; (ser || []).forEach(function (x) { if (x) t += x[f]; }); return t; }
   function cnt(ser) { return (ser || []).filter(Boolean).length; }
 
   function build() {
     var e = S.ev, p = prevOf(e), l = lyOf(e);
-    var days = eventDays(e).filter(function (d) { return d <= S.anchor; }), n = days.length;
-    var part = e.end_dt > S.anchor;
+    var days = eventDays(e).filter(function (d) { return d <= S.anchor; }), n = days.length, part = e.end_dt > S.anchor;
     S.busy = true;
-    var pRange = p ? [p.start_dt, addD(p.start_dt, Math.min(n, diffD(p.end_dt, p.start_dt) + 1) - 1)] : null;
-    return Promise.all([seriesOf(e), seriesOf(p, n), seriesOf(l, n),
-      itemsOf(days[0], days[n - 1]), pRange ? itemsOf(pRange[0], pRange[1]) : Promise.resolve(null)]).then(function (r) {
-      var cur = r[0], prev = r[1], ly = r[2], it = r[3], itp = r[4];
+    var pn = p ? Math.min(n, diffD(p.end_dt, p.start_dt) + 1) : 0, pRange = p ? [p.start_dt, addD(p.start_dt, pn - 1)] : null;
+    return Promise.all([seriesOf(e), seriesOf(p, n), seriesOf(l, n), itemsOf(days[0], days[n - 1]), pRange ? itemsOf(pRange[0], pRange[1]) : Promise.resolve(null),
+      chansOf(days[0], days[n - 1]), pRange ? chansOf(pRange[0], pRange[1]) : Promise.resolve(null)]).then(function (r) {
+      var cur = r[0], prev = r[1], ly = r[2], it = r[3], itp = r[4], ch = r[5], chp = r[6];
       var gm = function (x, id, k) { var v = x && x.rows[id]; return v && v[k] ? v[k] : 0; };
       var total = 0; Object.keys(it.rows).forEach(function (id) { total += gm(it, id, "g_net_amt"); });
       var items = Object.keys(it.rows).map(function (id) {
@@ -118,7 +137,10 @@
         o.qoq = itp ? (o.pSales ? growth(o.sales, o.pSales) : "NEW") : null; o.pvQoq = itp ? (o.pPv ? growth(o.pv, o.pPv) : "NEW") : null;
         o.cvr = o.pv ? o.qty / o.pv * 100 : null;
       });
-      S.data = { e: e, p: p, l: l, days: days, n: n, part: part, cur: cur, prev: prev, ly: ly, items: items, itemsTotal: total };
+      var storePv = sum(cur, "pv");
+      var chans = CHKEYS.map(function (k) { var v = ch[k] || 0, pvv = chp ? chp[k] || 0 : null; return { key: k, label: D.METRICS[k].label.replace(/ PV$/, ""), pv: v, share: storePv ? v / storePv * 100 : null, qoq: chp ? (pvv ? growth(v, pvv) : (v ? "NEW" : null)) : null }; })
+        .filter(function (c) { return c.pv > 0; }).sort(function (a, b) { return b.pv - a.pv; });
+      S.data = { e: e, p: p, l: l, days: days, n: n, part: part, cur: cur, prev: prev, ly: ly, items: items, itemsTotal: total, chans: chans, storePv: storePv };
     }).then(function () { S.busy = false; }, function (err) { S.busy = false; throw err; });
   }
 
@@ -142,12 +164,15 @@
       if (neg.length) L.push({ t: "DAY " + neg.join(",") + "일차는 직전 행사 같은 일차보다 매출이 낮았어요 (QoQ 마이너스)", c: "is-neg" });
       else if (pos) L.push({ t: "모든 날이 직전 행사 같은 일차보다 매출이 높았어요 (QoQ 플러스)" });
     }
+    if (d.chans.length) {
+      var topc = d.chans.filter(function (x) { return x.key !== "pv_main"; }).slice(0, 3);   // 홈은 항상 크므로 제외하고 상위 경로를 말한다
+      if (topc.length) L.push({ t: "유입 경로 상위: " + topc.map(function (x) { return x.label + " " + man(x.pv) + (typeof x.qoq === "number" ? " (QoQ " + gs(x.qoq) + ")" : ""); }).join(" · ") });
+    }
     if (d.items.length >= 3) {
       var top = d.items.slice(0, 3), sh = top.reduce(function (t, o) { return t + o.sales; }, 0) / d.itemsTotal * 100;
       L.push({ t: "상위 3개 상품이 " + sh.toFixed(0) + "%: " + top.map(function (o) { return o.name + " " + mil(o.sales); }).join(" · ") });
     }
-    var flags = flagged();
-    flags.forEach(function (f) { L.push({ t: "※ " + f, c: "is-neg" }); });
+    flagged().forEach(function (f) { L.push({ t: "※ " + f, c: "is-neg" }); });
     return L;
   }
   // 취소금액이 주문금액의 50% 이상인 날(집계 이상 가능성) — 비교값이 크게 흔들린다
@@ -167,95 +192,133 @@
     el.manualMeta.textContent = S.note ? "직접 입력 · " + (S.note.by || "") + (S.note.at ? " · " + String(S.note.at).slice(0, 16).replace("T", " ") : "") : "";
     el.noteBtn.textContent = S.note ? "코멘트 수정" : "코멘트 입력";
   }
-  function noteKey() { return S.ev.start_dt.slice(0, 8) + "01"; }   // 메가포는 한 달에 한 번이라 시작 월로 구분한다
+  function noteKey() { return S.ev.start_dt.slice(0, 8) + "01"; }   // 같은 종류의 행사는 한 달에 한 번이라 시작 월로 구분한다
   function renderComment() {
     el.auto.innerHTML = "";
     autoLines().forEach(function (l) { var q = h("p"); q.appendChild(h("span", l.c || "", l.t)); el.auto.appendChild(q); });
     showManual(null);
     var k = noteKey(), ev = S.ev;
-    rpc("dy_inni_comment_get", { p_report: "megapo", p_ym: k }).then(function (c) { if (ev === S.ev) showManual(c); })
+    rpc("dy_inni_comment_get", { p_report: report(), p_ym: k }).then(function (c) { if (ev === S.ev) showManual(c); })
       .catch(function (e) { el.manualMeta.textContent = friendly(e); el.manualBox.hidden = false; });
   }
 
-  // ---------- 표·그래프 ----------
-  function renderDaily() {
-    var d = S.data, t = el.daily; t.innerHTML = "";
-    var head = ["DAY", "날짜", "SALES", "QoQ", "YoY", "PV", "QoQ", "YoY", "ORDERS", "CVR", "AOV"];
-    var thead = h("thead"), tr = h("tr"); head.forEach(function (x) { tr.appendChild(h("th", null, x)); }); thead.appendChild(tr); t.appendChild(thead);
-    var tb = h("tbody"), flagDates = {}; flagged().forEach(function (f) { flagDates[f.slice(0, 10)] = 1; });
-    function cell(row, text, c) { row.appendChild(h("td", c || "", text)); }
-    function line(label, date, c, p, y, strong) {
-      var row = h("tr", strong ? "is-total" : ""); cell(row, label, "t"); cell(row, date, "t");
-      var s = c, ps = p, ys = y;
-      cell(row, kv(s.sales)); cell(row, ps && ps.sales ? gs(growth(s.sales, ps.sales)) : "-", ps && ps.sales ? cls(growth(s.sales, ps.sales)) : "is-empty"); cell(row, ys && ys.sales ? gs(growth(s.sales, ys.sales)) : "-", ys && ys.sales ? cls(growth(s.sales, ys.sales)) : "is-empty");
-      cell(row, num(s.pv)); cell(row, ps && ps.pv ? gs(growth(s.pv, ps.pv)) : "-", ps && ps.pv ? cls(growth(s.pv, ps.pv)) : "is-empty"); cell(row, ys && ys.pv ? gs(growth(s.pv, ys.pv)) : "-", ys && ys.pv ? cls(growth(s.pv, ys.pv)) : "is-empty");
-      cell(row, num(s.orders)); cell(row, pv1(s.cvr)); cell(row, num(s.aov));
-      return row;
+  // ---------- 표 ----------
+  // 일별 표의 열 정의 [id, 머리글, 엑셀 종류]
+  var DCOLS = [["day", "DAY", "text"], ["date", "날짜", "text"], ["sales", "SALES", "int"], ["sq", "QoQ", "gr"], ["sy", "YoY", "gr"], ["pv", "PV", "int"], ["pq", "QoQ", "gr"], ["py", "YoY", "gr"], ["orders", "ORDERS", "int"], ["cvr", "CVR", "pct1"], ["aov", "AOV", "int"]];
+  function dailyRows() { // [{ id, vals:{열id: 값}, sum, flag }]
+    var d = S.data, out = [], flagDates = {}; flagged().forEach(function (f) { flagDates[f.slice(0, 10)] = 1; });
+    var g = function (a, b) { return b ? growth(a, b) : null; };
+    function vals(label, date, c, p, y) {
+      return { day: label, date: date, sales: c.sales / 1000, sq: p ? g(c.sales, p.sales) : null, sy: y ? g(c.sales, y.sales) : null, pv: c.pv, pq: p ? g(c.pv, p.pv) : null, py: y ? g(c.pv, y.pv) : null, orders: c.orders, cvr: c.cvr, aov: c.aov };
     }
     d.cur.forEach(function (x, i) {
       if (!x) return;
-      var row = line("Day " + (i + 1), md(x.date), dayStat(x), dayStat(d.prev && d.prev[i]), dayStat(d.ly && d.ly[i]));
-      if (flagDates[x.date] || (d.prev && d.prev[i] && flagDates[d.prev[i].date]) || (d.ly && d.ly[i] && flagDates[d.ly[i].date])) row.classList.add("is-flag");
+      var flag = flagDates[x.date] || (d.prev && d.prev[i] && flagDates[d.prev[i].date]) || (d.ly && d.ly[i] && flagDates[d.ly[i].date]);
+      out.push({ id: "d" + (i + 1), vals: vals("Day " + (i + 1), md(x.date), dayStat(x), dayStat(d.prev && d.prev[i]), dayStat(d.ly && d.ly[i])), flag: !!flag });
+    });
+    out.push({ id: "sum", vals: vals("SUM", d.n + "일", sumStat(d.cur), d.prev ? sumStat(d.prev) : null, d.ly ? sumStat(d.ly) : null), strong: true });
+    return out;
+  }
+  function fmtCell(id, v) {
+    if (v == null) return "-";
+    switch (id) { case "sales": return Math.round(v).toLocaleString("ko-KR"); case "sq": case "sy": case "pq": case "py": return gs(v); case "cvr": return pv1(v); case "pv": case "orders": case "aov": return num(v); }
+    return String(v);
+  }
+  function renderDaily() {
+    var t = el.daily; t.innerHTML = "";
+    var thead = h("thead"), tr = h("tr"); DCOLS.forEach(function (c) { var th = h("th", null, c[1]); th.dataset.col = c[0]; tr.appendChild(th); }); thead.appendChild(tr); t.appendChild(thead);
+    var tb = h("tbody");
+    dailyRows().forEach(function (r) {
+      var row = h("tr", (r.strong ? "is-total " : "") + (r.flag ? "is-flag" : "")); row.dataset.id = r.id;
+      DCOLS.forEach(function (c) {
+        var v = r.vals[c[0]], td = h("td", c[2] === "text" ? "t" : (c[2] === "gr" ? (v == null ? "is-empty" : cls(v)) : ""), c[2] === "text" ? v : fmtCell(c[0], v)); td.dataset.col = c[0]; row.appendChild(td);
+      });
       tb.appendChild(row);
     });
-    var cs = sumStat(d.cur), ps = d.prev ? sumStat(d.prev) : null, ys = d.ly ? sumStat(d.ly) : null;
-    tb.appendChild(line("SUM", d.n + "일", cs, ps, ys, true));
-    t.appendChild(tb);
+    t.appendChild(tb); K.applyHl(t, S.cfg.daily);
   }
 
+  var CCOLS = [["name", "유입 경로", "text"], ["pv", "PV", "int"], ["share", "스토어 PV 대비", "pct1"], ["qoq", "QoQ", "gr"]];
+  function renderChans() {
+    var d = S.data, t = el.chan; t.innerHTML = "";
+    el.chanTitle.textContent = "유입 경로별 PV · 상위 " + Math.min(CH_N, d.chans.length) + "개 · 스토어 전체 PV " + num(d.storePv);
+    var thead = h("thead"), tr = h("tr"); CCOLS.forEach(function (c) { var th = h("th", null, c[1]); th.dataset.col = c[0]; tr.appendChild(th); }); thead.appendChild(tr); t.appendChild(thead);
+    var tb = h("tbody");
+    d.chans.slice(0, CH_N).forEach(function (c) {
+      var row = h("tr"); row.dataset.id = c.key;
+      var q = typeof c.qoq === "string" ? c.qoq : c.qoq == null ? "-" : gs(c.qoq);
+      [["name", c.label, "t"], ["pv", num(c.pv), ""], ["share", c.share == null ? "-" : c.share.toFixed(1) + "%", ""], ["qoq", q, typeof c.qoq === "number" ? cls(c.qoq) : ""]].forEach(function (x) { var td = h("td", x[2], x[1]); td.dataset.col = x[0]; row.appendChild(td); });
+      tb.appendChild(row);
+    });
+    t.appendChild(tb); K.applyHl(t, S.cfg.chan);
+  }
+
+  var ICOLS = [["no", "No.", "text"], ["name", "상품", "text"], ["sales", "Sales(엔)", "int"], ["share", "%", "pct"], ["qoq", "QoQ", "gr"], ["pv", "PV", "int"], ["pvqoq", "QoQ", "gr"], ["cvr", "CVR", "pct1"]];
+  function itemVals(o) { return { no: o.no, name: o.name, sales: o.sales, share: o.share, qoq: o.qoq, pv: o.pv, pvqoq: o.pvQoq, cvr: o.cvr }; }
   function renderItems() {
     var d = S.data, t = el.items; t.innerHTML = "";
     el.itemsTitle.textContent = "상품별 실적 · 상위 " + Math.min(TOP_N, d.items.length) + "개 · 행사 기간 합계 " + kv(d.itemsTotal) + "K";
-    var head = ["No.", "상품", "Sales(엔)", "%", "QoQ", "PV", "QoQ", "CVR"];
-    var thead = h("thead"), tr = h("tr"); head.forEach(function (x) { tr.appendChild(h("th", null, x)); }); thead.appendChild(tr); t.appendChild(thead);
+    var thead = h("thead"), tr = h("tr"); ICOLS.forEach(function (c) { var th = h("th", null, c[1]); th.dataset.col = c[0]; tr.appendChild(th); }); thead.appendChild(tr); t.appendChild(thead);
     var tb = h("tbody");
     d.items.slice(0, TOP_N).forEach(function (o) {
-      var row = h("tr"), q = typeof o.qoq === "string" ? o.qoq : o.qoq == null ? "-" : gs(o.qoq), pq = typeof o.pvQoq === "string" ? o.pvQoq : o.pvQoq == null ? "-" : gs(o.pvQoq);
-      row.appendChild(h("td", "t", String(o.no))); var nm = h("td", "name", o.name); nm.title = o.name; row.appendChild(nm);
-      row.appendChild(h("td", "", num(o.sales))); row.appendChild(h("td", "", o.share == null ? "-" : o.share.toFixed(0) + "%"));
-      row.appendChild(h("td", typeof o.qoq === "number" ? cls(o.qoq) : "", q)); row.appendChild(h("td", "", num(o.pv)));
-      row.appendChild(h("td", typeof o.pvQoq === "number" ? cls(o.pvQoq) : "", pq)); row.appendChild(h("td", "", pv1(o.cvr)));
+      var row = h("tr"), v = itemVals(o); row.dataset.id = o.gd;
+      var q = typeof v.qoq === "string" ? v.qoq : v.qoq == null ? "-" : gs(v.qoq), pq = typeof v.pvqoq === "string" ? v.pvqoq : v.pvqoq == null ? "-" : gs(v.pvqoq);
+      [["no", String(v.no), "t"], ["name", v.name, "name"], ["sales", num(v.sales), ""], ["share", v.share == null ? "-" : v.share.toFixed(0) + "%", ""], ["qoq", q, typeof v.qoq === "number" ? cls(v.qoq) : ""],
+        ["pv", num(v.pv), ""], ["pvqoq", pq, typeof v.pvqoq === "number" ? cls(v.pvqoq) : ""], ["cvr", pv1(v.cvr), ""]].forEach(function (x) {
+        var td = h("td", x[2], x[1]); td.dataset.col = x[0]; if (x[0] === "name") td.title = v.name; row.appendChild(td);
+      });
       tb.appendChild(row);
     });
-    t.appendChild(tb);
+    t.appendChild(tb); K.applyHl(t, S.cfg.items);
   }
 
+  // 그래프: 일별 매출 (이번·직전·작년). light=true 는 엑셀 그림용
+  function chartConfig(light) {
+    var d = S.data, tick = light ? "#333333" : (getComputedStyle(document.body).color || "#444"), bar = S.cfg.type === "bar", labels = [];
+    for (var i = 0; i < d.n; i++) labels.push("Day " + (i + 1));
+    var ser = function (s) { return labels.map(function (_, i) { var x = s && s[i]; return x ? Math.round(x.sales / 1000) : null; }); };
+    var sets = [{ label: evLabel(d.e) + " (" + evRange(d.e) + ")", data: ser(d.cur), borderColor: "#2b6fd6", backgroundColor: "#2b6fd6", borderWidth: bar ? 1 : 3 }];
+    if (d.prev && (S.cfg.compare === "both" || S.cfg.compare === "prev")) sets.push({ label: "직전 " + evLabel(d.p), data: ser(d.prev), borderColor: "#f2a33a", backgroundColor: "#f2a33a", borderDash: bar ? [] : [6, 4] });
+    if (d.ly && (S.cfg.compare === "both" || S.cfg.compare === "ly")) sets.push({ label: "작년 " + evLabel(d.l), data: ser(d.ly), borderColor: "#8c8c8c", backgroundColor: "#8c8c8c", borderDash: bar ? [] : [2, 3] });
+    sets.forEach(function (s) { s.tension = .25; s.pointRadius = 3; s.spanGaps = false; });
+    return { type: bar ? "bar" : "line", data: { labels: labels, datasets: sets }, options: { responsive: !light, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { labels: { color: tick } } },
+      scales: { x: { ticks: { color: tick }, grid: { display: false } }, y: { beginAtZero: true, min: 0, ticks: { color: tick }, title: { display: true, text: "SALES (K JPY)", color: tick } } } } };
+  }
   function drawChart() {
     if (!window.Chart) return;
-    var d = S.data, tick = getComputedStyle(document.body).color || "#444";
-    var N = Math.max(d.n, d.prev ? d.prev.length : 0, d.ly ? d.ly.length : 0), labels = []; for (var i = 0; i < d.n; i++) labels.push("Day " + (i + 1));
-    var ser = function (s) { return labels.map(function (_, i) { var x = s && s[i]; return x ? Math.round(x.sales / 1000) : null; }); };
-    var sets = [{ label: evLabel(d.e) + " (" + evRange(d.e) + ")", data: ser(d.cur), borderColor: "#2b6fd6", backgroundColor: "#2b6fd6", borderWidth: 3 }];
-    if (d.prev) sets.push({ label: "직전 " + evLabel(d.p), data: ser(d.prev), borderColor: "#f2a33a", backgroundColor: "#f2a33a", borderDash: [6, 4] });
-    if (d.ly) sets.push({ label: "작년 " + evLabel(d.l), data: ser(d.ly), borderColor: "#8c8c8c", backgroundColor: "#8c8c8c", borderDash: [2, 3] });
-    sets.forEach(function (s) { s.tension = .25; s.pointRadius = 3; s.spanGaps = false; });
     if (chart) { chart.destroy(); chart = null; }
-    chart = new window.Chart(el.chart, { type: "line", data: { labels: labels, datasets: sets }, options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
-      plugins: { legend: { labels: { color: tick } } },
-      scales: { x: { ticks: { color: tick }, grid: { display: false } }, y: { beginAtZero: true, min: 0, ticks: { color: tick }, title: { display: true, text: "SALES (K JPY)", color: tick } } } } });
+    chart = new window.Chart(el.chart, chartConfig(false));
   }
 
   function renderNotice() {
     var d = S.data, msgs = [];
     if (d.part) msgs.push("진행 중인 행사예요. 데이터가 있는 " + md(d.days[d.n - 1]) + "까지만 보이고 비교도 같은 일수로 해요.");
     if (!d.p) msgs.push("비교할 직전 행사가 없어요.");
+    if (isWari()) msgs.push("메가와리는 첫날(" + md(d.e.start_dt) + ")이 오후 5시 시작이라 첫날 값에는 행사 전 시간대도 섞여 있어요.");
     el.notice.hidden = !msgs.length; el.notice.textContent = msgs.join(" ");
   }
 
   function renderAll() {
     var d = S.data;
+    el.eyebrow.textContent = "Qoo10 " + typeName();
     el.title.textContent = evLabel(d.e) + " · " + evRange(d.e) + (d.part ? " (진행 중)" : "");
-    renderNotice(); renderComment(); renderDaily(); drawChart(); renderItems();
-    el.note.textContent = "단위: SALES 천 엔(상품 표는 엔). SALES = 순매출(취소 제외), ORDERS = 총상품수량(순), CVR = ORDERS ÷ PV, AOV = SALES ÷ ORDERS. QoQ = 직전 메가포 행사의 같은 일차 대비, YoY = 작년 같은 행사 대비. 노란 줄은 취소금액이 주문금액의 50% 이상인 날(집계 이상 가능성)이 포함된 줄이에요.";
+    renderNotice(); renderComment(); renderDaily(); drawChart(); renderChans(); renderItems();
+    el.note.textContent = "단위: SALES 천 엔(상품 표는 엔). SALES = 순매출(취소 제외), ORDERS = 총상품수량(순), CVR = ORDERS ÷ PV, AOV = SALES ÷ ORDERS. QoQ = 직전 " + (isWari() ? "메가와리" : "메가포") + " 행사의 같은 일차 대비, YoY = 작년 같은 행사 대비. 노란 줄은 취소금액이 주문금액의 50% 이상인 날(집계 이상 가능성)이 포함된 줄이에요. 유입 경로는 서로 겹치는 항목이 있어요(검색 ⊃ 키워드플러스 등).";
   }
-  function recompute() { showMsg(""); return build().then(renderAll).catch(function (e) { showMsg(friendly(e)); }); }
+  function recompute() { showMsg(""); return loadCfg().then(build).then(renderAll).catch(function (e) { showMsg(friendly(e)); }); }
 
   // ---------- 선택 상자 ----------
+  function fillTypes() {
+    el.type.innerHTML = "";
+    TYPES.forEach(function (t) { var o = h("option", null, t[1]); o.value = t[0]; el.type.appendChild(o); });
+    el.type.value = S.type;
+  }
   function fillEvents() {
     el.ev.innerHTML = "";
     S.events.forEach(function (e) { var o = h("option", null, evLabel(e) + " (" + evRange(e) + ")" + (e.end_dt > S.anchor ? " · 진행 중" : "")); o.value = String(e.no); el.ev.appendChild(o); });
     if (!S.ev) S.ev = S.events.filter(function (e) { return e.end_dt <= S.anchor; })[0] || S.events[0];   // 기본은 가장 최근에 끝난 행사
-    el.ev.value = String(S.ev.no);
+    if (S.ev) el.ev.value = String(S.ev.no);
   }
 
   // ---------- 코멘트 입력 모달 ----------
@@ -273,7 +336,7 @@
     function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(); } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(ta.value); } }
     function commit(body) {
       save.disabled = del.disabled = true; err.textContent = "";
-      rpc("dy_inni_comment_set", { p_report: "megapo", p_ym: k, p_body: body }).then(function (c) {
+      rpc("dy_inni_comment_set", { p_report: report(), p_ym: k, p_body: body }).then(function (c) {
         if (ev === S.ev) showManual(c); toast(c ? "코멘트를 저장했어요" : "코멘트를 지웠어요"); close();
       }).catch(function (e) { err.textContent = friendly(e); save.disabled = del.disabled = false; });
     }
@@ -282,10 +345,55 @@
     cancel.addEventListener("click", close); save.addEventListener("click", function () { commit(ta.value); }); del.addEventListener("click", function () { commit(""); });
   }
 
+  // ---------- 설정 · 엑셀 ----------
+  function openSettingsDlg() {
+    var d = S.data, ev = S.ev, k = noteKey(), fy = cfgFy();
+    var dRows = dailyRows().map(function (r) { return [r.id, r.vals.day]; });
+    K.openSettings({
+      title: "설정 · " + evLabel(ev), desc: "코멘트는 행사마다, 강조와 그래프는 같은 종류 행사의 회계연도(" + fyLabel(fy) + ")마다 저장돼요. 모두가 같이 봐요.",
+      report: report(), fy: fy, note: { ym: k, body: S.note ? S.note.body : "", label: evLabel(ev) }, cfg: S.cfg,
+      tables: [
+        { key: "daily", title: "일별 표", rows: dRows, cols: DCOLS.filter(function (c) { return c[2] !== "text"; }).map(function (c) { return [c[0], c[1] + (c[0] === "sq" || c[0] === "pq" ? " (SALES/PV QoQ)" : c[0] === "sy" || c[0] === "py" ? " (SALES/PV YoY)" : c[0] === "sales" ? "" : "")]; }) },
+        { key: "chan", title: "유입 경로 표", rows: d.chans.slice(0, CH_N).map(function (c) { return [c.key, c.label]; }), cols: CCOLS.filter(function (c) { return c[2] !== "text"; }).map(function (c) { return [c[0], c[1]]; }) },
+        { key: "items", title: "상품별 실적 표", rows: d.items.slice(0, TOP_N).map(function (o) { return [o.gd, o.no + ". " + o.name.slice(0, 28)]; }), cols: ICOLS.filter(function (c) { return c[2] !== "text"; }).map(function (c) { return [c[0], c[1]]; }), scroll: true }
+      ],
+      selects: [{ key: "type", label: "그래프 종류", options: [["line", "꺾은선"], ["bar", "막대"]] }, { key: "compare", label: "비교 행사 표시", options: [["both", "직전 + 작년"], ["prev", "직전만"], ["ly", "작년만"], ["none", "이번 행사만"]] }],
+      chartNote: "일별 매출 그래프예요.", rpc: rpc, toast: toast, friendly: friendly,
+      onNote: function (c) { if (ev === S.ev) showManual(c); },
+      onCfg: function (draft) { S.cfg = normCfg(draft); renderDaily(); renderChans(); renderItems(); drawChart(); }
+    });
+  }
+
+  function exportXlsx() {
+    if (!S.ready || !S.data || S.busy) return;
+    el.xlsxBtn.disabled = true; var old = el.xlsxBtn.textContent; el.xlsxBtn.textContent = "만드는 중…";
+    K.loadExcelJs().then(function () {
+      var d = S.data, wb = new window.ExcelJS.Workbook(); wb.creator = "DY-AI"; wb.created = new Date();
+      var ws = wb.addWorksheet(typeName(), { views: [{ showGridLines: false }] });
+      ws.columns = [{ width: 10 }, { width: 30 }].concat([1, 2, 3, 4, 5, 6, 7, 8, 9].map(function () { return { width: 12.5 }; }));
+      var r = K.writeHead(ws, 2, { eyebrow: "QOO10 " + typeName(), title: el.title.textContent, unit: "(K JPY) · 순매출 기준 · 행사 기간(시작일~종료일) 합계", lines: autoLines(), note: S.note, width: 11 });
+      ws.getCell(r, 1).value = "일별 매출 (직전 행사 · 작년 행사와 같은 Day 비교)"; ws.getCell(r, 1).font = { size: 12, bold: true }; r++;
+      ws.addImage(K.imageOf(wb, chartConfig(true), 900, 330), { tl: { col: 0, row: r - 1 }, ext: { width: 900, height: 330 } }); r += 18;
+      r = K.writeTable(ws, r, { title: "일별", cols: DCOLS.map(function (c) { return { id: c[0], label: c[1], type: c[2], text: c[2] === "text" }; }),
+        rows: dailyRows().map(function (x) { return { id: x.id, vals: x.vals, strong: x.strong }; }), hl: S.cfg.daily });
+      r = K.writeTable(ws, r, { title: el.chanTitle.textContent, cols: CCOLS.map(function (c) { return { id: c[0], label: c[1], type: c[2], text: c[2] === "text" }; }),
+        rows: d.chans.slice(0, CH_N).map(function (c) { return { id: c.key, vals: { name: c.label, pv: c.pv, share: c.share, qoq: c.qoq } }; }), hl: S.cfg.chan });
+      r = K.writeTable(ws, r, { title: el.itemsTitle.textContent, cols: ICOLS.map(function (c) { return { id: c[0], label: c[1], type: c[2], text: c[2] === "text" }; }),
+        rows: d.items.slice(0, TOP_N).map(function (o) { return { id: o.gd, vals: itemVals(o) }; }), hl: S.cfg.items });
+      ws.mergeCells(r, 1, r, 11); ws.getCell(r, 1).value = el.note.textContent; ws.getCell(r, 1).font = { size: 9, color: { argb: K.XL.sub } }; ws.getCell(r, 1).alignment = { wrapText: true, vertical: "top" }; ws.getRow(r).height = 44;
+      ws.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+      return K.download(wb, "Qoo10_" + typeName() + "_" + d.e.start_dt.slice(0, 7) + ".xlsx", toast);
+    }).catch(function (e) { showMsg("엑셀을 만들지 못했어요: " + ((e && e.message) || e)); })
+      .then(function () { el.xlsxBtn.disabled = false; el.xlsxBtn.textContent = old; });
+  }
+
   // ---------- 이벤트 ----------
+  el.type.addEventListener("change", function () { S.type = el.type.value; pickType(); fillEvents(); recompute(); });
   el.ev.addEventListener("change", function () { S.ev = S.events.filter(function (e) { return String(e.no) === el.ev.value; })[0]; recompute(); });
   el.reload.addEventListener("click", function () { D.clearCache(); S.ready = false; S.ev = null; start(true); });
   el.noteBtn.addEventListener("click", function () { if (S.ready && S.ev) openNoteModal(); });
+  el.setBtn.addEventListener("click", function () { if (S.ready && S.data && S.cfg) openSettingsDlg(); });
+  el.xlsxBtn.addEventListener("click", exportXlsx);
   document.addEventListener("dy:theme", function () { if (S.data && started) drawChart(); });
 
   // ---------- 시작 ----------
@@ -295,7 +403,7 @@
     started = true;
     return load().then(function () {
       if (!S.ready) { started = false; return; }
-      fillEvents(); return recompute();
+      fillTypes(); pickType(); fillEvents(); return recompute();
     }).catch(function (e) { showMsg(friendly(e)); });
   }
   document.addEventListener("inni:show", function (e) { if (e.detail.view === "inni" && e.detail.sub === "megapo") start(); });

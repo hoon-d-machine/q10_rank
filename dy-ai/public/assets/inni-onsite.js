@@ -14,7 +14,7 @@
   var $ = function (s) { return pane.querySelector(s); };
   var el = {
     fy: $(".js-o-fy"), month: $(".js-o-month"), reload: $(".js-o-reload"), manualBtn: $(".js-o-manual"), noteBtn: $(".js-o-note-btn"),
-    msg: $(".js-o-msg"), notice: $(".js-o-notice"), title: $(".js-o-title"), auto: $(".js-o-auto"),
+    setBtn: $(".js-o-set"), xlsxBtn: $(".js-o-xlsx"), msg: $(".js-o-msg"), notice: $(".js-o-notice"), title: $(".js-o-title"), auto: $(".js-o-auto"),
     manualBox: $(".js-o-manual-box"), manualBody: $(".js-o-manual-body"), manualMeta: $(".js-o-manual-meta"),
     chart: $(".js-o-chart"), spend: $(".js-o-spend"), sales: $(".js-o-sales"), roas: $(".js-o-roas"), note: $(".js-o-note"),
     t1: $(".js-o-t1"), t2: $(".js-o-t2"), t3: $(".js-o-t3")
@@ -30,7 +30,7 @@
   var API_ROWS = SPEND_ROWS.filter(function (r) { return !r.manual && !r.cpm; });
   var KNOWN = {}; API_ROWS.forEach(function (r) { KNOWN[r.id] = 1; });
   var MANUAL_IDS = SPEND_ROWS.filter(function (r) { return r.manual; }).map(function (r) { return r.id; });
-  var S = { ready: false, loading: false, fy: null, ym: null, bounds: null, partial: null, ad: {}, man: {}, cpm: {}, prev: null, note: null };
+  var S = { ready: false, loading: false, fy: null, ym: null, bounds: null, partial: null, ad: {}, man: {}, cpm: {}, prev: null, note: null, cfg: null, rows: null };
   var chart = null;
 
   // ---------- 날짜·서식 ----------
@@ -144,97 +144,100 @@
       .catch(function (e) { el.manualMeta.textContent = friendly(e); el.manualBox.hidden = false; });
   }
 
+  // ---------- 설정 ----------
+  var K = window.dyInniKit;
+  function normCfg(c) {
+    c = c || {};
+    return { spend: K.normSpec(c.spend), sales: K.normSpec(c.sales), roas: K.normSpec(c.roas), type: c.type === "line" ? "line" : "bar", roasLine: c.roasLine === "off" ? "off" : "on" };
+  }
+  function loadCfg(fy) {
+    return rpc("dy_inni_settings_get", { p_report: "onsite", p_fy: fy }).then(function (c) { S.cfg = normCfg(c); }).catch(function (e) { S.cfg = normCfg(null); showMsg(friendly(e)); });
+  }
+
   // ---------- 표 ----------
   function monthHead(k) { return MON[mOf(k) - 1] + (k === S.partial ? "*" : ""); }
-  function table(tbl, rows) {
-    // rows: [{ label, cells: function(k) -> {t, cls}|null, total: {t, cls}, strong }]
+  function table(tbl, rows, key) {
+    // rows: [{ id, label, ty, cells: function(k) -> {t, v, cls}|null, total: function() -> {t, v}, strong }]
     var months = fyMonths(S.fy);
     tbl.innerHTML = "";
     var thead = h("thead"), tr = h("tr");
     tr.appendChild(h("th", null, ""));
-    months.forEach(function (k) { tr.appendChild(h("th", null, visible(k) ? monthHead(k) : MON[mOf(k) - 1])); });
-    tr.appendChild(h("th", null, "누계")); thead.appendChild(tr); tbl.appendChild(thead);
+    months.forEach(function (k) { var th = h("th", null, visible(k) ? monthHead(k) : MON[mOf(k) - 1]); th.dataset.col = k; tr.appendChild(th); });
+    var tt = h("th", null, "누계"); tt.dataset.col = "total"; tr.appendChild(tt); thead.appendChild(tr); tbl.appendChild(thead);
     var tb = h("tbody");
     rows.forEach(function (r) {
-      var row = h("tr", r.strong ? "is-total" : "");
+      var row = h("tr", r.strong ? "is-total" : ""); row.dataset.id = r.id;
       row.appendChild(h("td", "t", r.label));
       months.forEach(function (k) {
-        var c = visible(k) ? r.cells(k) : null;
-        row.appendChild(h("td", c && c.cls ? c.cls : "", c ? c.t : ""));
+        var c = visible(k) ? r.cells(k) : null, td = h("td", c && c.cls ? c.cls : "", c ? c.t : ""); td.dataset.col = k; row.appendChild(td);
       });
-      var t = r.total();
-      row.appendChild(h("td", t && t.cls ? t.cls : "", t ? t.t : ""));
+      var t = r.total(), tdt = h("td", "", t ? t.t : ""); tdt.dataset.col = "total"; row.appendChild(tdt);
       tb.appendChild(row);
     });
     tbl.appendChild(tb);
+    if (S.cfg && key) K.applyHl(tbl, S.cfg[key]);
   }
   function vis() { return fyMonths(S.fy).filter(visible); }
   function sumOver(f) { var t = 0; vis().forEach(function (k) { t += f(k); }); return t; }
+  // 금액 줄(천 엔) / 비율 줄(합계끼리 나눈 값)
+  function krow(id, label, f, o) {
+    return { id: id, label: label, strong: o && o.strong, ty: "int",
+      cells: function (k) { var v = f(k); return v == null ? { t: "-", cls: "is-empty" } : { t: kv(v), v: v / 1000 }; },
+      total: function () { var v = sumOver(function (k) { return f(k) || 0; }); return { t: kv(v), v: v / 1000 }; } };
+  }
+  function prow(id, label, num, den, o) {
+    var rr = function (a, b) { return b ? a / b * 100 : null; };
+    return { id: id, label: label, strong: o && o.strong, ty: "pct",
+      cells: function (k) { var v = rr(num(k), den(k)); return { t: pv(v), v: v }; },
+      total: function () { var v = rr(sumOver(num), sumOver(den)); return { t: pv(v), v: v }; } };
+  }
 
-  function renderTables() {
-    var fy = S.fy;
-    // 1) 광고비
-    var rows1 = SPEND_ROWS.map(function (r) {
-      var f = function (k) { return rowSpend(r, k); };
-      return { label: r.label, cells: function (k) { var v = f(k); return v == null ? { t: "-", cls: "is-empty" } : { t: kv(v) }; },
-        total: function () { return { t: kv(sumOver(function (k) { return f(k) || 0; })) }; } };
-    });
-    // 광고센터에 있는데 위 목록에 없는 광고(데일리딜 등)는 '기타'로 묶는다 (값이 있을 때만)
+  function buildRows() {
     var other = function (k, f) { var a = S.ad[k] || {}, t = 0; Object.keys(a).forEach(function (id) { if (id !== "all" && !KNOWN[id]) t += a[id][f]; }); return t; };
     var hasOther = vis().some(function (k) { return other(k, "price") || other(k, "sales"); });
-    if (hasOther) rows1.push({ label: "기타 광고", cells: function (k) { return { t: kv(other(k, "price")) }; }, total: function () { return { t: kv(sumOver(function (k) { return other(k, "price"); })) }; } });
-    var tot = function (k) { var c = mv(k); return c.api + c.man; };
-    rows1.push({ label: "Total", strong: true, cells: function (k) { return { t: kv(tot(k)) }; }, total: function () { return { t: kv(sumOver(tot)) }; } });
-    var inv = function (k) { var s = storeSales(k); return s ? tot(k) / s * 100 : null; };
-    rows1.push({ label: "투입율 (광고비 ÷ 총매출)", cells: function (k) { return { t: pv(inv(k)) }; },
-      total: function () { var s = sumOver(storeSales); return { t: pv(s ? sumOver(tot) / s * 100 : null) }; } });
-    table(el.spend, rows1);
+    var tot = function (k) { var c = mv(k); return c.api + c.man; }, st = function (k) { return mv(k).sales; }, api = function (k) { return mv(k).api; };
+    var rows1 = SPEND_ROWS.map(function (r) { return krow(r.id, r.label, function (k) { return rowSpend(r, k); }); });
+    if (hasOther) rows1.push(krow("other", "기타 광고", function (k) { return other(k, "price"); }));
+    rows1.push(krow("total", "Total", tot, { strong: true }));
+    rows1.push(prow("ratio", "투입율 (광고비 ÷ 총매출)", tot, storeSales));
+    var rows2 = API_ROWS.map(function (r) { return krow(r.id, r.label, function (k) { return apiSales(k, r.id); }); });
+    if (hasOther) rows2.push(krow("other", "기타 광고", function (k) { return other(k, "sales"); }));
+    rows2.push(krow("total", "Total", st, { strong: true }));
+    rows2.push(prow("ratio", "AD Sales % (총매출 대비)", st, storeSales));
+    var rows3 = API_ROWS.map(function (r) { return prow(r.id, r.label, function (k) { return apiSales(k, r.id); }, function (k) { return apiPrice(k, r.id); }); });
+    rows3.push(prow("total", "Total (광고센터 광고비 기준)", st, api, { strong: true }));
+    rows3.push(prow("roi", "전체 ROI (총매출 ÷ 광고비 합계)", storeSales, tot));
+    return { spend: rows1, sales: rows2, roas: rows3 };
+  }
 
-    // 2) 광고 매출
-    var rows2 = API_ROWS.filter(function (r) { return r.id !== "beauty"; }).map(function (r) {
-      return { label: r.label, cells: function (k) { return { t: kv(apiSales(k, r.id)) }; }, total: function () { return { t: kv(sumOver(function (k) { return apiSales(k, r.id); })) }; } };
-    });
-    if (hasOther) rows2.push({ label: "기타 광고", cells: function (k) { return { t: kv(other(k, "sales")) }; }, total: function () { return { t: kv(sumOver(function (k) { return other(k, "sales"); })) }; } });
-    var st = function (k) { return mv(k).sales; };
-    rows2.push({ label: "Total", strong: true, cells: function (k) { return { t: kv(st(k)) }; }, total: function () { return { t: kv(sumOver(st)) }; } });
-    rows2.push({ label: "AD Sales % (총매출 대비)", cells: function (k) { var s = storeSales(k); return { t: pv(s ? st(k) / s * 100 : null) }; },
-      total: function () { var s = sumOver(storeSales); return { t: pv(s ? sumOver(st) / s * 100 : null) }; } });
-    table(el.sales, rows2);
-
-    // 3) ROAS
-    var rr = function (a, b) { return b ? a / b * 100 : null; };
-    var rows3 = API_ROWS.map(function (r) {
-      return { label: r.label, cells: function (k) { return { t: pv(rr(apiSales(k, r.id), apiPrice(k, r.id))) }; },
-        total: function () { return { t: pv(rr(sumOver(function (k) { return apiSales(k, r.id); }), sumOver(function (k) { return apiPrice(k, r.id); }))) }; } };
-    });
-    var api = function (k) { return mv(k).api; };
-    rows3.push({ label: "Total (광고센터 광고비 기준)", strong: true, cells: function (k) { return { t: pv(rr(st(k), api(k))) }; }, total: function () { return { t: pv(rr(sumOver(st), sumOver(api))) }; } });
-    rows3.push({ label: "전체 ROI (총매출 ÷ 광고비 합계)", cells: function (k) { return { t: pv(rr(storeSales(k), tot(k))) }; }, total: function () { return { t: pv(rr(sumOver(storeSales), sumOver(tot))) }; } });
-    table(el.roas, rows3);
-
+  function renderTables() {
+    var fy = S.fy, R = S.rows = buildRows();
+    table(el.spend, R.spend, "spend"); table(el.sales, R.sales, "sales"); table(el.roas, R.roas, "roas");
     el.t1.textContent = "광고비 (Spend) · " + fyLabel(fy);
     el.t2.textContent = "광고 매출 (AD Sales) · " + fyLabel(fy);
     el.t3.textContent = "ROAS (광고 매출 ÷ 광고비) · " + fyLabel(fy);
     el.note.textContent = "단위 천 엔. Beauty AD 는 QSM 의 Beauty Brand AD(CPM) 리포트에서 수집한 값(캠페인이 없던 달은 0), Spotlight AD · Singleone(OFF)은 광고센터에 없어 직접 입력한 값이에요(‘-’ 는 입력 안 한 달). 세 광고 모두 광고 매출은 없어요. 합계 ROAS 는 직접 입력 항목을 뺀 광고센터 광고비 기준, 전체 ROI·투입율은 직접 입력 포함이에요. * 진행 중인 달.";
   }
 
+  // 그래프 설정(light=true 는 엑셀 그림용: 화면 테마와 무관하게 어두운 글자)
+  function chartConfig(light) {
+    var ms = vis(), tick = light ? "#333333" : (getComputedStyle(document.body).color || "#444");
+    var labels = ms.map(function (k) { return String(yOf(k)).slice(2) + "-" + pad(mOf(k)) + (k === S.partial ? "*" : ""); });
+    var bar = S.cfg.type !== "line", sets = [
+      { type: bar ? "bar" : "line", label: "광고비 합계", data: ms.map(function (k) { var c = mv(k); return Math.round((c.api + c.man) / 1000); }), backgroundColor: "#8aa4d6", borderColor: "#6c88c2", yAxisID: "y", tension: .25 },
+      { type: bar ? "bar" : "line", label: "광고 매출", data: ms.map(function (k) { return Math.round(mv(k).sales / 1000); }), backgroundColor: "#f2b35e", borderColor: "#dd9a3c", yAxisID: "y", tension: .25 }
+    ];
+    var scales = { x: { ticks: { color: tick }, grid: { display: false } }, y: { beginAtZero: true, min: 0, ticks: { color: tick }, title: { display: true, text: "K JPY", color: tick } } };
+    if (S.cfg.roasLine !== "off") {
+      sets.push({ type: "line", label: "ROAS(%)", data: ms.map(function (k) { var c = mv(k); return c.api ? Math.round(c.sales / c.api * 100) : null; }), borderColor: "#2b9a73", backgroundColor: "#2b9a73", yAxisID: "y1", tension: .25 });
+      scales.y1 = { position: "right", beginAtZero: true, min: 0, grid: { drawOnChartArea: false }, ticks: { color: tick, callback: function (v) { return v + "%"; } } };
+    }
+    return { data: { labels: labels, datasets: sets }, options: { responsive: !light, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { labels: { color: tick } } }, scales: scales } };
+  }
   function drawChart() {
     if (!window.Chart) return;
-    var ms = vis(), cs = getComputedStyle(document.body), tick = cs.color || "#444";
-    var labels = ms.map(function (k) { return String(yOf(k)).slice(2) + "-" + pad(mOf(k)) + (k === S.partial ? "*" : ""); });
-    var cfg = {
-      data: { labels: labels, datasets: [
-        { type: "bar", label: "광고비 합계", data: ms.map(function (k) { var c = mv(k); return Math.round((c.api + c.man) / 1000); }), backgroundColor: "#8aa4d6", yAxisID: "y" },
-        { type: "bar", label: "광고 매출", data: ms.map(function (k) { return Math.round(mv(k).sales / 1000); }), backgroundColor: "#f2b35e", yAxisID: "y" },
-        { type: "line", label: "ROAS(%)", data: ms.map(function (k) { var c = mv(k); return c.api ? Math.round(c.sales / c.api * 100) : null; }), borderColor: "#2b9a73", backgroundColor: "#2b9a73", yAxisID: "y1", tension: .25 }
-      ] },
-      options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
-        plugins: { legend: { labels: { color: tick } } },
-        scales: { x: { ticks: { color: tick }, grid: { display: false } }, y: { beginAtZero: true, min: 0, ticks: { color: tick }, title: { display: true, text: "K JPY", color: tick } },
-          y1: { position: "right", beginAtZero: true, min: 0, grid: { drawOnChartArea: false }, ticks: { color: tick, callback: function (v) { return v + "%"; } } } } }
-    };
     if (chart) { chart.destroy(); chart = null; }
-    chart = new window.Chart(el.chart, cfg);
+    chart = new window.Chart(el.chart, chartConfig(false));
   }
 
   function renderNotice() {
@@ -337,8 +340,53 @@
     });
   }
 
+  // ---------- 설정 · 엑셀 ----------
+  function openSettingsDlg() {
+    var k = S.ym, cols = fyMonths(S.fy).map(function (m) { return [m, m.slice(0, 7)]; }).concat([["total", "누계"]]);
+    var def = function (key, title) { return { key: key, title: title, rows: S.rows[key].map(function (r) { return [r.id, r.label]; }), cols: cols }; };
+    K.openSettings({
+      title: "설정 · ONSITE AD · " + fyLabel(S.fy) + " · " + k.slice(0, 4) + " " + MON[mOf(k) - 1],
+      desc: "코멘트는 기준 월마다, 강조와 그래프는 회계연도(" + fyLabel(S.fy) + ")마다 저장돼요. 모두가 같이 봐요.",
+      report: "onsite", fy: S.fy, note: { ym: k, body: S.note ? S.note.body : "", label: k.slice(0, 4) + " " + MON[mOf(k) - 1] },
+      cfg: S.cfg, tables: [def("spend", "광고비 표"), def("sales", "광고 매출 표"), def("roas", "ROAS 표")],
+      selects: [{ key: "type", label: "광고비·광고 매출 표시", options: [["bar", "막대"], ["line", "꺾은선"]] }, { key: "roasLine", label: "ROAS 선", options: [["on", "표시"], ["off", "숨김"]] }],
+      chartNote: "월별 광고비·광고 매출 그래프예요.",
+      rpc: rpc, toast: toast, friendly: friendly,
+      onNote: function (c) { if (k === S.ym) showManual(c); },
+      onCfg: function (draft) { S.cfg = normCfg(draft); renderTables(); drawChart(); }
+    });
+  }
+
+  function exportXlsx() {
+    if (!S.ready || !S.rows) return;
+    el.xlsxBtn.disabled = true; var old = el.xlsxBtn.textContent; el.xlsxBtn.textContent = "만드는 중…";
+    K.loadExcelJs().then(function () {
+      var wb = new window.ExcelJS.Workbook(); wb.creator = "DY-AI"; wb.created = new Date();
+      var ws = wb.addWorksheet("ONSITE AD", { views: [{ showGridLines: false }] }), months = fyMonths(S.fy);
+      ws.columns = [{ width: 34 }].concat(months.map(function () { return { width: 10.5 }; }), [{ width: 11 }]);
+      var r = K.writeHead(ws, 2, { eyebrow: "QOO10 ON-SITE AD", title: el.title.textContent, unit: "(K JPY) · 광고센터 기준 · 총매출 기준 투입율", lines: autoLines(S.ym), note: S.note, width: 14 });
+      ws.getCell(r, 1).value = "월별 광고비 · 광고 매출 · ROAS"; ws.getCell(r, 1).font = { size: 12, bold: true }; r++;
+      ws.addImage(K.imageOf(wb, chartConfig(true), 900, 340), { tl: { col: 0, row: r - 1 }, ext: { width: 900, height: 340 } }); r += 18;
+      var cols = [{ id: "label", label: "", text: true }].concat(months.map(function (m) { return { id: m, label: visible(m) ? monthHead(m) : MON[mOf(m) - 1], type: "int" }; }), [{ id: "total", label: "누계", type: "int" }]);
+      [["spend", el.t1.textContent], ["sales", el.t2.textContent], ["roas", el.t3.textContent]].forEach(function (t) {
+        var rows = S.rows[t[0]].map(function (row) {
+          var vals = { label: row.label, total: (row.total() || {}).v };
+          months.forEach(function (m) { var c = visible(m) ? row.cells(m) : null; vals[m] = c ? c.v : null; });
+          return { id: row.id, vals: vals, strong: row.strong, type: row.ty };
+        });
+        r = K.writeTable(ws, r, { title: t[1], cols: cols, rows: rows, hl: S.cfg[t[0]] });
+      });
+      ws.mergeCells(r, 1, r, 14); ws.getCell(r, 1).value = el.note.textContent; ws.getCell(r, 1).font = { size: 9, color: { argb: K.XL.sub } }; ws.getCell(r, 1).alignment = { wrapText: true, vertical: "top" }; ws.getRow(r).height = 42;
+      ws.pageSetup = { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9 };
+      return K.download(wb, "Qoo10_ONSITE_AD_" + fyLabel(S.fy) + "_" + S.ym.slice(0, 7) + ".xlsx", toast);
+    }).catch(function (e) { showMsg("엑셀을 만들지 못했어요: " + ((e && e.message) || e)); })
+      .then(function () { el.xlsxBtn.disabled = false; el.xlsxBtn.textContent = old; });
+  }
+
   // ---------- 이벤트 ----------
-  el.fy.addEventListener("change", function () { S.fy = +el.fy.value; S.ym = null; fillMonths(); loadFy(S.fy).then(recompute).catch(function (e) { showMsg(friendly(e)); }); });
+  el.fy.addEventListener("change", function () { S.fy = +el.fy.value; S.ym = null; fillMonths(); Promise.all([loadFy(S.fy), loadCfg(S.fy)]).then(recompute).catch(function (e) { showMsg(friendly(e)); }); });
+  el.setBtn.addEventListener("click", function () { if (S.ready && S.cfg && S.rows) openSettingsDlg(); });
+  el.xlsxBtn.addEventListener("click", exportXlsx);
   el.month.addEventListener("change", function () { S.ym = el.month.value; recompute(); });
   el.reload.addEventListener("click", function () { D.clearCache(); S.ready = false; start(true); });
   el.noteBtn.addEventListener("click", function () { if (S.ready && S.ym) openNoteModal(); });
@@ -353,7 +401,7 @@
     return load().then(function () {
       if (!S.ready) { started = false; return; }
       fillFy(); fillMonths();
-      return loadFy(S.fy).then(recompute);
+      return Promise.all([loadFy(S.fy), loadCfg(S.fy)]).then(recompute);
     }).catch(function (e) { showMsg(friendly(e)); });
   }
   document.addEventListener("inni:show", function (e) { if (e.detail.view === "inni" && e.detail.sub === "onsite") start(); });

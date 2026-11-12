@@ -1,0 +1,109 @@
+/* inni 탭의 '설명' 버튼: 각 리포트가 무엇을 보여 주는지, 숫자 정의, 코멘트 기준, 설정·엑셀 사용법을 모달로 보여 준다.
+ * 버튼: <button class="js-help" data-help="sales|product">설명</button> (툴바에 있음). 내용은 아래 HELP 에서 고친다.
+ * 코멘트 규칙을 바꾸면(inni-sales.js autoLines / inni-product.js autoLines) 여기 설명도 같이 고칠 것.
+ */
+(function () {
+  "use strict";
+  var HELP = {
+    sales: {
+      title: "SALES 설명",
+      sections: [
+        ["이 화면은", [
+          "AP Talk 시트의 SALES 탭을 DB 로 대체한 월간 매출 리포트예요. 회계연도(BY)는 7월~6월이고 BY27 은 2026-07~2027-06 이에요.",
+          "맨 위에서 회계연도와 기준 월을 골라요. 표·그래프·코멘트는 기준 월까지만 보여요(그 뒤 달은 숨겨져요). 이전 회계연도 선은 비교하려고 전체를 보여 줘요."
+        ]],
+        ["숫자 정의", [
+          "SALES = 순매출(취소 제외), 단위는 천 엔(K JPY). YoY = 작년 같은 달 대비 증감률, MoM = 전월 대비 증감률 (둘 다 이번 ÷ 비교값 − 1).",
+          "TGT = 월별 목표(‘월별 목표 입력’에서 천 엔 단위로 입력), TGT % = SALES ÷ TGT.",
+          "PV = 스토어 전체 총 PV, ORDERS = 구매수, CVR = ORDERS ÷ PV, AOV = SALES ÷ ORDERS.",
+          "‘누계’ 열은 회계연도 시작(7월)부터 기준 월까지의 합이에요(CVR·AOV 는 합계끼리 나눈 값). 누계 YoY 는 작년 같은 달들끼리 비교해요.",
+          "진행 중인 달(헤더에 *)은 마감 전이라서 작년·전월의 같은 일수와 비교해요."
+        ]],
+        ["코멘트 기준 (자동)", [
+          "기준 월 하나를 기준으로 매번 숫자에서 새로 만들어요. 최대 네 줄이에요.",
+          "1) 매출 줄: ‘Sales 약 4천8백만엔 (MoM +416% YoY -17%)’. 비교값이 없거나 0 이면 그 증감률은 빠져요.",
+          "2) 추세 줄: 기준 월부터 거꾸로 YoY 부호(플러스/마이너스)가 같은 달이 몇 개월 이어졌는지 세요. 3개월 이상이면 ‘N개월 연속 마이너스 — 마이너스 트렌드 지속중’ 또는 ‘플러스 — 성장 트렌드 지속중’, 그보다 짧으면 ‘YoY -17% 감소/성장’. 작년 데이터가 없으면 이 줄은 없어요.",
+          "3) 목표 줄: 그 달 목표가 있을 때만 ‘목표 76,700K 대비 63% 달성’. 목표가 없으면 줄이 빠지고, 기준 월까지 목표가 빈 달이 있으면 화면 위에 알림이 떠요.",
+          "4) 지표 줄: PV(YoY) · ORDERS · CVR · AOV(YoY).",
+          "‘설정 > 코멘트’에서 직접 쓴 코멘트는 그 달마다 따로 저장되고 자동 코멘트 아래에 같이 보여요."
+        ]],
+        ["설정 · 엑셀", [
+          "설정: 코멘트(기준 월마다), 표 강조(표마다 행·열·색 선택, 회계연도마다), 그래프 종류(막대/꺾은선, 회계연도마다). 저장하면 모두가 같이 봐요.",
+          "엑셀 다운로드: 화면과 같은 서식(강조 색 포함)과 그래프 그림, 2024-01부터의 월별 원본 시트가 들어가요."
+        ]],
+        ["알아둘 점", [
+          "데이터는 Qoo10 판매자센터에서 매일 수집해 DB 에 쌓아요. 판매자센터가 과거 수치를 나중에 소폭 고치는 경우가 있어서 시트에 붙여 둔 값과 아주 조금 다를 수 있어요(예: 2026-07 ORDERS).",
+          "‘누계’와 ‘진행 중’ 표시는 데이터가 있는 마지막 날(화면 위 ‘데이터’ 줄)을 기준으로 해요."
+        ]]
+      ]
+    },
+    product: {
+      title: "PRODUCT 설명",
+      sections: [
+        ["이 화면은", [
+          "AP Talk 시트의 PRODUCT 탭을 DB 로 대체한 상품별 월간 리포트예요. 위쪽 그래프는 라인별·카테고리별 비교, 아래 ‘상품별 상세’ 표는 상품 한 줄씩의 실적이에요.",
+          "회계연도와 기준 월을 고르면 그 달(1일~말일, 진행 중이면 데이터가 있는 마지막 날까지)을 작년 같은 기간과 비교해요."
+        ]],
+        ["그래프", [
+          "라인별·카테고리별 막대 그래프예요. 값 축은 0부터 시작하고(음수는 0 에서 잘려요) 막대 끝에 값이 표시돼요. 상위 12개까지 보여요.",
+          "‘설정 > 그래프’에서 당월 vs 작년 동월 / 누계 vs 작년 누계, 가로/세로 막대를 바꿔요.",
+          "라인·카테고리는 상품코드표 기준이고, 분류가 없는 상품은 ‘(미분류)’로 묶여요. 그런 상품이 있으면 화면 위에 안내가 떠요."
+        ]],
+        ["상품별 상세 표", [
+          "당월 매출이 있는 상품만 매출 순으로 보여 주고, 맨 아래가 합계예요.",
+          "Sales = 상품 순수금액, 상품수량 = 순수량, LY 상품수량 = 작년 같은 기간 수량, YoY = 작년 같은 기간 매출 대비 증감률.",
+          "PV = 상품별 PV, CVR = 상품수량 ÷ PV, YoY GAP(%p) = 이번 CVR − 작년 CVR.",
+          "YTD = 회계연도 시작(7월)부터 기준 월까지의 누계, LY = 작년 같은 기간 누계, % = 전체 누계 매출에서 차지하는 비중.",
+          "On Site AD(Spend · AD Sales · ROAS)는 아직 광고 데이터가 DB 에 없어서 ‘-’ 로 비어 있어요(ONSITE AD 를 만들면서 연결할 예정).",
+          "작년 값이 아주 작아 증감률이 터무니없이 큰 경우는 ‘>+9,999%’ 처럼 상한으로 표시해요. 작년 값이 없으면 ‘-’ 예요."
+        ]],
+        ["코멘트 기준 (자동)", [
+          "기준 월 하나를 기준으로 매번 숫자에서 새로 만들어요. 최대 다섯 줄이에요.",
+          "1) 합계 줄: 당월 매출이 있는 상품의 합계(YoY)와 ‘상위 3개 상품이 N%’.",
+          "2) 라인별 줄: 작년 동월 매출이 ‘50만 엔과 작년 전체 매출의 2% 중 큰 값’ 이상인 라인만 비교 후보예요(아주 작은 라인의 과장된 증감률과 ‘(미분류)’는 제외, 후보가 2개 이상일 때만 표시). 그중 YoY 가 가장 큰 라인이 ‘가장 크게 성장’(모두 마이너스면 ‘선방’), 가장 작은 라인이 ‘가장 크게 하락’(모두 플러스면 ‘낮은 성장’).",
+          "3) 카테고리별 줄: 라인별과 같은 규칙.",
+          "4) TOP3 줄: 당월 매출 상위 3개 상품과 매출·YoY (작년 동월 매출이 없으면 ‘신규’).",
+          "5) 신규 상품 줄: 작년 동월 매출이 없던 상품의 개수와 합계.",
+          "‘설정 > 코멘트’에서 직접 쓴 코멘트는 월마다 따로 저장되고 자동 코멘트 아래에 같이 보여요."
+        ]],
+        ["설정 · 엑셀", [
+          "설정: 코멘트(기준 월마다), ‘상품별 상세’ 표의 행·열 강조와 색(회계연도마다), 그래프 기준·방향(회계연도마다).",
+          "엑셀 다운로드: 그래프 그림 2개와 상품별 상세 표(서식·강조 색 포함)가 들어가요."
+        ]],
+        ["알아둘 점", [
+          "상품코드표는 지금은 자동으로 갱신되지 않아요. 새로 올린 상품은 코드표에 올리기 전까지 ‘(미분류)’ 예요.",
+          "표에서 시트의 ‘숨김 영역’ 열(상품번호 · 라인 · 카테고리, Sales·PV·CVR 의 작년 동월)은 뺐어요. 작년 값은 YoY 계산에 그대로 쓰여요."
+        ]]
+      ]
+    }
+  };
+
+  function h(tag, c, text) { var e = document.createElement(tag); if (c) e.className = c; if (text != null) e.textContent = text; return e; }
+
+  function open(key) {
+    var d = HELP[key]; if (!d) return;
+    var prev = document.activeElement;
+    var ov = h("div", "inni-modal"), card = h("div", "inni-modal-card is-wide inni-help");
+    ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", d.title);
+    card.appendChild(h("h3", null, d.title));
+    d.sections.forEach(function (sec) {
+      card.appendChild(h("h4", null, sec[0]));
+      var ul = h("ul");
+      sec[1].forEach(function (t) { ul.appendChild(h("li", null, t)); });
+      card.appendChild(ul);
+    });
+    var acts = h("div", "inni-modal-acts"), gap = h("span", "inni-gap"), ok = h("button", "dash-btn is-primary", "닫기"); ok.type = "button";
+    acts.appendChild(gap); acts.appendChild(ok); card.appendChild(acts); ov.appendChild(card); document.body.appendChild(ov);
+    ok.focus();
+    function close() { document.removeEventListener("keydown", onKey, true); if (ov.parentNode) ov.parentNode.removeChild(ov); if (prev && prev.focus) prev.focus(); }
+    function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(); } }
+    document.addEventListener("keydown", onKey, true);
+    ov.addEventListener("mousedown", function (e) { if (e.target === ov) close(); });
+    ok.addEventListener("click", close);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".js-help"), function (b) {
+    b.addEventListener("click", function () { open(b.dataset.help); });
+  });
+  window.dyInniHelp = { open: open, HELP: HELP };
+})();

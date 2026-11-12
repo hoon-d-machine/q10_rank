@@ -95,6 +95,7 @@
           <label class="dash-bar-item"><span>기준 월</span><select class="js-s-month"></select></label>
           <span class="dash-bar-gap"></span>
           <button class="dash-btn js-s-tgt-btn" type="button" aria-expanded="false">월별 목표 입력</button>
+          <button class="dash-btn js-help" data-help="sales" type="button" aria-haspopup="dialog" title="이 화면과 코멘트 기준 설명">설명</button>
           <button class="dash-btn js-s-set" type="button" aria-haspopup="dialog" title="코멘트 · 강조 · 그래프 설정">설정</button>
           <button class="dash-btn js-s-xlsx" type="button" title="이 리포트를 서식이 들어간 엑셀로 내려받기">엑셀 다운로드</button>
           <button class="dash-btn js-s-reload" type="button" title="DB 에서 다시 불러오기">새로고침</button>
@@ -139,6 +140,7 @@
           <label class="dash-bar-item"><span>회계연도</span><select class="js-p-fy"></select></label>
           <label class="dash-bar-item"><span>기준 월</span><select class="js-p-month"></select></label>
           <span class="dash-bar-gap"></span>
+          <button class="dash-btn js-help" data-help="product" type="button" aria-haspopup="dialog" title="이 화면과 코멘트 기준 설명">설명</button>
           <button class="dash-btn js-p-set" type="button" aria-haspopup="dialog" title="코멘트 · 강조 · 그래프 설정">설정</button>
           <button class="dash-btn js-p-xlsx" type="button" title="이 리포트를 서식이 들어간 엑셀로 내려받기">엑셀 다운로드</button>
           <button class="dash-btn js-p-reload" type="button" title="DB 에서 다시 불러오기">새로고침</button>
@@ -209,6 +211,7 @@
 <script src="/assets/inni.js"></script>
 <script src="/assets/inni-sales.js"></script>
 <script src="/assets/inni-product.js"></script>
+<script src="/assets/inni-help.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });

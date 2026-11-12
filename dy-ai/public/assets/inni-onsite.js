@@ -22,15 +22,15 @@
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   // 시트와 같은 순서·이름. manual: 광고센터에 없어서 직접 입력하는 항목
   var SPEND_ROWS = [
-    { id: "beauty", label: "Beauty AD", manual: true }, { id: "spotlight", label: "Spotlight AD", manual: true },
+    { id: "beauty", label: "Beauty AD", cpm: true }, { id: "spotlight", label: "Spotlight AD", manual: true },
     { id: "cps", label: "스마트세일즈 (CPS)" }, { id: "keywordplus", label: "키워드플러스" }, { id: "power_rankup", label: "파워랭크업" },
     { id: "timesale", label: "타임세일" }, { id: "horidashimono", label: "호리다시모노" }, { id: "mega", label: "Mega AD" },
     { id: "singleone", label: "Singleone (OFF)", manual: true }
   ];
-  var API_ROWS = SPEND_ROWS.filter(function (r) { return !r.manual; });
+  var API_ROWS = SPEND_ROWS.filter(function (r) { return !r.manual && !r.cpm; });
   var KNOWN = {}; API_ROWS.forEach(function (r) { KNOWN[r.id] = 1; });
   var MANUAL_IDS = SPEND_ROWS.filter(function (r) { return r.manual; }).map(function (r) { return r.id; });
-  var S = { ready: false, loading: false, fy: null, ym: null, bounds: null, partial: null, ad: {}, man: {}, prev: null, note: null };
+  var S = { ready: false, loading: false, fy: null, ym: null, bounds: null, partial: null, ad: {}, man: {}, cpm: {}, prev: null, note: null };
   var chart = null;
 
   // ---------- 날짜·서식 ----------
@@ -79,9 +79,11 @@
     var months = fyMonths(fy), from = addM(months[0], -1), to = ym(yOf(months[11]), mOf(months[11])) ; to = to.slice(0, 8) + lastDay(to);
     return Promise.all([
       rpc("dy_dash_agg", { p_source: "ad", p_grain: "month", p_from: from, p_to: to, p_cols: ["ad_price", "ad_sales", "total_sales"], p_dim: "ad_type" }),
-      rpc("dy_inni_ad_manual_get", { p_from: from, p_to: to })
+      rpc("dy_inni_ad_manual_get", { p_from: from, p_to: to }),
+      rpc("dy_dash_agg", { p_source: "cpm", p_grain: "month", p_from: from, p_to: to, p_cols: ["ad_cost"] })
     ]).then(function (r) {
-      S.ad = {}; S.man = {};
+      S.ad = {}; S.man = {}; S.cpm = {};
+      (r[2] || []).forEach(function (x) { S.cpm[String(x.p).slice(0, 10)] = x.ad_cost || 0; });
       (r[0] || []).forEach(function (x) {
         var k = String(x.p).slice(0, 10); (S.ad[k] = S.ad[k] || {})[x.d] = { price: x.ad_price || 0, sales: x.ad_sales || 0, total: x.total_sales || 0 };
       });
@@ -95,7 +97,9 @@
   function apiSales(k, id) { var a = S.ad[k]; return a && a[id] ? a[id].sales : 0; }
   function sumApi(k, f) { var a = S.ad[k] || {}, t = 0; Object.keys(a).forEach(function (id) { if (id !== "all") t += a[id][f]; }); return t; }
   function manual(k, id) { var m = S.man[k]; return m && m[id] != null ? m[id] : null; }
-  function manSum(k) { var t = 0; MANUAL_IDS.forEach(function (id) { t += manual(k, id) || 0; }); return t; }
+  function cpmCost(k) { return S.cpm[k] || 0; }   // Beauty Brand AD(CPM) 광고비: QSM 에서 수집한 값 (캠페인이 없던 달은 0)
+  function manSum(k) { var t = cpmCost(k); MANUAL_IDS.forEach(function (id) { t += manual(k, id) || 0; }); return t; }
+  function rowSpend(r, k) { return r.cpm ? cpmCost(k) : r.manual ? manual(k, r.id) : apiPrice(k, r.id); }
   function storeSales(k) { var a = S.ad[k]; return a && a.all ? a.all.total : 0; }
   function mv(k) { return { api: sumApi(k, "price"), man: manSum(k), sales: sumApi(k, "sales"), store: storeSales(k) }; }
 
@@ -121,7 +125,7 @@
       var hi = cand[0], lo = cand[cand.length - 1];
       L.push({ t: "ROAS 가장 높은 광고 " + hi.r.label + " " + pv(hi.roas) + " (광고비 " + kt(hi.price) + ") · 가장 낮은 광고 " + lo.r.label + " " + pv(lo.roas) + " (광고비 " + kt(lo.price) + ")", c: lo.roas < 100 ? "is-neg" : "" });
     }
-    var all = SPEND_ROWS.map(function (r) { return { r: r, v: r.manual ? (manual(k, r.id) || 0) : apiPrice(k, r.id) }; }).sort(function (a, b) { return b.v - a.v; });
+    var all = SPEND_ROWS.map(function (r) { return { r: r, v: rowSpend(r, k) || 0 }; }).sort(function (a, b) { return b.v - a.v; });
     if (spend && all[0].v > 0) L.push({ t: "광고비 비중 1위는 " + all[0].r.label + " " + kt(all[0].v) + "엔 (" + (all[0].v / spend * 100).toFixed(0) + "%)" });
     return L;
   }
@@ -171,7 +175,7 @@
     var fy = S.fy;
     // 1) 광고비
     var rows1 = SPEND_ROWS.map(function (r) {
-      var f = function (k) { return r.manual ? manual(k, r.id) : apiPrice(k, r.id); };
+      var f = function (k) { return rowSpend(r, k); };
       return { label: r.label, cells: function (k) { var v = f(k); return v == null ? { t: "-", cls: "is-empty" } : { t: kv(v) }; },
         total: function () { return { t: kv(sumOver(function (k) { return f(k) || 0; })) }; } };
     });
@@ -211,7 +215,7 @@
     el.t1.textContent = "광고비 (Spend) · " + fyLabel(fy);
     el.t2.textContent = "광고 매출 (AD Sales) · " + fyLabel(fy);
     el.t3.textContent = "ROAS (광고 매출 ÷ 광고비) · " + fyLabel(fy);
-    el.note.textContent = "단위 천 엔. Beauty AD · Spotlight AD · Singleone(OFF)은 광고센터에 없어 직접 입력한 값이고 광고 매출이 없어요(‘-’ 는 입력 안 한 달). 합계 ROAS 는 직접 입력 항목을 뺀 광고센터 광고비 기준, 전체 ROI·투입율은 직접 입력 포함이에요. * 진행 중인 달.";
+    el.note.textContent = "단위 천 엔. Beauty AD 는 QSM 의 Beauty Brand AD(CPM) 리포트에서 수집한 값(캠페인이 없던 달은 0), Spotlight AD · Singleone(OFF)은 광고센터에 없어 직접 입력한 값이에요(‘-’ 는 입력 안 한 달). 세 광고 모두 광고 매출은 없어요. 합계 ROAS 는 직접 입력 항목을 뺀 광고센터 광고비 기준, 전체 ROI·투입율은 직접 입력 포함이에요. * 진행 중인 달.";
   }
 
   function drawChart() {
@@ -236,7 +240,7 @@
   function renderNotice() {
     var miss = vis().filter(function (k) { return MANUAL_IDS.every(function (id) { return manual(k, id) == null; }); });
     el.notice.hidden = !miss.length;
-    el.notice.textContent = miss.length ? "Beauty AD · Spotlight AD · Singleone 광고비가 입력되지 않은 달이 있어요: " + miss.map(function (k) { return k.slice(0, 7); }).join(", ") + " (‘월별 광고비 입력’) — 입력 전에는 광고비 합계에 빠져 있어요." : "";
+    el.notice.textContent = miss.length ? "Spotlight AD · Singleone 광고비가 입력되지 않은 달이 있어요: " + miss.map(function (k) { return k.slice(0, 7); }).join(", ") + " (‘월별 광고비 입력’) — 입력 전에는 광고비 합계에 빠져 있어요." : "";
   }
 
   function recompute() {

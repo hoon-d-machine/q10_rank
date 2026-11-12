@@ -51,6 +51,7 @@ begin
     when 'custgoods' then tbl := 'inni_customer_goods'; dcol := 'snapshot_date';  -- 찜·장바구니 스냅샷(누적값)
     when 'ad' then tbl := 'inni_ad_daily'; dcol := 'base_date';                    -- inni_RPA/supabase_schema_ads.sql (광고유형별 일자)
     when 'adgoods' then tbl := 'inni_ad_goods_daily'; dcol := 'base_date';         -- 상품 × 광고유형 일자
+    when 'cpm' then tbl := 'inni_cpm_daily'; dcol := 'base_date';                  -- Beauty Brand AD(CPM) 캠페인 일자별 (inni_RPA/supabase_schema_cpm.sql)
     when 'rank_d' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''daily''';     -- supabase/rank_log.sql 먼저 실행
     when 'rank_w' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''weekly''';
     when 'rank_m' then tbl := 'inni_rank_cat'; dcol := 'rank_date'; extra := ' and period = ''monthly''';

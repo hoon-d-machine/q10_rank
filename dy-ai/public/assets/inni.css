@@ -21,3 +21,38 @@ html[data-theme="nature"] .inni-card, html[data-theme="dark"] .inni-card { borde
 .inni-card h2 small { margin-left: 8px; font-size: 12.5px; font-weight: 500; color: var(--lg-muted); }
 .inni-card p { margin: 6px 0 0; font-size: 13.5px; line-height: 1.7; color: var(--lg-muted); }
 .inni-state { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px !important; font-weight: 700; color: var(--lg-text) !important; box-shadow: inset 0 0 0 1.5px var(--lg-line); }
+
+/* ---- SALES ---- */
+.inni-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 14px; }
+.inni-bar select { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--lg-line); background: transparent; color: inherit; }
+.inni-card h3 { margin: 18px 0 8px; font-size: 14px; }
+.inni-card h3 small, .inni-comment h3 small { margin-left: 6px; font-size: 12px; font-weight: 400; color: var(--lg-muted); }
+.inni-rhead h2 { font-size: 22px; margin: 4px 0 2px; }
+.inni-unit { margin: 0 !important; font-size: 12.5px !important; }
+.inni-comment { margin: 14px 0 6px; padding: 14px 16px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--lg-line); }
+.inni-comment h3 { margin: 0 0 8px; }
+.inni-auto p { margin: 3px 0 !important; font-size: 14px !important; line-height: 1.75; color: var(--lg-text) !important; }
+.inni-auto p::before { content: "· "; color: var(--lg-muted); }
+.inni-auto .is-neg { color: var(--dash-down); font-weight: 700; }
+.inni-auto .is-pos { color: var(--dash-up); font-weight: 700; }
+.inni-note-lab { display: block; margin-top: 12px; font-size: 12.5px; color: var(--lg-muted); }
+.inni-note-lab textarea { display: block; width: 100%; box-sizing: border-box; margin-top: 6px; padding: 10px 12px; font: inherit; font-size: 14px; line-height: 1.6; color: var(--lg-text); background: transparent; border: 1px solid var(--lg-line); border-radius: 8px; resize: vertical; }
+.inni-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 10px; }
+.inni-note { font-size: 12.5px !important; color: var(--lg-muted); }
+.inni-scroll { overflow-x: auto; }
+.inni-table { border-collapse: separate; border-spacing: 0; min-width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+.inni-table th, .inni-table td { padding: 8px 12px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--lg-line-2, rgba(0,0,0,.08)); }
+.inni-table th:first-child, .inni-table td:first-child { text-align: left; font-weight: 700; position: sticky; left: 0; background: var(--lg-card); }
+.inni-table thead th { font-size: 12px; color: var(--lg-muted); border-bottom: 1.5px solid var(--lg-line); }
+.inni-table .is-sel { background: var(--lg-line-2, rgba(0,0,0,.06)); }
+.inni-table .is-sum { font-weight: 700; border-left: 1.5px solid var(--lg-line); }
+.inni-table .is-sub td { color: var(--lg-muted); font-size: 12.5px; }
+.inni-table .is-up { color: var(--dash-up); }
+.inni-table .is-down { color: var(--dash-down); }
+.inni-table .is-empty { color: var(--lg-muted); opacity: .5; }
+.inni-table th.is-part::after { content: "*"; color: var(--dash-down); }
+.inni-chart { position: relative; height: 320px; margin: 4px 0 12px; }
+.inni-tgt-table input { width: 84px; padding: 6px 8px; font: inherit; font-size: 13px; text-align: right; color: var(--lg-text); background: transparent; border: 1px solid var(--lg-line); border-radius: 6px; }
+.inni-tgt-table input:disabled { opacity: .35; border-style: dashed; }
+.inni-tgt-table input.is-changed { border-color: var(--lg-accent); box-shadow: 0 0 0 2px rgba(0, 114, 228, .15); }
+.inni-tgt-table td, .inni-tgt-table th { padding: 6px 8px; }

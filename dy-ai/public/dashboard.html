@@ -90,10 +90,43 @@
       </div>
 
       <section class="inni-pane" data-pane="sales">
-        <div class="inni-card inni-todo">
-          <h2>SALES <small>월간 매출 리포트</small></h2>
-          <p class="inni-state">준비 중 · 가장 먼저 만들 화면</p>
-          <p>회계연도(BY, 7월~6월) 기준 월별 SALES · YoY · 목표 · 목표 달성률 · PV · ORDERS · CVR · AOV, 그리고 BY별 월 매출 추이.</p>
+        <div class="inni-bar" role="toolbar" aria-label="SALES 설정">
+          <label class="dash-bar-item"><span>회계연도</span><select class="js-s-fy"></select></label>
+          <label class="dash-bar-item"><span>기준 월</span><select class="js-s-month"></select></label>
+          <span class="dash-bar-gap"></span>
+          <button class="dash-btn js-s-tgt-btn" type="button" aria-expanded="false">월별 목표 입력</button>
+          <button class="dash-btn js-s-reload" type="button" title="DB 에서 다시 불러오기">새로고침</button>
+        </div>
+        <p class="dash-msg js-s-msg" role="alert" hidden></p>
+
+        <div class="inni-card js-s-tgt" hidden>
+          <h3>월별 매출 목표 <small>단위: 천 엔(K JPY) · 순매출(GMV) 기준 · 비워 두면 목표 없음 · DB 기간(2024-01~)부터 회계연도 말(6월)까지</small></h3>
+          <div class="inni-scroll"><table class="inni-table inni-tgt-table js-s-tgt-table"></table></div>
+          <div class="inni-actions"><button class="dash-btn is-primary js-s-tgt-save" type="button">목표 저장</button><button class="dash-btn js-s-tgt-cancel" type="button">닫기</button><span class="inni-note js-s-tgt-note"></span></div>
+        </div>
+
+        <div class="inni-card inni-report">
+          <header class="inni-rhead">
+            <p class="logs-eyebrow">Qoo10 Monthly Report</p>
+            <h2 class="js-s-title">SALES</h2>
+            <p class="inni-unit js-s-unit">(K JPY / Unit) · 순매출(GMV) 기준</p>
+          </header>
+
+          <div class="inni-comment">
+            <h3>코멘트</h3>
+            <div class="inni-auto js-s-auto"></div>
+            <label class="inni-note-lab">직접 입력 <small>(이 달 리포트에 같이 보여요)</small>
+              <textarea class="js-s-note" rows="3" maxlength="4000" placeholder="예: 메가와리 기간 차이로 YoY -17%..."></textarea>
+            </label>
+            <div class="inni-actions"><button class="dash-btn js-s-note-save" type="button">코멘트 저장</button><span class="inni-note js-s-note-meta"></span></div>
+          </div>
+
+          <h3 class="js-s-kpi-title">월별 요약</h3>
+          <div class="inni-scroll"><table class="inni-table inni-kpi js-s-kpi"></table></div>
+
+          <h3>전체 매출 추이 <small>(K JPY)</small></h3>
+          <div class="inni-chart"><canvas class="js-s-chart"></canvas></div>
+          <div class="inni-scroll"><table class="inni-table inni-trend js-s-trend"></table></div>
         </div>
       </section>
       <section class="inni-pane" data-pane="product" hidden>
@@ -132,6 +165,7 @@
 <script src="/assets/dash-core.js"></script>
 <script src="/assets/dash.js"></script>
 <script src="/assets/inni.js"></script>
+<script src="/assets/inni-sales.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });

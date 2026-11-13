@@ -251,3 +251,6 @@ button, input { font: inherit; color: inherit; }
   .ltr, .logo-daisy, .deco > .bob, .deco svg, .cube, .q10-btn .spark, .dy-modal-box, .theme-menu { animation: none !important; }
   .deco { transform: none !important; }
 }
+
+/* 계정 권한: 권한 확인 중에는 화면을 숨겨 깜빡임 방지 (perm.js 가 풀어 줌, 6초 안전장치) */
+html.dy-perm-wait body { visibility: hidden; }

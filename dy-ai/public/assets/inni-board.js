@@ -124,7 +124,7 @@
       var bar = h("div", "inni-bar"); bar.setAttribute("role", "toolbar"); bar.setAttribute("aria-label", def.label + " 설정");
       el.ctrls = h("span", "board-ctrls"); bar.appendChild(el.ctrls); bar.appendChild(h("span", "dash-bar-gap"));
       [["help", "설명", "이 화면과 코멘트 기준 설명"], ["note", "코멘트 입력", "이 화면 코멘트 직접 입력"], ["set", "설정", "코멘트 · 강조 · 그래프 설정"], ["xlsx", "엑셀 다운로드", "서식이 들어간 엑셀로 내려받기"], ["reload", "새로고침", "DB 에서 다시 불러오기"]].forEach(function (b) {
-        var btn = h("button", "dash-btn", b[1]); btn.type = "button"; btn.title = b[2]; if (b[0] !== "reload" && b[0] !== "xlsx") btn.setAttribute("aria-haspopup", "dialog"); el[b[0]] = btn; bar.appendChild(btn);
+        var btn = h("button", "dash-btn js-b-" + b[0], b[1]); btn.type = "button"; btn.title = b[2]; if (b[0] !== "reload" && b[0] !== "xlsx") btn.setAttribute("aria-haspopup", "dialog"); el[b[0]] = btn; bar.appendChild(btn);
       });
       pane.appendChild(bar);
       el.msg = h("p", "dash-msg"); el.msg.setAttribute("role", "alert"); el.msg.hidden = true; pane.appendChild(el.msg);

@@ -1,4 +1,4 @@
-/* 대시보드의 탭: 큰 탭(대시보드 / inni)과 그 아래 하위 탭
+/* 대시보드의 탭: 큰 탭(대시보드 / inni / 상품코드관리)과 그 아래 하위 탭
  *   대시보드: 커스텀(기존 대시보드, 기본) · 광고 효율 · 랭킹·판매 · 유입 경로 · 고객 구조 · 행사 비교 · 찜·장바구니 · 경영 요약 (inni-board.js 의 보드들)
  *   inni: SALES · PRODUCT · ONSITE AD · MEGAPO (월간 리포트 4종)
  * 주소 해시로 기억한다: (없음)=커스텀, #board/ad, #inni, #inni/product 처럼.
@@ -8,7 +8,7 @@
   var SUBS = ["sales", "product", "onsite", "megapo"];
   var BOARDS = ["custom", "ad", "rank", "channel", "customer", "events", "wish", "exec"];
   var $ = function (s) { return document.querySelector(s); };
-  var viewDash = $("#view-dash"), viewInni = $("#view-inni");
+  var viewDash = $("#view-dash"), viewInni = $("#view-inni"), viewCodes = $("#view-codes");
   var views = Array.prototype.slice.call(document.querySelectorAll(".js-views .inni-tab"));
   var subs = Array.prototype.slice.call(document.querySelectorAll(".js-subs .inni-tab"));
   var panes = Array.prototype.slice.call(document.querySelectorAll(".inni-pane"));
@@ -18,7 +18,7 @@
 
   function parse() { // "#inni/product" → { view: "inni", sub: "product" }, "#board/ad" → { view: "dash", board: "ad" }
     var h = (location.hash || "").replace(/^#/, "").split("/");
-    return { view: h[0] === "inni" ? "inni" : "dash", sub: SUBS.indexOf(h[1]) >= 0 && h[0] === "inni" ? h[1] : "sales", board: h[0] === "board" && BOARDS.indexOf(h[1]) >= 0 ? h[1] : "custom" };
+    return { view: h[0] === "inni" ? "inni" : h[0] === "codes" ? "codes" : "dash", sub: SUBS.indexOf(h[1]) >= 0 && h[0] === "inni" ? h[1] : "sales", board: h[0] === "board" && BOARDS.indexOf(h[1]) >= 0 ? h[1] : "custom" };
   }
   function show(view, sub, push, board) {
     board = board || "custom";
@@ -26,11 +26,12 @@
     var inner = document.querySelector(".dash-inner"); if (inner) inner.classList.toggle("is-wide", view === "inni" && sub === "product");   // PRODUCT 화면만 넓게
     viewDash.hidden = view !== "dash";
     viewInni.hidden = view !== "inni";
+    if (viewCodes) viewCodes.hidden = view !== "codes";
     subs.forEach(function (b) { b.setAttribute("aria-selected", b.dataset.sub === sub ? "true" : "false"); });
     panes.forEach(function (p) { p.hidden = p.dataset.pane !== sub; });
     btabs.forEach(function (b) { b.setAttribute("aria-selected", b.dataset.board === board ? "true" : "false"); });
     bpanes.forEach(function (p) { p.hidden = p.dataset.bpane !== board; });
-    var hash = view === "inni" ? "#inni/" + sub : (board !== "custom" ? "#board/" + board : "");
+    var hash = view === "inni" ? "#inni/" + sub : view === "codes" ? "#codes" : (board !== "custom" ? "#board/" + board : "");
     if (push && (location.hash || "") !== hash) {
       try { history.replaceState(null, "", hash || location.pathname + location.search); } catch (e) {}
     }

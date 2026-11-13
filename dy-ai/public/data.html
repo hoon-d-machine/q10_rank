@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="/assets/dash.css">
 <link rel="stylesheet" href="/assets/data.css">
 </head>
-<body class="logs-body data-body">
+<body class="logs-body data-body" data-page="data">
 
 <!-- 탑바: 왼쪽 로고 + 메뉴(수집기·대시보드·로그), 오른쪽 테마 선택 + 로그아웃 -->
 <header class="topbar">
@@ -30,6 +30,7 @@
     <a href="/event">행사 랭킹</a>
     <a href="/data" aria-current="page">데이터</a>
     <a href="/logs">로그</a>
+    <a href="/admin" data-perm-admin hidden>관리</a>
   </nav>
   <div class="top-actions">
     <div class="theme-pick" data-theme-pick>
@@ -89,6 +90,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="/assets/config.js"></script>
 <script src="/assets/auth.js"></script>
+<script src="/assets/perm.js"></script>
 <script src="/assets/xlsx-writer.js"></script>
 <script src="/assets/dy-cal.js"></script>
 <script src="/assets/data.js"></script>

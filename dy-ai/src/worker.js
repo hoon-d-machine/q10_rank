@@ -42,6 +42,7 @@ export default {
       if (url.pathname === "/api/event/collect" && req.method === "POST") { // 행사 랭킹 '지금 한 번 수집' (로그인 사용자)
         return json(await collectEvent(env, Date.now(), { sid: url.searchParams.get("sid") || undefined, force: true }));
       }
+      if (url.pathname.startsWith("/api/admin/")) return await adminApi(req, env, url);
       return await route(req, env, url);
     } catch (e) {
       return json({ error: String((e && e.message) || e) }, e && e.status ? e.status : 500);
@@ -106,6 +107,76 @@ async function checkUser(req, env) {
   if (userCache.size > 200) userCache.clear();
   userCache.set(token, v);
   return v;
+}
+
+// ---------- 관리(계정 생성·비밀번호·사용 중지·삭제): 관리자만. Supabase Auth Admin API 는 service key 가 필요해서 Worker 가 한다 ----------
+// 권한(메뉴·탭·기능) 읽기·쓰기는 DB 함수(dy_admin_users, dy_admin_set_perms)가 한다. 여기서는 계정 자체만 다룬다
+const LOGIN_DOMAIN = "dy-ai.local";
+async function sb(env, method, path, body, extra) {
+  const r = await fetch(env.SUPABASE_URL + path, {
+    method, headers: Object.assign({ apikey: env.SUPABASE_SERVICE_KEY, Authorization: "Bearer " + env.SUPABASE_SERVICE_KEY, "Content-Type": "application/json" }, extra || {}),
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  const text = await r.text(); let data = null; try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+  if (!r.ok) throw httpError(r.status === 401 || r.status === 403 ? 502 : r.status, (data && (data.msg || data.message || data.error_description || data.error)) || ("Supabase " + r.status));
+  return data;
+}
+async function adminUser(req, env) {
+  if (!env.SUPABASE_SERVICE_KEY) throw httpError(500, "서버에 SUPABASE_SERVICE_KEY 가 설정돼 있지 않아요");
+  const token = (req.headers.get("Authorization") || "").slice(7);
+  const r = await fetch(env.SUPABASE_URL + "/auth/v1/user", { headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: "Bearer " + token } });
+  if (!r.ok) throw httpError(401, "로그인이 필요해요");
+  const u = await r.json();
+  const rows = await sb(env, "GET", "/rest/v1/dy_user_perms?user_id=eq." + enc(u.id) + "&select=is_admin,disabled");
+  if (!rows || !rows[0] || !rows[0].is_admin || rows[0].disabled) throw httpError(403, "관리자만 쓸 수 있어요");
+  return u;
+}
+async function otherActiveAdmins(env, exceptId) {
+  const rows = await sb(env, "GET", "/rest/v1/dy_user_perms?is_admin=eq.true&disabled=eq.false&select=user_id");
+  return (rows || []).filter((x) => x.user_id !== exceptId).length;
+}
+async function adminApi(req, env, url) {
+  const me = await adminUser(req, env), p = url.pathname;
+  const body = req.method === "POST" || req.method === "PUT" ? await req.json().catch(() => ({})) : {};
+  const m = /^\/api\/admin\/users\/([0-9a-f-]{36})(?:\/(password|disable))?$/.exec(p);
+  if (p === "/api/admin/users" && req.method === "POST") {
+    const login = String(body.login || "").trim(), pw = String(body.password || "");
+    const email = login.includes("@") ? login : login + "@" + LOGIN_DOMAIN;
+    if (!/^[A-Za-z0-9._+-]{2,40}(@[A-Za-z0-9.-]+\.[A-Za-z]{2,})?$/.test(login)) throw httpError(400, "아이디는 영문·숫자·._- 2~40자(또는 이메일)로 입력해 주세요");
+    if (pw.length < 8 || pw.length > 72) throw httpError(400, "비밀번호는 8자 이상으로 입력해 주세요");
+    const perms = Array.isArray(body.perms) ? body.perms.filter((x) => typeof x === "string" && x.length < 60).slice(0, 200) : [];
+    const created = await sb(env, "POST", "/auth/v1/admin/users", { email, password: pw, email_confirm: true });
+    try {
+      await sb(env, "POST", "/rest/v1/dy_user_perms", { user_id: created.id, is_admin: !!body.is_admin, perms, display_name: String(body.name || "").trim().slice(0, 60) || null, note: String(body.note || "").trim().slice(0, 300) || null, updated_by: me.id },
+        { Prefer: "resolution=merge-duplicates,return=minimal" });
+    } catch (e) { await sb(env, "DELETE", "/auth/v1/admin/users/" + created.id).catch(() => {}); throw e; }
+    return json({ ok: true, id: created.id, email });
+  }
+  if (m && m[2] === "password" && req.method === "POST") {
+    const pw = String(body.password || "");
+    if (pw.length < 8 || pw.length > 72) throw httpError(400, "비밀번호는 8자 이상으로 입력해 주세요");
+    await sb(env, "PUT", "/auth/v1/admin/users/" + m[1], { password: pw });
+    return json({ ok: true });
+  }
+  if (m && m[2] === "disable" && req.method === "POST") {
+    const dis = !!body.disabled;
+    if (dis && m[1] === me.id) throw httpError(400, "자기 자신은 사용 중지할 수 없어요");
+    if (dis && (await otherActiveAdmins(env, m[1])) < 1) {
+      const t = await sb(env, "GET", "/rest/v1/dy_user_perms?user_id=eq." + m[1] + "&select=is_admin");
+      if (t && t[0] && t[0].is_admin) throw httpError(400, "마지막 관리자는 사용 중지할 수 없어요");
+    }
+    await sb(env, "PUT", "/auth/v1/admin/users/" + m[1], { ban_duration: dis ? "876000h" : "none" });
+    await sb(env, "POST", "/rest/v1/dy_user_perms", { user_id: m[1], disabled: dis, updated_by: me.id }, { Prefer: "resolution=merge-duplicates,return=minimal" });
+    return json({ ok: true });
+  }
+  if (m && !m[2] && req.method === "DELETE") {
+    if (m[1] === me.id) throw httpError(400, "자기 자신은 삭제할 수 없어요");
+    const t = await sb(env, "GET", "/rest/v1/dy_user_perms?user_id=eq." + m[1] + "&select=is_admin");
+    if (t && t[0] && t[0].is_admin && (await otherActiveAdmins(env, m[1])) < 1) throw httpError(400, "마지막 관리자는 삭제할 수 없어요");
+    await sb(env, "DELETE", "/auth/v1/admin/users/" + m[1]);
+    return json({ ok: true });
+  }
+  throw httpError(404, "없는 요청이에요");
 }
 
 // ---------- 구글 시트 ----------

@@ -183,3 +183,31 @@ html[data-theme="nature"] .inni-modal-card, html[data-theme="dark"] .inni-modal-
 .inni-colorhead .dash-btn { padding: 3px 10px; font-size: 12px; }
 .inni-colorrow { display: flex; align-items: center; gap: 10px; padding: 3px 0; font-size: 13px; cursor: pointer; }
 .inni-colorrow input[type=color] { width: 34px; height: 24px; padding: 0; border: 1px solid rgba(0,0,0,.2); border-radius: 5px; background: none; cursor: pointer; }
+
+/* 상품코드관리 탭 */
+.codes-bar { flex-wrap: wrap; }
+.codes-q { min-width: 280px; padding: 6px 10px; font: inherit; font-size: 13px; color: var(--lg-text); background: transparent; border: 1px solid var(--lg-line); border-radius: 8px; }
+.codes-card { padding: 16px 18px; }
+.codes-scroll { overflow: auto; max-height: calc(100vh - 330px); min-height: 240px; }
+.codes-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.codes-table th { position: sticky; top: 0; z-index: 1; padding: 8px 8px; text-align: left; font-size: 12px; background: var(--lg-card); border-bottom: 2px solid var(--lg-line); white-space: nowrap; }
+.codes-table td { padding: 3px 6px; border-bottom: 1px solid var(--lg-line); vertical-align: middle; }
+.codes-table td input[type=text] { width: 100%; min-width: 120px; box-sizing: border-box; padding: 5px 7px; font: inherit; font-size: 13px; color: var(--lg-text); background: transparent; border: 1px solid transparent; border-radius: 6px; }
+.codes-table td input[type=text]:hover { border-color: var(--lg-line); }
+.codes-table td input[type=text]:focus { outline: 2px solid var(--lg-accent); outline-offset: 0; border-color: transparent; }
+.codes-table td input[type=text]:disabled { opacity: .85; cursor: default; }
+.codes-table .c-chk { width: 28px; text-align: center; }
+.codes-table .c-no { font-family: ui-monospace, Consolas, monospace; white-space: nowrap; }
+.codes-table .c-ref { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; opacity: .65; }
+.codes-table tr.is-dirty td { background: rgba(229, 166, 58, .13); }
+.codes-table tr.is-new .c-no { font-weight: 700; }
+.codes-badge { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; color: #fff; background: #11af5d; }
+.codes-empty { text-align: center; padding: 30px 0 !important; opacity: .7; }
+.codes-morerow { text-align: center; margin-top: 10px; }
+.codes-modal textarea { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; white-space: pre; }
+.codes-opt { margin: 10px 0 4px; font-size: 12.5px; }
+.codes-sum { margin: 10px 0 4px !important; font-weight: 600; color: var(--lg-text) !important; }
+.codes-warn { margin: 2px 0 !important; color: #b4690e !important; }
+.codes-more { margin: 4px 0 0 !important; }
+.codes-mini { margin-top: 8px; font-size: 12px; }
+.dy-no-edit-codes .js-c-add, .dy-no-edit-codes .js-c-paste, .dy-no-edit-codes .js-c-del, .dy-no-edit-codes .js-c-save, .dy-no-edit-codes .js-c-undo { display: none; }

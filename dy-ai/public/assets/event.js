@@ -41,8 +41,7 @@
     return m;
   }
   function theme() {
-    var cs = getComputedStyle(document.body);
-    return { font: cs.color || "#222", grid: "rgba(128,128,128,.25)" };
+    return { font: window.dyColors ? window.dyColors.tick(false) : "#222", grid: "rgba(128,128,128,.25)" };
   }
   function baseLayout(extra) {
     var t = theme();
@@ -135,6 +134,7 @@
     $(".js-t-goods").textContent = "📦 상품" + tn + " 순위";
     renderPane(list, n); renderRaw(list);
   }
+  document.addEventListener("dy:theme", function () { try { renderAll(); } catch (e) {} });   // 테마가 바뀌면 글자색을 다시 입힘
   // 숨겨진 탭에서는 Plotly 가 크기를 못 재서 그래프가 안 그려진다 → 보이는 탭만 그리고, 탭을 열 때 그린다
   var activeTab = "trend";
   function renderPane(list, n) {

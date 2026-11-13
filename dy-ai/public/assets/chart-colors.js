@@ -88,6 +88,11 @@
     return out;
   }
 
+  // 그래프 글자·눈금·격자 색: 테마로 정한다 (엑셀 그림 light=true 는 어두운 글자). 테마가 바뀌면 각 화면이 그래프를 다시 그린다
+  function themeName() { return document.documentElement.getAttribute("data-theme") || "rug"; }
+  function tick(light) { if (light) return "#333333"; var t = themeName(); return t === "dark" ? "#e6e8ec" : t === "nature" ? "#2d4a38" : "#4a2f12"; }
+  function grid(light) { if (light) return "rgba(0,0,0,.1)"; var t = themeName(); return t === "dark" ? "rgba(255,255,255,.14)" : t === "nature" ? "rgba(14,59,36,.1)" : "rgba(59,34,0,.1)"; }
+
   // ---------- 저장 ----------
   function client() { return window.dyAuth && window.dyAuth.client; }
   function load() {
@@ -137,7 +142,7 @@
     return box;
   }
 
-  window.dyColors = { get: get, cmp: cmp, decorate: decorate, mixed: mixed, section: section, boardCharts: boardCharts, load: load, PAL: PAL, GREEN: GREEN, DARK: DARK, LIGHT: LIGHT,
+  window.dyColors = { tick: tick, grid: grid, get: get, cmp: cmp, decorate: decorate, mixed: mixed, section: section, boardCharts: boardCharts, load: load, PAL: PAL, GREEN: GREEN, DARK: DARK, LIGHT: LIGHT,
     _set: function (o) { over = o || {}; }, _flush: flush };
   // 로그인 클라이언트가 준비되면 한 번 불러온다
   var tries = 0;

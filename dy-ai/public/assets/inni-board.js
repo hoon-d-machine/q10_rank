@@ -56,7 +56,7 @@
     return D.friendly ? D.friendly(e) : "불러오지 못했어요: " + m;
   }
   function short(s, n) { s = String(s || "").replace(/【[^】]*】/g, "").replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n) + "…" : s; }
-  function tick(light) { return light ? "#333333" : (getComputedStyle(document.body).color || "#444"); }
+  function tick(light) { return window.dyColors.tick(light); }
 
   // 집계 함수 (dy_dash_agg) · 원본 표 페이지 읽기 (dy_data_page) · 경계 · 상품코드표 · 행사 달력 — 보드 공용(캐시)
   var cache = {};

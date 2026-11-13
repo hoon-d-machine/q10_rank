@@ -8,7 +8,7 @@
 html[data-theme="nature"] .dash-page {
   --dash-c1: #11af5d; --dash-c2: #0e3b24; --dash-c3: #c9933d; --dash-c4: #3fa58a; --dash-c5: #8fd6ab; --dash-c6: #6b8f71;
   --dash-cmp: #a9b8a4; --dash-cmp-bar: rgba(14, 59, 36, .16); --dash-grid: rgba(14, 59, 36, .07); --dash-tick: #4a6553;
-  --dash-up: #11af5d; --dash-down: #e5484d;
+  --dash-up: #0b8a47; --dash-down: #d13b40;
 }
 html[data-theme="dark"] .dash-page {
   --dash-c1: #f2f2f2; --dash-c2: #9ad7ff; --dash-c3: #ffc6a0; --dash-c4: #c9a8ff; --dash-c5: #8ff0d8; --dash-c6: #8a8a8a;

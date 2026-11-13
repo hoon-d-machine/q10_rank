@@ -233,7 +233,7 @@
   // 그래프 설정(light=true 는 엑셀 그림용: 화면 테마와 무관하게 어두운 글자)
   var DC = window.dyColors;
   function chartConfig(light) {
-    var ms = vis(), tick = light ? "#333333" : (getComputedStyle(document.body).color || "#444");
+    var ms = vis(), tick = DC.tick(light);
     var labels = ms.map(function (k) { return String(yOf(k)).slice(2) + "-" + pad(mOf(k)) + (k === S.partial ? "*" : ""); });
     var bar = S.cfg.type !== "line", sets = [
       { type: bar ? "bar" : "line", label: "광고비 합계", data: ms.map(function (k) { var c = mv(k); return Math.round((c.api + c.man) / 1000); }), backgroundColor: DC.get("onsite.main", "spend", "#2a8c9a"), borderColor: DC.get("onsite.main", "spend", "#2a8c9a"), yAxisID: "y", tension: .25 },

@@ -49,7 +49,7 @@ html[data-theme="nature"] .inni-card, html[data-theme="dark"] .inni-card { borde
 .inni-table .is-sub td { color: var(--lg-muted); font-size: 12.5px; }
 .inni-table .is-up { color: var(--dash-up); }
 .inni-table .is-down { color: var(--dash-down); }
-.inni-table .is-empty { color: var(--lg-muted); opacity: .5; }
+.inni-table .is-empty { color: var(--lg-muted); opacity: .75; }
 .inni-table th.is-part::after { content: "*"; color: var(--dash-down); }
 .inni-chart { position: relative; height: 320px; margin: 4px 0 12px; }
 .inni-tgt-table input { width: 84px; padding: 6px 8px; font: inherit; font-size: 13px; text-align: right; color: var(--lg-text); background: transparent; border: 1px solid var(--lg-line); border-radius: 6px; }
@@ -221,3 +221,9 @@ html[data-theme="dark"] .codes-badge::before { content: ""; display: inline-bloc
 html[data-theme="dark"] .inni-modal-card { --lg-card: #20232b; --lg-solid: #20232b; background: #20232b; box-shadow: 0 28px 90px rgba(0, 0, 0, .85), inset 0 0 0 1px rgba(255, 255, 255, .24); }
 html[data-theme="dark"] .inni-modal { background: rgba(0, 0, 0, .72); }
 html[data-theme="dark"] .codes-table td input[type=text]:hover { border-color: rgba(255, 255, 255, .22); }
+
+/* 다크: 빈 칸(-, ·) 표시가 배경에 묻히지 않게 */
+html[data-theme="dark"] .inni-table .is-empty, html[data-theme="dark"] .inni-table td.is-empty { color: rgba(255, 255, 255, .62); opacity: 1; }
+/* 풀잎: 흰 바탕 위 연두 글자는 읽기 어려워 같은 계열의 진한 초록으로 */
+html[data-theme="nature"] .inni-link, html[data-theme="nature"] .logs-eyebrow, html[data-theme="nature"] .inni-table .is-up, html[data-theme="nature"] .board-kpi .is-up { color: #0b8a47; }
+html[data-theme="nature"] .inni-table .is-empty, html[data-theme="nature"] .inni-table td.is-empty { color: #5d7266; opacity: 1; }

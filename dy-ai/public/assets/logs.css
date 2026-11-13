@@ -116,3 +116,5 @@ html[data-theme="nature"] .log-steps, html[data-theme="dark"] .log-steps { paddi
   .log-step { grid-template-columns: 56px 8px minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { .is-run .log-badge::before { animation: none; } .log-chev { transition: none; } }
+
+html[data-theme="nature"] .logs-eyebrow { color: #0b8a47; }

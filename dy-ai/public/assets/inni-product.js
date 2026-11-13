@@ -296,7 +296,7 @@
   var DC = window.dyColors;
   function chartConfig(rows, basis, dir, light, cid) {
     var root = getComputedStyle(pane), cs = function (n, d) { return root.getPropertyValue(n).trim() || d; };
-    var tick = light ? "#444444" : cs("--dash-tick", "#7a4a1c"), grid = light ? "rgba(0,0,0,.1)" : cs("--dash-grid", "rgba(0,0,0,.08)");
+    var tick = DC.tick(light), grid = DC.grid(light);
     var c1 = DC.cmp(cid, "cur"), cmp = DC.cmp(cid, "prev");
     var kt = basis === "ytd" ? "ytd" : "ty", kl = basis === "ytd" ? "lyytd" : "ly";
     var list = rows.slice(0, 12);
@@ -337,6 +337,7 @@
   }
 
   document.addEventListener("dycolors:change", function () { if (S.ready && S.data) drawCharts(); });
+  document.addEventListener("dy:theme", function () { if (S.ready && S.data) drawCharts(); });
 
   function renderAll() {
     var k = S.ym, d = S.data;

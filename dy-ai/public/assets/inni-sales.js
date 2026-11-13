@@ -276,7 +276,7 @@
   function chartConfig(md, type, light) {
     var pal = palette();
     var pageStyle = getComputedStyle(pane); var cs = function (n, d) { return pageStyle.getPropertyValue(n).trim() || d; };
-    var tick = light ? "#444444" : cs("--dash-tick", "#7a4a1c"), grid = light ? "rgba(0,0,0,.1)" : cs("--dash-grid", "rgba(0,0,0,.08)");
+    var tick = DC.tick(light), grid = DC.grid(light);
     var cmp = DC.get("sales.trend", "tgt", "#e5a63a");
     var datasets = [];
     md.rows.forEach(function (r, i) {
@@ -317,6 +317,7 @@
   }
 
   document.addEventListener("dycolors:change", function () { if (S.ready && S.cfg && started) renderTrend(); });
+  document.addEventListener("dy:theme", function () { if (S.ready && S.cfg && started) renderTrend(); });
 
   // 회계연도 시작~기준 월 중 목표가 비어 있는 달이 있으면 알림 (회계연도·기준 월 아래, 리포트 위)
   function renderNotice() {

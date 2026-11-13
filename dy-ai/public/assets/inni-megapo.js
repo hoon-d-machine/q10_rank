@@ -355,7 +355,7 @@
   // 그래프: 일별 매출 (이번·직전·작년). light=true 는 엑셀 그림용
   var DC = window.dyColors;
   function chartConfig(light) {
-    var d = S.data, tick = light ? "#333333" : (getComputedStyle(document.body).color || "#444"), bar = S.cfg.type === "bar", labels = [];
+    var d = S.data, tick = DC.tick(light), bar = S.cfg.type === "bar", labels = [];
     for (var i = 0; i < d.n; i++) labels.push("Day " + (i + 1));
     var ser = function (s) { return labels.map(function (_, i) { var x = s && s[i]; return x ? Math.round(x.sales / 1000) : null; }); };
     var sets = [{ label: evLabel(d.e) + " (" + evRange(d.e) + ")", data: ser(d.cur), borderColor: DC.cmp("megapo.daily", "cur"), backgroundColor: DC.cmp("megapo.daily", "cur"), borderWidth: bar ? 1 : 3 }];
@@ -374,7 +374,7 @@
 
   // PV 막대 그래프: 구분(큐텐 구좌·오가닉·내부 광고·외부 광고·구분 불가)별 이번 행사 · 직전 행사 · 작년 행사
   function pvChartConfig(light) {
-    var d = S.data, tick = light ? "#333333" : (getComputedStyle(document.body).color || "#444"), gr = pvGroups(), labels = gr.map(function (x) { return x.g; });
+    var d = S.data, tick = DC.tick(light), gr = pvGroups(), labels = gr.map(function (x) { return x.g; });
     var sets = [{ label: evLabel(d.e), data: gr.map(function (x) { return x.cur; }), backgroundColor: DC.cmp("megapo.pv", "cur") }];
     if (d.prev && (S.cfg.compare === "both" || S.cfg.compare === "prev")) sets.push({ label: "직전 " + evLabel(d.p), data: gr.map(function (x) { return x.prev; }), backgroundColor: DC.cmp("megapo.pv", "prev") });
     if (d.ly && (S.cfg.compare === "both" || S.cfg.compare === "ly")) sets.push({ label: "작년 " + evLabel(d.l), data: gr.map(function (x) { return x.ly; }), backgroundColor: DC.cmp("megapo.pv", "prev2") });

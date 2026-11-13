@@ -2,6 +2,7 @@
 .ev-inner { max-width: 1280px; }
 .ev-card { background: var(--dt-cell, #fff); border-radius: 14px; padding: 16px 18px; margin: 0 0 14px; box-shadow: inset 0 0 0 1px var(--lg-line, rgba(0,0,0,.1)); }
 html[data-theme="nature"] .ev-card, html[data-theme="dark"] .ev-card { border-radius: 0; }
+html[data-theme="dark"] .ev-card { background: #17191f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2); }
 .ev-card h2 { margin: 0 0 10px; font-size: 15px; }
 .ev-card h3 { margin: 0 0 8px; font-size: 14px; }
 .ev-collect-row { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }

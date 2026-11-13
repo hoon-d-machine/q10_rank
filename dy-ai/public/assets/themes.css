@@ -520,7 +520,7 @@ html[data-theme="dark"] #toast {
 html[data-theme="dark"] .dy-modal { color: var(--text); }
 html[data-theme="dark"] .dy-modal::backdrop { background: rgba(0, 0, 0, .7); backdrop-filter: blur(6px); }
 html[data-theme="dark"] .dy-modal-box {
-  background: #0b0b0b; border: 1px solid rgba(255, 255, 255, .14); border-radius: 26px;
+  background: #20232b; border: 1px solid rgba(255, 255, 255, .24); border-radius: 26px;
   box-shadow: 0 40px 100px rgba(0, 0, 0, .8), 0 0 80px -20px rgba(170, 150, 255, .25);
   text-align: left; padding: 28px 26px 22px;
 }

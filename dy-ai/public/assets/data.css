@@ -4,7 +4,7 @@
   --dt-head: #f3eed8; --dt-cell: #fffef7; --dt-zebra: #faf6e6; --dt-hover: #fff2b8;
 }
 html[data-theme="nature"] .data-body { --dt-head: #f1f5ee; --dt-cell: #ffffff; --dt-zebra: #f8faf6; --dt-hover: #e6f3ea; }
-html[data-theme="dark"] .data-body   { --dt-on: #000; --dt-head: #101010; --dt-cell: #050506; --dt-zebra: #0b0b0c; --dt-hover: #181818; }
+html[data-theme="dark"] .data-body   { --dt-on: #000; --dt-head: #20232b; --dt-cell: #121419; --dt-zebra: #17191f; --dt-hover: #232730; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 

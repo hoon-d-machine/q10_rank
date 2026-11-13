@@ -203,8 +203,11 @@
       </section>
       <section class="inni-pane" data-pane="onsite" hidden>
         <div class="inni-bar" role="toolbar" aria-label="ONSITE AD 설정">
-          <label class="dash-bar-item"><span>회계연도</span><select class="js-o-fy"></select></label>
-          <label class="dash-bar-item"><span>기준 월</span><select class="js-o-month"></select></label>
+          <label class="dash-bar-item"><span>보기</span><select class="js-o-mode"><option value="fy">회계연도</option><option value="range">기간 (연월 ~ 연월)</option></select></label>
+          <label class="dash-bar-item js-o-fyg"><span>회계연도</span><select class="js-o-fy"></select></label>
+          <label class="dash-bar-item js-o-fyg"><span>기준 월</span><select class="js-o-month"></select></label>
+          <label class="dash-bar-item js-o-rg" hidden><span>시작 연월</span><select class="js-o-from"></select></label>
+          <label class="dash-bar-item js-o-rg" hidden><span>끝 연월</span><select class="js-o-to"></select></label>
           <button class="dash-btn js-o-manual" type="button" aria-haspopup="dialog" title="광고센터에 없는 광고(Spotlight AD · Singleone)의 월별 광고비 입력">월별 광고비 입력</button>
           <span class="dash-bar-gap"></span>
           <button class="dash-btn js-help" data-help="onsite" type="button" aria-haspopup="dialog" title="이 화면과 코멘트 기준 설명">설명</button>

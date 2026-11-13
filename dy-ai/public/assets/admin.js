@@ -39,7 +39,9 @@
     countEl.textContent = users.length + "개 계정";
     users.forEach(function (u) {
       var tr = h("tr", u.disabled ? "is-off" : "");
-      tr.appendChild(h("td", null, u.name || "-"));
+      var nameTd = h("td", "admin-name"), nm = h("span", null, u.name || "-"), nb = h("button", "logs-btn admin-rename", "이름 수정");
+      nb.type = "button"; nb.title = "상단에 표시되는 이름을 바꿔요"; nb.addEventListener("click", function () { renameUser(u); });
+      nameTd.appendChild(nm); nameTd.appendChild(nb); tr.appendChild(nameTd);
       var idTd = h("td", null, u.email); idTd.className = "admin-id"; tr.appendChild(idTd);
       tr.appendChild(h("td", null, u.is_admin ? "관리자" : "일반"));
       var st = h("td"); var b = h("span", "admin-badge " + (u.disabled ? "is-off" : "is-on"), u.disabled ? "사용 중지" : "사용 중"); st.appendChild(b);
@@ -165,6 +167,22 @@
           .then(function () { toast("권한을 저장했어요"); m.close(); return load(); })
           .catch(function (e) { m.err.textContent = friendly(e); m.save.disabled = false; });
       });
+      return name;
+    });
+  }
+
+  // ---------- 이름만 바꾸기 (상단 계정 이름으로 보임) ----------
+  function renameUser(u) {
+    modal("이름 수정 · " + u.email, "화면 위쪽(테마와 로그아웃 사이)에 보이는 이름이에요. 그 계정이 다시 불러올 때 바뀌어요. 비우면 아이디가 보여요.", function (m) {
+      var name = field(m.card, "이름", textInput("text", u.name || "", "표시용 이름"));
+      var go = function () {
+        m.err.textContent = ""; m.save.disabled = true;
+        rpc("dy_admin_set_perms", { p_user: u.id, p_is_admin: u.is_admin, p_perms: u.perms || [], p_name: name.value, p_note: u.note })
+          .then(function () { toast("이름을 바꿨어요"); m.close(); return load(); })
+          .catch(function (e) { m.err.textContent = friendly(e); m.save.disabled = false; });
+      };
+      m.save.addEventListener("click", go);
+      name.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); go(); } });
       return name;
     });
   }

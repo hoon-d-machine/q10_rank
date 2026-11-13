@@ -61,9 +61,20 @@
     return null;
   }
 
+  // 테마 선택과 로그아웃 사이에 로그인한 계정 이름 (이름은 계정 관리에서 고침, 없으면 아이디)
+  function showName() {
+    var out = document.getElementById("logout");
+    if (!out || !me.email) return;
+    var el = document.getElementById("user-name");
+    if (!el) { el = document.createElement("span"); el.id = "user-name"; el.className = "user-name"; out.parentNode.insertBefore(el, out); }
+    var label = me.name || String(me.email).split("@")[0];
+    el.textContent = label; el.title = me.email + (me.is_admin ? " · 관리자" : "");
+  }
+
   function apply() {
     queued = false;
     if (!me.loaded) return;
+    showName();
     // 상단 메뉴
     $$(".top-nav a").forEach(function (a) {
       var p = (a.getAttribute("href") || "").replace(/^\//, "").replace(/\.html$/, "");
@@ -115,7 +126,8 @@
     var A = window.dyAuth;
     if (!A || !A.client) { me.loaded = true; me.open = true; return Promise.resolve(); }
     return A.getSession().then(function (s) {
-      if (!s) { me.loaded = true; me.open = true; return; }   // 로그인 안 한 화면(로그인 창)은 각 화면이 알아서 처리
+      if (!s) { me.loaded = true; me.open = true; return; }
+      me.email = s.user && s.user.email || "";   // 로그인 안 한 화면(로그인 창)은 각 화면이 알아서 처리
       return A.client.rpc("dy_me").then(function (r) {
         if (r.error) {
           var msg = String(r.error.message || ""), code = String(r.error.code || "");
@@ -123,7 +135,7 @@
           me.loaded = true; me.perms = []; return;                                                                                         // 읽지 못함 → 닫아 둠
         }
         var d = r.data || {};
-        me = { is_admin: !!d.is_admin, perms: Array.isArray(d.perms) ? d.perms : [], name: d.name || null, loaded: true, open: false, disabled: !!d.disabled, registered: d.registered !== false };
+        me = { email: me.email, is_admin: !!d.is_admin, perms: Array.isArray(d.perms) ? d.perms : [], name: d.name || null, loaded: true, open: false, disabled: !!d.disabled, registered: d.registered !== false };
         if (me.disabled) { A.signOut().then(function () { location.replace("/"); }); }
       });
     }).catch(function () { me.loaded = true; me.open = true; });

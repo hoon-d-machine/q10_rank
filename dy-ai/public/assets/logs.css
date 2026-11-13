@@ -13,7 +13,7 @@ html[data-theme="nature"] .logs-body {
   --lg-radius: 4px;
 }
 html[data-theme="dark"] .logs-body {
-  --lg-bg: #050506; --lg-card: transparent; --lg-line: rgba(255, 255, 255, .14); --lg-line-2: rgba(255, 255, 255, .07);
+  --lg-bg: #050506; --lg-card: #17191f; --lg-solid: #17191f; --lg-line: rgba(255, 255, 255, .2); --lg-line-2: rgba(255, 255, 255, .1);
   --lg-text: #f1f1f1; --lg-muted: rgba(255, 255, 255, .55); --lg-accent: #fff;
   --lg-ok: #8ff0b8; --lg-warn: #ffc6a0; --lg-err: #ff8a84; --lg-run: #9ad7ff; --lg-mute: #777;
   --lg-radius: 0;

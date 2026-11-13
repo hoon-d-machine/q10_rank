@@ -8,7 +8,7 @@
  *   6. 결과를 DY-AI 페이지로 넘긴다 → 페이지가 원본 엑셀의 시트를 덮어쓰거나 새 파일로 저장하고, 추가 작업 목록을 DB 에 반영
  *      (페이지가 없으면/구버전 페이지면 여기서 xlsx 를 만들어 다운로드 — 이때는 추가 수집을 하지 않는다)
  */
-importScripts("xlsx-writer.js", "extra.js", "save.js");
+importScripts("extra.js", "save.js");
 
 // ============================================================
 // 상수
@@ -222,10 +222,24 @@ function execFetch(url, payload) {
 }
 
 // 재시도 + 인증 만료 처리
+// 판매자센터 동시 호출 상한(전체 수집 합쳐서 4개, 호출 뒤 0.4초 간격)
+var sellerActive = 0, sellerQueue = [];
+function sellerGate(fn) {
+  return new Promise(function (resolve, reject) {
+    function start() {
+      sellerActive++;
+      Promise.resolve().then(fn).then(resolve, reject).then(function () {
+        setTimeout(function () { sellerActive--; var n = sellerQueue.shift(); if (n) n(); }, 400);
+      });
+    }
+    if (sellerActive < 4) start(); else sellerQueue.push(start);
+  });
+}
 async function callApi(url, payload) {
   var last = null;
   for (var attempt = 0; attempt <= MAX_RETRY; attempt++) {
-    var r = await execFetch(url, payload);
+    if (job && job.cancelled) throw new UserError("수집이 취소됐어요");
+    var r = await sellerGate(function () { return execFetch(url, payload); });
     if (r.status === 200 && r.body) return r.body;
     if (r.status === 401 || r.status === 403) throw new UserError("Qoo10 로그인이 만료됐어요. 다시 'Q10 수집'을 눌러 로그인해 주세요.");
     last = r;
@@ -324,13 +338,15 @@ function daysBetween(s, e) { return Math.round((new Date(e) - new Date(s)) / 864
 async function collectDateGoods(range, warnings) {
   var periods = monthPeriods(range.start, range.end);
   var rows = [];
-  for (var i = 0; i < periods.length; i++) {
-    var p = periods[i];
-    status("progress", "수집 중 (1/3) 일자·품목별 거래 " + p.label + " [" + (i + 1) + "/" + periods.length + "]");
-    var body = await callApi(DATE_GOODS_API_URL, {
+  status("progress", "수집 중 일자·품목별 거래 (" + periods.length + "구간 동시)");
+  var bodies = await Promise.all(periods.map(function (p) {
+    return callApi(DATE_GOODS_API_URL, {
       dateType: "D", startDt: p.start, endDt: p.end, from: 0, size: 9999,
       gdNos: [], gdlcCds: [], sortCd: "D1", sortType: "Desc"
     });
+  }));
+  for (var i = 0; i < periods.length; i++) {
+    var p = periods[i], body = bodies[i];
     listOf(body, "date-goods " + p.label, warnings).forEach(function (it) {
       var buy = it.totalBuyCnt || 0, cancel = it.totalCancelCnt || 0;
       var bpv = it.buyBpv || 0, cbpv = it.cancelBpv || 0;
@@ -348,17 +364,18 @@ async function collectDateGoods(range, warnings) {
 async function collectDaily(range, url, columns, sortCd, step, label, warnings) {
   var periods = splitPeriods(range.start, range.end);
   var rows = [];
-  for (var i = 0; i < periods.length; i++) {
-    var p = periods[i];
-    status("progress", "수집 중 (" + step + "/3) " + label + " " + p.start + "~" + p.end + " [" + (i + 1) + "/" + periods.length + "]");
-    var body = await callApi(url, {
+  status("progress", "수집 중 " + label + " (" + periods.length + "구간 동시)");
+  var bodies = await Promise.all(periods.map(function (p) {
+    return callApi(url, {
       dateType: "D", startDt: p.start, endDt: p.end, from: 0, page: 0, size: 9999,
       gdNos: [], gdlcCds: [], sortCd: sortCd, sortType: "Desc"
     });
+  }));
+  for (var i = 0; i < periods.length; i++) {
+    var p = periods[i], body = bodies[i];
     listOf(body, label + " " + p.start + "~" + p.end, warnings, daysBetween(p.start, p.end)).forEach(function (it) {
       rows.push(columns.map(function (c) { var v = it[c]; return v === undefined || v === null ? "" : v; }));
     });
-    if (i < periods.length - 1) await sleep(1000); // API 부하 방지
   }
   rows.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });
   return rows;
@@ -444,34 +461,19 @@ async function saveInBackground(payload) {
 
 async function collectExtras(range) {
   var ctx = {
+    cancelled: function () { return !job || job.cancelled; },
     sleep: sleep, today: function () { return ymd(new Date()); }, progress: function (t) { status("progress", t); },
     seller: callApi, ads: null, qsm: null
   };
   try {
-    status("progress", "추가 수집 · 광고센터에 연결하는 중…");
-    ctx.ads = await openAds();
-    status("progress", "추가 수집 · Beauty Brand AD 화면에 연결하는 중…");
-    ctx.qsm = await openQsm();
+    status("progress", "추가 수집 · 광고센터·Beauty Brand AD 화면에 연결하는 중…");
+    var conn = await Promise.all([openAds(), openQsm()]);
+    ctx.ads = conn[0]; ctx.qsm = conn[1];
     return await self.Q10Extra.run(ctx, { start: ymd(range.start), end: ymd(range.end) });
   } catch (e) {
     if (e instanceof UserError) throw e;   // 판매자센터 로그인 만료는 사용자에게 알린다
     return { jobs: [], errors: [{ name: "추가 수집", message: (e && e.message) || String(e) }] };
   } finally { closeTabs(); }
-}
-
-// ============================================================
-// 다운로드
-// ============================================================
-function toBase64(bytes) {
-  var bin = "", CHUNK = 0x8000;
-  for (var i = 0; i < bytes.length; i += CHUNK) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
-  return btoa(bin);
-}
-
-async function downloadXlsx(filename, sheets) {
-  var bytes = await self.buildXlsx(sheets);
-  var url = "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64," + toBase64(bytes);
-  return chrome.downloads.download({ url: url, filename: filename, conflictAction: "uniquify", saveAs: false });
 }
 
 // ============================================================
@@ -503,9 +505,17 @@ async function run(dyTabId, deliver, runId) {
 
     var range = defaultRange();
     var warnings = [];
-    var dataRows = await collectDateGoods(range, warnings);
-    var tradeRows = await collectDaily(range, TRADE_API_URL, TRADE_COLUMNS, "", 2, "일자별 거래", warnings);
-    var convRows = await collectDaily(range, CONVERSION_API_URL, CONVERSION_COLUMNS, "N0G", 3, "페이지뷰", warnings);
+    // 추가 수집(광고센터·QSM 연결 포함)은 판매 3종과 동시에 시작한다. 한 묶음이 실패해도 나머지는 계속, 판매 3종 결과는 그대로 둔다
+    var extraP = collectExtras(range).then(function (v) { return { v: v }; }, function (e) { return { e: e }; });
+    var base;
+    try {
+      base = await Promise.all([
+        collectDateGoods(range, warnings),
+        collectDaily(range, TRADE_API_URL, TRADE_COLUMNS, "", 2, "일자별 거래", warnings),
+        collectDaily(range, CONVERSION_API_URL, CONVERSION_COLUMNS, "N0G", 3, "페이지뷰", warnings)
+      ]);
+    } catch (e) { job.cancelled = true; await extraP; throw e; }
+    var dataRows = base[0], tradeRows = base[1], convRows = base[2];
 
     var now = new Date();
     var stamp = ymd(now).replace(/-/g, "") + "_" + String(now.getHours()).padStart(2, "0") + String(now.getMinutes()).padStart(2, "0");
@@ -516,39 +526,28 @@ async function run(dyTabId, deliver, runId) {
       { name: "raw_trade", header: TRADE_HEADERS, rows: tradeRows, dateIdx: 1 },
       { name: "raw_conversion", header: CONVERSION_HEADERS, rows: convRows, dateIdx: 1 }
     ];
-    // 추가 수집 (페이지로 넘길 때만): 한 묶음이 실패해도 나머지는 계속, 판매 3종 결과는 그대로 둔다
-    var extra = null, savedLine = null;
-    if (job.deliver === "page") {
-      try { extra = await collectExtras(range); }
-      catch (e) { if (e instanceof UserError) warnings.push("추가 수집 중단: " + e.message); else extra = { jobs: [], errors: [{ name: "추가 수집", message: (e && e.message) || String(e) }] }; }
-    }
+    var extra = null, xr = await extraP;
+    status("progress", "추가 수집 마무리 중…");
+    if (xr.e) { if (xr.e instanceof UserError) warnings.push("추가 수집 중단: " + xr.e.message); else extra = { jobs: [], errors: [{ name: "추가 수집", message: (xr.e && xr.e.message) || String(xr.e) }] }; }
+    else extra = xr.v;
     chrome.tabs.remove(job.tabId).catch(function () {});
 
-    if (job.deliver === "page") {
-      var delivered = await deliverToPage({
-        sheets: sheets, cutoff: ymd(range.start), start: ymd(range.start), end: ymd(range.end),
-        filename: filename, warnings: warnings, extra: extra
-      });
-      if (delivered) return; // 저장·완료 안내는 페이지가 한다
-      // 수집기 페이지가 열려 있지 않다(다른 페이지로 이동했거나 탭을 닫음): 확장이 로그인 세션으로 DB·구글 시트·추가 항목을 직접 저장한다
-      // (엑셀 원본은 페이지에서만 열 수 있어서 아래에서 xlsx 파일로 내려받음). 저장하지 못하면 결과를 보관해 두고 수집기 페이지를 열면 저장할지 물어본다
-      var full = { sheets: sheets, cutoff: ymd(range.start), start: ymd(range.start), end: ymd(range.end), filename: filename, warnings: warnings, extra: extra };
-      var saved = await saveInBackground(full);
-      if (saved && saved.ok) {
-        savedLine = saved.line;
-      } else {
-        try {
-          await chrome.storage.local.set({ pendingResult: { savedAt: Date.now(), payload: full } });
-          warnings.push((saved ? "확장 저장이 일부 실패했어요(" + saved.line + "). " : saved === null ? "저장할 로그인 정보가 없거나 만료돼서 " : "") + "결과를 보관해 뒀어요. DY-AI 수집기 페이지를 열면 DB·시트에 저장할지 물어봐요");
-        } catch (e) { console.error("[DY-AI Q10] 결과 보관 실패", e); }
-      }
-    }
+    var full = { sheets: sheets, cutoff: ymd(range.start), start: ymd(range.start), end: ymd(range.end), filename: filename, warnings: warnings, extra: extra };
+    if (await deliverToPage(full)) return; // 수집기 페이지가 열려 있으면 저장·완료 안내는 페이지가 한다 (엑셀 원본 포함)
 
-    status("progress", "엑셀 파일 만드는 중…");
-    await downloadXlsx(filename, sheets);
-    var summary = (savedLine ? "확장이 저장 완료 (" + savedLine + ") — " : "") + filename + " 다운로드 완료 (" + ymd(range.start) + " ~ " + ymd(range.end) +
-      ", 품목별 " + dataRows.length + "행 · 거래 " + tradeRows.length + "행 · 페이지뷰 " + convRows.length + "행)";
-    if (warnings.length) summary += " ⚠ 일부 누락 가능: " + warnings.join(", ");
+    // 수집기 페이지가 없다(다른 페이지로 이동했거나 탭을 닫음): 확장이 로그인 세션으로 DB·구글 시트·추가 항목을 직접 저장한다.
+    // 확장은 파일을 만들지 않는다(엑셀 원본은 수집기 페이지에서만 저장). 저장하지 못하면 결과를 보관해 두고, 수집기 페이지를 열면 저장할지 물어본다
+    var saved = await saveInBackground(full), period = ymd(range.start) + " ~ " + ymd(range.end), summary;
+    if (saved && saved.ok) {
+      summary = "확장이 저장 완료 (" + saved.line + ", " + period + "). 엑셀 원본에 넣으려면 수집기 페이지를 연 채로 수집해 주세요";
+    } else {
+      var why = saved ? "확장 저장이 일부 실패했어요 (" + saved.line + ")" : "저장할 로그인 정보가 없거나 만료됐어요";
+      try {
+        await chrome.storage.local.set({ pendingResult: { savedAt: Date.now(), payload: full } });
+        summary = why + ". 결과를 보관해 뒀어요 — DY-AI 수집기 페이지를 열면 DB·시트에 저장할지 물어봐요";
+      } catch (e2) { console.error("[DY-AI Q10] 결과 보관 실패", e2); summary = why + ". 결과를 보관하지도 못했어요 — 다시 수집해 주세요"; }
+    }
+    if (warnings.length) summary += " ⚠ " + warnings.join(", ");
     status("done", summary);
   } catch (e) {
     var msg = e instanceof UserError ? e.message : "수집 중 오류가 났어요: " + (e && e.message || e);

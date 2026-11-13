@@ -1,8 +1,8 @@
-/* 대시보드 '상품코드관리' 탭: 상품번호 · 상품명 · 제품명 라인 · 카테고리 · 비고 를 보고 고친다
+/* 대시보드 '상품코드관리' 탭: 상품번호 · 상품명 · 라인 · 카테고리 · 비고 를 보고 고친다
  *   - 데이터(판매·PV·광고·찜)에 새 상품번호가 들어오면 DB 가 자동으로 등록한다(상품명·라인·카테고리는 비어 있음 → '신규'로 위에 모아 보여 줌)
  *   - 표에서 바로 고치거나, 엑셀에서 복사해 붙여넣어 여러 건을 한 번에 등록·수정한다 (헤더가 있으면 열 이름으로, 없으면 위 순서로)
  *   - 읽기 dy_codes_list · 저장 dy_codes_save · 삭제 dy_codes_delete (권한 dash.codes / edit.codes 를 DB 가 확인)
- * 열: gd_no(상품번호) · product_name(상품명, 화면·엑셀에 쓰는 이름) · line(제품명 라인) · category(카테고리) · note(비고) / 참고용: 원본 상품명 · 마지막 판매일
+ * 열: gd_no(상품번호) · product_name(상품명, 화면·엑셀에 쓰는 이름) · line(라인) · category(카테고리) · note(비고) / 참고용: 원본 상품명 · 마지막 판매일
  */
 (function () {
   "use strict";
@@ -12,7 +12,7 @@
   var el = { q: $(".js-c-q"), filter: $(".js-c-filter"), add: $(".js-c-add"), paste: $(".js-c-paste"), xlsx: $(".js-c-xlsx"), save: $(".js-c-save"), undo: $(".js-c-undo"),
     del: $(".js-c-del"), reload: $(".js-c-reload"), msg: $(".js-c-msg"), count: $(".js-c-count"), body: $(".js-c-body"), more: $(".js-c-more"), all: $(".js-c-all") };
   var FIELDS = ["product_name", "line", "category", "note"];
-  var LABEL = { gd_no: "상품번호", product_name: "상품명", line: "제품명 라인", category: "카테고리", note: "비고" };
+  var LABEL = { gd_no: "상품번호", product_name: "상품명", line: "라인", category: "카테고리", note: "비고" };
   var PAGE = 200;
   var S = { rows: [], by: {}, edits: {}, added: [], sel: {}, shown: PAGE, loaded: false, busy: false, canEdit: true };
 
@@ -166,8 +166,8 @@
     var prev = document.activeElement, ov = h("div", "inni-modal"), card = h("div", "inni-modal-card is-wide codes-modal");
     ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "엑셀 붙여넣기");
     card.appendChild(h("h3", null, "엑셀에서 붙여넣어 등록·수정"));
-    card.appendChild(h("p", null, "엑셀에서 표를 복사(Ctrl+C)해 아래 칸에 붙여넣으세요. 첫 줄에 열 이름(상품번호 · 상품명 · 제품명 라인 · 카테고리 · 비고)이 있으면 그 순서대로, 없으면 상품번호 · 상품명 · 제품명 라인 · 카테고리 · 비고 순서로 읽어요. 이미 있는 상품번호는 수정, 없으면 새로 등록해요."));
-    var ta = h("textarea"); ta.placeholder = "상품번호\t상품명\t제품명 라인\t카테고리\t비고\n1105218484\t레티놀 PDRN 세럼\t피디알엔\tSERUM\t"; ta.style.minHeight = "130px"; card.appendChild(ta);
+    card.appendChild(h("p", null, "엑셀에서 표를 복사(Ctrl+C)해 아래 칸에 붙여넣으세요. 첫 줄에 열 이름(상품번호 · 상품명 · 라인 · 카테고리 · 비고)이 있으면 그 순서대로, 없으면 상품번호 · 상품명 · 라인 · 카테고리 · 비고 순서로 읽어요. 이미 있는 상품번호는 수정, 없으면 새로 등록해요."));
+    var ta = h("textarea"); ta.placeholder = "상품번호\t상품명\t라인\t카테고리\t비고\n1105218484\t레티놀 PDRN 세럼\t피디알엔\tSERUM\t"; ta.style.minHeight = "130px"; card.appendChild(ta);
     var opt = h("div", "codes-opt"), cb = h("input"); cb.type = "checkbox"; var lab = h("label"); lab.appendChild(cb); lab.appendChild(document.createTextNode(" 붙여넣은 칸이 비어 있으면 기존 값도 지움 (끄면 빈 칸은 그대로 둠)")); opt.appendChild(lab); card.appendChild(opt);
     var prevEl = h("div", "codes-prev"); card.appendChild(prevEl);
     var err = h("div", "inni-modal-err"), acts = h("div", "inni-modal-acts"), gap = h("span", "inni-gap"), cancel = h("button", "dash-btn", "취소"), go = h("button", "dash-btn is-primary", "반영"); cancel.type = go.type = "button"; go.disabled = true;
@@ -210,7 +210,7 @@
   // ---------- 엑셀 내려받기 ----------
   function exportXlsx() {
     if (!window.dyXlsx) return;
-    var header = ["상품번호", "상품명", "제품명 라인", "카테고리", "비고", "원본 상품명", "마지막 판매일", "신규(자동 등록)"];
+    var header = ["상품번호", "상품명", "라인", "카테고리", "비고", "원본 상품명", "마지막 판매일", "신규(자동 등록)"];
     var rows = S.rows.map(function (r) { return [r.gd_no, cur(r, "product_name"), cur(r, "line"), cur(r, "category"), cur(r, "note"), val(r.src_name), val(r.last_date).slice(0, 10), r.auto_added ? "신규" : ""]; });
     Promise.resolve(window.dyXlsx.buildXlsx([{ name: "상품코드", header: header, rows: rows }])).then(function (bytes) {
       var url = URL.createObjectURL(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })), a = document.createElement("a"), d = new Date();

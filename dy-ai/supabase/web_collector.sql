@@ -62,3 +62,26 @@ alter function inni_replace_pageview_daily(date, jsonb) security definer set sea
 grant execute on function inni_replace_sales_goods(date, jsonb) to authenticated;
 grant execute on function inni_replace_sales_daily(date, jsonb) to authenticated;
 grant execute on function inni_replace_pageview_daily(date, jsonb) to authenticated;
+
+-- ============================================================
+-- 3) 추가 수집(확장 0.5.0~): 상품별 PV · 고객 · 찜/장바구니 · 광고센터 · Beauty Brand AD · 행사 달력
+--    inni_RPA/supabase_schema_extra.sql · supabase_schema_ads.sql · supabase_schema_cpm.sql 을 먼저 실행해 함수가 있어야 한다.
+--    위 세 함수와 같은 방식: security definer 로 바꾸고 로그인 사용자에게 실행 권한을 준다 (표는 계속 잠겨 있음).
+-- ============================================================
+alter function inni_replace_pageview_goods(date, date, jsonb) security definer set search_path = public;
+alter function inni_replace_customer_daily(date, date, jsonb) security definer set search_path = public;
+alter function inni_replace_customer_goods(date, jsonb) security definer set search_path = public;
+alter function inni_replace_ad_daily(date, date, jsonb) security definer set search_path = public;
+alter function inni_replace_ad_goods_daily(date, date, jsonb) security definer set search_path = public;
+alter function inni_replace_ad_keyword_daily(date, date, jsonb) security definer set search_path = public;
+alter function inni_upsert_mega_events(jsonb) security definer set search_path = public;
+alter function inni_replace_cpm(date, date, jsonb, jsonb, jsonb) security definer set search_path = public;
+grant execute on function inni_replace_pageview_goods(date, date, jsonb) to authenticated;
+grant execute on function inni_replace_customer_daily(date, date, jsonb) to authenticated;
+grant execute on function inni_replace_customer_goods(date, jsonb) to authenticated;
+grant execute on function inni_replace_ad_daily(date, date, jsonb) to authenticated;
+grant execute on function inni_replace_ad_goods_daily(date, date, jsonb) to authenticated;
+grant execute on function inni_replace_ad_keyword_daily(date, date, jsonb) to authenticated;
+grant execute on function inni_upsert_mega_events(jsonb) to authenticated;
+grant execute on function inni_replace_cpm(date, date, jsonb, jsonb, jsonb) to authenticated;
+

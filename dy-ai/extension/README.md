@@ -31,10 +31,30 @@ DY-AI 메인 아래 설명서에서 zip을 받아 압축을 풀고 아래 순서
 
 진행 상황은 DY-AI 화면 아래 토스트로 표시됩니다. 하나라도 실패하면 파일을 만들지 않습니다(부분 데이터 방지).
 
+## 추가 수집 (0.5.0~)
+판매 3종 수집이 끝나면 같은 버튼으로 아래 항목도 모아서 DB 에만 반영한다(엑셀·구글 시트는 위 3개 그대로). `extra.js` 가 `inni_RPA` 의 `qsm_extra.py` · `ads_extra.py` · `qsm_cpm.py` 와 같은 API·검증·열로 수집한다.
+
+| 항목 | 출처 | 기간 |
+|---|---|---|
+| 상품별 일자 PV | 판매자센터 `pageview/table/date-goods` (스토어 총 PV 와 합계가 같을 때까지 재시도) | 전전월 1일 ~ 어제, 10일 단위 |
+| 고객(일자) | `customer/table/date` | 같음 |
+| 찜·장바구니 스냅샷 | `customer/table/goods` (수집한 날의 누적값) | 오늘 하루 |
+| 행사 달력(메가와리·메가포) | 광고센터 `calendar/mega` | 전체 |
+| 일별 광고비·광고 매출(유형별) | 광고센터 `sales/chart` (유형별 합 = 전체 검증) | 전전월 1일 ~ 어제 (2026-02~) |
+| 상품별 광고 | 광고센터 `goods/rank` (일자별 광고 매출 합 = 전체 검증) | 최근 14일 |
+| 광고 키워드 노출·클릭·구매 | 광고센터 `keyword/rank` | 최근 28일, 7일 단위 |
+| Beauty Brand AD(CPM) 캠페인·일자별·키워드 | QSM `CPMList.aspx` · `InnerAjax/*` | 최근 35일과 겹치는 캠페인 |
+
+- 광고센터는 새 탭(`ads.qoo10.jp/conversion`)을 열어 QSM 로그인(SSO)으로 붙은 요청의 `Authorization` 을 잡아 쓰고, QSM 화면은 `CPMManagementReport.aspx` 탭 안에서 호출한다. 끝나면 두 탭을 닫는다.
+- 한 묶음이 실패해도 나머지는 계속하고, 실패한 묶음은 DY-AI 로그 메뉴에 남는다. 판매 3종 결과와 엑셀 저장은 영향받지 않는다.
+- DB 반영은 로그인 사용자 권한으로 `inni_replace_*` 함수를 호출한다(`supabase/web_collector.sql` 3번 구간, 페이지 쪽 `public/assets/q10-extra.js`). 추가 항목은 DY-AI 페이지로 넘길 때만 수집한다(페이지가 없어 xlsx 만 내려받는 경우엔 건너뜀).
+- 0.5.0 은 `ads.qoo10.jp` 접근 권한이 새로 필요해서, 업데이트 뒤 크롬이 확장을 꺼 두면 `chrome://extensions` 에서 다시 켜 주세요.
+
 ## 파일
 - `manifest.json` — MV3. DY-AI 사이트(`dy-ai.xogns1381.workers.dev`, 로컬 `localhost:8765`)에서만 연결
 - `bridge.js` — DY-AI 페이지 ↔ 확장 메시지 중계 (`window.postMessage`)
-- `background.js` — 로그인 대기, 토큰 캡처, 수집, 다운로드
+- `background.js` — 로그인 대기, 토큰 캡처, 수집, 다운로드, 추가 수집용 탭(광고센터·QSM) 열기
+- `extra.js` — 추가 수집 로직(판매자센터·광고센터·QSM). `ctx` 만 바꾸면 Node 에서도 시험 가능
 - `qsm-login.js` — QSM 로그인 창 자동 입력 (Qoo10_RPA.py qsm_login 과 같은 칸)
 - `options.html` / `options.js` — Qoo10 로그인 정보 저장 (chrome.storage.local, 이 PC에만)
 - `xlsx-writer.js` — 의존성 없는 xlsx 생성기 + zip 도구. 사이트(`public/assets/xlsx-writer.js`)도 이 파일의 사본을 씀 → 고친 뒤 빌드 스크립트 실행

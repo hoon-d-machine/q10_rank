@@ -4,10 +4,11 @@
  *   2. 로그인 안 돼 있으면 QSM 로그인 화면에서 사람이 로그인할 때까지 기다린다
  *   3. 페이지가 보내는 API 요청에서 Authorization / X-SELL-CUST-NO 헤더를 잡는다
  *   4. 그 탭 안에서(같은 출처라 쿠키·Origin 그대로) API를 호출해 수집한다
- *   5. 결과를 DY-AI 페이지로 넘긴다 → 페이지가 원본 엑셀의 시트를 덮어쓰거나 새 파일로 저장
- *      (페이지가 없으면/구버전 페이지면 여기서 xlsx 를 만들어 다운로드)
+ *   5. (0.5.0~) 추가 수집(extra.js): 상품별 PV·고객·찜장바구니(판매자센터), 광고센터(새 탭에서 토큰), Beauty Brand AD(QSM 탭) → DB 에 호출할 작업 목록
+ *   6. 결과를 DY-AI 페이지로 넘긴다 → 페이지가 원본 엑셀의 시트를 덮어쓰거나 새 파일로 저장하고, 추가 작업 목록을 DB 에 반영
+ *      (페이지가 없으면/구버전 페이지면 여기서 xlsx 를 만들어 다운로드 — 이때는 추가 수집을 하지 않는다)
  */
-importScripts("xlsx-writer.js");
+importScripts("xlsx-writer.js", "extra.js");
 
 // ============================================================
 // 상수
@@ -66,7 +67,7 @@ var CONVERSION_HEADERS = CONVERSION_COLUMNS.map(function (c) { return CONVERSION
 // ============================================================
 // 상태
 // ============================================================
-var job = null; // { dyTabId, tabId, token, custNo, deliver }
+var job = null; // { dyTabId, tabId, token, custNo, deliver, adsTabId, adsToken, qsmTabId }
 
 function UserError(msg) { this.message = msg; }
 
@@ -79,14 +80,16 @@ function status(state, text) {
 
 // 판매자 페이지가 보내는 요청에서 인증 헤더 캡처 (Qoo10_RPA.py 의 capture_request 와 동일)
 chrome.webRequest.onSendHeaders.addListener(function (d) {
-  if (!job || d.tabId !== job.tabId) return;
+  if (!job) return;
+  var ads = job.adsTabId != null && d.tabId === job.adsTabId;   // 광고센터 탭이 보내는 요청에서는 광고센터 토큰만 잡는다
+  if (!ads && d.tabId !== job.tabId) return;
   (d.requestHeaders || []).forEach(function (h) {
     var n = h.name.toLowerCase();
     var v = h.value || "";
-    if (n === "authorization" && /^(bearer\s+)?ey/i.test(v)) job.token = v;
-    if (n === "x-sell-cust-no" && v) job.custNo = v;
+    if (n === "authorization" && /^(bearer\s+)?ey/i.test(v)) { if (ads) job.adsToken = v; else job.token = v; }
+    if (!ads && n === "x-sell-cust-no" && v) job.custNo = v;
   });
-}, { urls: ["https://seller.qoo10.jp/*"] }, ["requestHeaders", "extraHeaders"]);
+}, { urls: ["https://seller.qoo10.jp/*", "https://ads.qoo10.jp/*"] }, ["requestHeaders", "extraHeaders"]);
 
 chrome.runtime.onMessage.addListener(function (msg, sender) {
   if (!msg || msg.type !== "q10-collect" || !sender.tab) return;
@@ -175,7 +178,7 @@ function pageFetch(url, payload, token, custNo) {
   var headers = { "Content-Type": "application/json", "Accept": "application/json, text/plain, */*" };
   if (token) headers["Authorization"] = token;
   if (custNo) headers["X-SELL-CUST-NO"] = custNo;
-  return fetch(url, { method: "POST", headers: headers, body: JSON.stringify(payload), credentials: "include" })
+  return fetch(url, { method: "POST", headers: headers, body: payload == null ? undefined : JSON.stringify(payload), credentials: "include" })
     .then(function (r) {
       return r.text().then(function (t) {
         var body = null;
@@ -184,6 +187,19 @@ function pageFetch(url, payload, token, custNo) {
       });
     })
     .catch(function (e) { return { status: 0, error: String(e) }; });
+}
+
+// QSM 화면(HTML) 호출용: 그 탭 안에서 같은 출처로 호출해 쿠키·헤더가 실제 화면과 같게 한다
+function pageFetchRaw(method, url, headers, bodyText) {
+  return fetch(url, { method: method, headers: headers, body: bodyText == null ? undefined : bodyText, credentials: "include" })
+    .then(function (r) { return r.text().then(function (t) { return { status: r.status, url: r.url, text: t }; }); })
+    .catch(function (e) { return { status: 0, url: "", text: "", error: String(e) }; });
+}
+
+function execIn(tabId, func, args) {
+  return chrome.scripting.executeScript({ target: { tabId: tabId }, func: func, args: args })
+    .then(function (res) { return (res && res[0] && res[0].result) || { status: 0, error: "no result" }; })
+    .catch(function (e) { return { status: 0, error: String(e && e.message || e) }; });
 }
 
 function execFetch(url, payload) {
@@ -342,6 +358,86 @@ async function collectDaily(range, url, columns, sortCd, step, label, warnings) 
 }
 
 // ============================================================
+// 추가 수집 (extra.js): 광고센터·QSM 는 각자 탭을 열어 그 안에서 호출한다
+// ============================================================
+async function waitTab(tabId, ms) {
+  var until = Date.now() + ms;
+  while (Date.now() < until) {
+    try { var t = await chrome.tabs.get(tabId); if (t.status === "complete") return t; } catch (e) { return null; }
+    await sleep(500);
+  }
+  return null;
+}
+
+// 광고센터: QSM 로그인(SSO)이 돼 있으면 열기만 해도 토큰이 붙은 요청이 나간다 → 그 헤더를 잡아 쓴다. 못 받으면 null
+async function openAds() {
+  try {
+    var tab = await chrome.tabs.create({ url: "https://ads.qoo10.jp/conversion", active: false });
+    job.adsTabId = tab.id; job.adsToken = null;
+    var until = Date.now() + 45000;
+    while (Date.now() < until && !job.adsToken) await sleep(800);
+    if (!job.adsToken) return null;
+    return async function (path, payload) {
+      var last = null;
+      for (var i = 0; i < 3; i++) {
+        var r = await execIn(job.adsTabId, pageFetch, ["https://ads.qoo10.jp/api/" + path, payload, job.adsToken, null]);
+        if (r.status === 200 && r.body) return r.body;
+        if (r.status === 401 || r.status === 403) throw new Error("광고센터 토큰이 만료됐어요");
+        last = r; await sleep(2000 * (i + 1));
+      }
+      throw new Error("광고센터 호출 실패 (" + (last && (last.status || last.error)) + ")");
+    };
+  } catch (e) { return null; }
+}
+
+// QSM Beauty Brand AD 화면: 그 화면 탭을 열고 안에서 호출
+async function openQsm() {
+  var BASE = "https://qsm.qoo10.jp/GMKT.INC.Gsm.Web/Promotion/";
+  try {
+    var tab = await chrome.tabs.create({ url: BASE + "CPMManagementReport.aspx", active: false });
+    job.qsmTabId = tab.id;
+    var t = await waitTab(tab.id, 30000);
+    if (!t || /login\.aspx/i.test(t.url || "")) return null;
+    return async function (method, path, form, referer) {
+      var headers = { "Accept": "*/*" }, body = null;
+      if (method === "POST") {
+        headers["X-Requested-With"] = "XMLHttpRequest"; headers["Content-Type"] = "application/x-www-form-urlencoded; charset=UTF-8";
+        body = new URLSearchParams(form || {}).toString();
+      }
+      var r = null;
+      for (var i = 0; i < 3; i++) {
+        r = await execIn(job.qsmTabId, pageFetchRaw, [method, BASE + path, headers, body]);
+        if (r.status === 200) return r;
+        await sleep(1500 * (i + 1));
+      }
+      throw new Error("QSM 호출 실패 (" + (r && (r.status || r.error)) + ")");
+    };
+  } catch (e) { return null; }
+}
+
+function closeTabs() {
+  [job && job.adsTabId, job && job.qsmTabId].forEach(function (id) { if (id != null) chrome.tabs.remove(id).catch(function () {}); });
+  if (job) { job.adsTabId = null; job.qsmTabId = null; }
+}
+
+async function collectExtras(range) {
+  var ctx = {
+    sleep: sleep, today: function () { return ymd(new Date()); }, progress: function (t) { status("progress", t); },
+    seller: callApi, ads: null, qsm: null
+  };
+  try {
+    status("progress", "추가 수집 · 광고센터에 연결하는 중…");
+    ctx.ads = await openAds();
+    status("progress", "추가 수집 · Beauty Brand AD 화면에 연결하는 중…");
+    ctx.qsm = await openQsm();
+    return await self.Q10Extra.run(ctx, { start: ymd(range.start), end: ymd(range.end) });
+  } catch (e) {
+    if (e instanceof UserError) throw e;   // 판매자센터 로그인 만료는 사용자에게 알린다
+    return { jobs: [], errors: [{ name: "추가 수집", message: (e && e.message) || String(e) }] };
+  } finally { closeTabs(); }
+}
+
+// ============================================================
 // 다운로드
 // ============================================================
 function toBase64(bytes) {
@@ -398,12 +494,18 @@ async function run(dyTabId, deliver) {
       { name: "raw_trade", header: TRADE_HEADERS, rows: tradeRows, dateIdx: 1 },
       { name: "raw_conversion", header: CONVERSION_HEADERS, rows: convRows, dateIdx: 1 }
     ];
+    // 추가 수집 (페이지로 넘길 때만): 한 묶음이 실패해도 나머지는 계속, 판매 3종 결과는 그대로 둔다
+    var extra = null;
+    if (job.deliver === "page") {
+      try { extra = await collectExtras(range); }
+      catch (e) { if (e instanceof UserError) warnings.push("추가 수집 중단: " + e.message); else extra = { jobs: [], errors: [{ name: "추가 수집", message: (e && e.message) || String(e) }] }; }
+    }
     chrome.tabs.remove(job.tabId).catch(function () {});
 
     if (job.deliver === "page") {
       var delivered = await deliverToPage({
         sheets: sheets, cutoff: ymd(range.start), start: ymd(range.start), end: ymd(range.end),
-        filename: filename, warnings: warnings
+        filename: filename, warnings: warnings, extra: extra
       });
       if (delivered) return; // 저장·완료 안내는 페이지가 한다
     }

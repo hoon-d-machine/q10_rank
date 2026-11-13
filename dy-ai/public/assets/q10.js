@@ -164,17 +164,28 @@
       window.dyToast("엑셀 저장 중 오류가 났어요: " + (e && e.message || e), 9000);
     }
 
-    // 2) DB · 구글 시트 (실패하면 다시 시도 가능)
+    // 2) DB · 구글 시트 (실패하면 다시 시도 가능) + 추가 항목(상품별 PV·고객·광고·Beauty Brand AD 등, 확장 0.5.0~)은 한 번만 반영
     if (!window.dyQ10Sync) { log.end(saved ? "ok" : "partial", "엑셀만 저장"); return; }
+    var ex = null;
     for (;;) {
       window.dyToast("DB · 구글 시트 업데이트 중…", 0);
       var res = await window.dyQ10Sync.run(p, log);
       var bad = res.parts.filter(function (x) { return !x.ok; });
+      if (ex === null) {
+        if (p.extra && window.dyQ10Extra) {
+          window.dyToast("추가 항목(상품별 PV · 고객 · 광고 등) 반영 중…", 0);
+          ex = await window.dyQ10Extra.run(p.extra, log);
+        } else {
+          ex = false;
+          log.step("추가 수집", "info", "추가 항목(상품별 PV·고객·찜장바구니·광고·Beauty Brand AD·행사 달력)은 확장 프로그램 0.5.0 이상에서 같이 수집돼요 (지금 설치된 확장은 건너뜀)");
+        }
+      }
+      var exBad = ex ? ex.failed.length + ex.errors.length : 0;
       var line = "엑셀 " + (t.mode === "none" ? "-" : saved ? "✓" : "✕") + " · DB " + (bad.some(function (x) { return x.target === "DB"; }) ? "✕" : "✓") +
-        " · 시트 " + (bad.some(function (x) { return x.target === "시트"; }) ? "✕" : "✓");
+        " · 시트 " + (bad.some(function (x) { return x.target === "시트"; }) ? "✕" : "✓") + (ex ? " · 추가 " + (exBad ? "✕ " + exBad + "건" : "✓ " + ex.done + "건") : "");
       if (!bad.length) {
-        log.end(saved ? "ok" : "partial", line + " (" + p.start + " ~ " + p.end + ")");
-        window.dyToast("저장 완료 — " + line + " (" + p.start + " ~ " + p.end + ")", 9000);
+        log.end(saved && !exBad ? "ok" : "partial", line + " (" + p.start + " ~ " + p.end + ")");
+        window.dyToast((exBad ? "일부 추가 항목이 실패했어요 — " : "저장 완료 — ") + line + " (" + p.start + " ~ " + p.end + ")" + (exBad ? ". 자세한 내용은 로그 메뉴에서 볼 수 있어요" : ""), exBad ? 0 : 9000);
         return;
       }
       window.dyToast("일부를 업데이트하지 못했어요 — " + line, 0);

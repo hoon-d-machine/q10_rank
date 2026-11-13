@@ -204,6 +204,13 @@
       log.step("재시도", "info", "DB · 시트 다시 시도");
     }
   }
+  // 수집기 페이지가 열려 있다는 표시(확장 bridge.js 가 결과를 넘길 때 확인) + 수집·저장 중에 이동·닫기를 하면 브라우저 경고
+  document.documentElement.setAttribute("data-q10-collector", "1");
+  window.addEventListener("beforeunload", function (e) {
+    if (!busy) return;
+    e.preventDefault();
+    e.returnValue = "";
+  });
   window.postMessage({ source: "dy-ai", type: "ping" }, location.origin);
 
   collectBtns.forEach(function (btn) {

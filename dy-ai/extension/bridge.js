@@ -29,6 +29,10 @@
 
   chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     if (msg && msg.type === "q10-status") {
+      // 수집 결과(data)는 수집기 페이지(q10.js 가 data-q10-collector 표시를 달아 둠)가 열려 있을 때만 받았다고 답한다.
+      // 다른 DY-AI 페이지로 이동한 탭이면 ok:false → 확장이 결과를 잃지 않고 xlsx 로 내려받는다.
+      var collector = document.documentElement.hasAttribute("data-q10-collector");
+      if (msg.state === "data" && !collector) { sendResponse({ ok: false }); return; }
       toPage(msg);
       sendResponse({ ok: true }); // 결과(data)를 받았음을 알림 → 확장은 따로 다운로드하지 않음
     }

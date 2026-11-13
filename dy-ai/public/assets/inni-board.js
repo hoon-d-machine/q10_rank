@@ -171,6 +171,7 @@
     }
 
     // ----- 본문 -----
+    function cfgOf(sec, light) { return window.dyColors.decorate("b." + def.id + "." + sec.id, sec.config(light)); }
     function renderBody() {
       Object.keys(S.charts).forEach(function (k) { if (S.charts[k]) S.charts[k].destroy(); }); S.charts = {};
       el.body.innerHTML = "";
@@ -182,7 +183,7 @@
           el.body.appendChild(g);
         } else if (sec.type === "chart") {
           el.body.appendChild(h("h3", null, sec.title)); var w = h("div", "inni-chart" + (sec.small ? " is-sm" : "")), cv = h("canvas"); w.appendChild(cv); el.body.appendChild(w);
-          if (window.Chart) S.charts[sec.id] = new window.Chart(cv, sec.config(false));
+          if (window.Chart) S.charts[sec.id] = new window.Chart(cv, cfgOf(sec, false));
         } else if (sec.type === "table") {
           el.body.appendChild(h("h3", null, sec.title));
           var sc = h("div", "inni-scroll"), t = h("table", "inni-table"), th = h("thead"), tr = h("tr");
@@ -285,7 +286,7 @@
       K.openSettings({
         title: "설정 · " + def.label, desc: "코멘트는 화면마다, 강조와 그래프는 이 보드 전체에 저장돼요. 모두가 같이 봐요.",
         report: "board_" + def.id, fy: SETTINGS_FY, note: { ym: key(), body: S.note ? S.note.body : "", label: def.label }, cfg: cfg,
-        tables: tables, selects: def.selects || [], chartNote: def.chartNote || "",
+        tables: tables, selects: def.selects || [], chartNote: def.chartNote || "", colors: window.dyColors.boardCharts(def.id, S.charts, S.view.sections),
         rpc: rpc, toast: toast, friendly: friendly,
         onNote: function (c) { showManual(c); },
         onCfg: function (draft) { S.cfg = normCfg(draft); ctx.cfg = S.cfg; if (S.data) rebuildView(); }
@@ -307,7 +308,7 @@
               rows: sec.items.map(function (it, i) { return { id: i, vals: { l: it.label, v: it.value, s: it.sub || "" } }; }) });
           } else if (sec.type === "chart") {
             ws.getCell(r, 1).value = sec.title; ws.getCell(r, 1).font = { size: 12, bold: true }; r++;
-            ws.addImage(K.imageOf(wb, sec.config(true), 900, 320), { tl: { col: 0, row: r - 1 }, ext: { width: 900, height: 320 } }); r += 17;
+            ws.addImage(K.imageOf(wb, cfgOf(sec, true), 900, 320), { tl: { col: 0, row: r - 1 }, ext: { width: 900, height: 320 } }); r += 17;
           } else if (sec.type === "table") {
             var cols = sec.cols.map(function (c) { return { id: c.id, label: c.label, type: XT[c.type] || "int", text: c.type === "text" }; });
             r = K.writeTable(ws, r, { title: sec.title, cols: cols, hl: S.cfg.tables[sec.id],
@@ -323,6 +324,7 @@
 
     // 테마가 바뀌면 그래프를 다시 그린다
     document.addEventListener("dy:theme", function () { if (S.view && S.started) renderBody(); });
+    document.addEventListener("dycolors:change", function () { if (S.view && S.started) renderBody(); });
     return { start: start, S: S };
   }
 

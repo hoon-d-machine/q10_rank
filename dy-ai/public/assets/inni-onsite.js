@@ -219,19 +219,20 @@
   }
 
   // 그래프 설정(light=true 는 엑셀 그림용: 화면 테마와 무관하게 어두운 글자)
+  var DC = window.dyColors;
   function chartConfig(light) {
     var ms = vis(), tick = light ? "#333333" : (getComputedStyle(document.body).color || "#444");
     var labels = ms.map(function (k) { return String(yOf(k)).slice(2) + "-" + pad(mOf(k)) + (k === S.partial ? "*" : ""); });
     var bar = S.cfg.type !== "line", sets = [
-      { type: bar ? "bar" : "line", label: "광고비 합계", data: ms.map(function (k) { var c = mv(k); return Math.round((c.api + c.man) / 1000); }), backgroundColor: "#8aa4d6", borderColor: "#6c88c2", yAxisID: "y", tension: .25 },
-      { type: bar ? "bar" : "line", label: "광고 매출", data: ms.map(function (k) { return Math.round(mv(k).sales / 1000); }), backgroundColor: "#f2b35e", borderColor: "#dd9a3c", yAxisID: "y", tension: .25 }
+      { type: bar ? "bar" : "line", label: "광고비 합계", data: ms.map(function (k) { var c = mv(k); return Math.round((c.api + c.man) / 1000); }), backgroundColor: DC.get("onsite.main", "spend", "#2a8c9a"), borderColor: DC.get("onsite.main", "spend", "#2a8c9a"), yAxisID: "y", tension: .25 },
+      { type: bar ? "bar" : "line", label: "광고 매출", data: ms.map(function (k) { return Math.round(mv(k).sales / 1000); }), backgroundColor: DC.get("onsite.main", "sales", DC.GREEN), borderColor: DC.get("onsite.main", "sales", DC.GREEN), yAxisID: "y", tension: .25 }
     ];
     var scales = { x: { ticks: { color: tick }, grid: { display: false } }, y: { beginAtZero: true, min: 0, ticks: { color: tick }, title: { display: true, text: "K JPY", color: tick } } };
     if (S.cfg.roasLine !== "off") {
-      sets.push({ type: "line", label: "ROAS(%)", data: ms.map(function (k) { var c = mv(k); return c.api ? Math.round(c.sales / c.api * 100) : null; }), borderColor: "#2b9a73", backgroundColor: "#2b9a73", yAxisID: "y1", tension: .25 });
+      sets.push({ type: "line", label: "ROAS(%)", data: ms.map(function (k) { var c = mv(k); return c.api ? Math.round(c.sales / c.api * 100) : null; }), borderColor: DC.get("onsite.main", "roas", "#e5a63a"), backgroundColor: DC.get("onsite.main", "roas", "#e5a63a"), yAxisID: "y1", tension: .25 });
       scales.y1 = { position: "right", beginAtZero: true, min: 0, grid: { drawOnChartArea: false }, ticks: { color: tick, callback: function (v) { return v + "%"; } } };
     }
-    return { data: { labels: labels, datasets: sets }, options: { responsive: !light, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { labels: { color: tick } } }, scales: scales } };
+    return DC.mixed({ data: { labels: labels, datasets: sets }, options: { responsive: !light, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false }, plugins: { legend: { labels: { color: tick } } }, scales: scales } });
   }
   function drawChart() {
     if (!window.Chart) return;
@@ -332,6 +333,7 @@
       cfg: S.cfg, tables: [def("spend", "광고비 표"), def("sales", "광고 매출 표"), def("roas", "ROAS 표")],
       selects: [{ key: "type", label: "광고비·광고 매출 표시", options: [["bar", "막대"], ["line", "꺾은선"]] }, { key: "roasLine", label: "ROAS 선", options: [["on", "표시"], ["off", "숨김"]] }],
       chartNote: "월별 광고비·광고 매출 그래프예요.",
+      colors: [{ id: "onsite.main", title: "월별 광고비 · 광고 매출 · ROAS", series: [{ key: "spend", label: "광고비 합계", def: "#2a8c9a" }, { key: "sales", label: "광고 매출", def: DC.GREEN }, { key: "roas", label: "ROAS(%) 선", def: "#e5a63a" }] }],
       rpc: rpc, toast: toast, friendly: friendly,
       onNote: function (c) { if (k === S.ym) showManual(c); },
       onCfg: function (draft) { S.cfg = normCfg(draft); renderTables(); drawChart(); }
@@ -371,6 +373,7 @@
   el.month.addEventListener("change", function () { S.ym = el.month.value; recompute(); });
   el.reload.addEventListener("click", function () { D.clearCache(); S.ready = false; start(true); });
   el.manualBtn.addEventListener("click", function () { if (S.ready) openManualModal(); });
+  document.addEventListener("dycolors:change", function () { if (S.ready && S.ym && started) drawChart(); });
   document.addEventListener("dy:theme", function () { if (S.ready && S.ym && started) drawChart(); });
 
   // ---------- 시작 ----------

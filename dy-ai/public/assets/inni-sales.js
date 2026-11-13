@@ -267,6 +267,7 @@
     applyHl(el.kpi, S.cfg.kpi);
   }
 
+  var DC = window.dyColors;
   function palette() {
     var root = getComputedStyle(pane);
     return [1, 2, 3, 4].map(function (i) { return root.getPropertyValue("--dash-c" + i).trim() || ["#0072e4", "#eb0104", "#06ac78", "#e0a800"][i - 1]; });
@@ -276,16 +277,16 @@
     var pal = palette();
     var pageStyle = getComputedStyle(pane); var cs = function (n, d) { return pageStyle.getPropertyValue(n).trim() || d; };
     var tick = light ? "#444444" : cs("--dash-tick", "#7a4a1c"), grid = light ? "rgba(0,0,0,.1)" : cs("--dash-grid", "rgba(0,0,0,.08)");
-    var cmp = light ? "#888888" : cs("--dash-cmp", "#a19a82");
+    var cmp = DC.get("sales.trend", "tgt", "#e5a63a");
     var datasets = [];
     md.rows.forEach(function (r, i) {
-      var c = pal[(md.rows.length - 1 - i) % 4], cur = r.fy === md.fy;
+      var gap = md.fy - r.fy, cur = gap === 0, c = DC.cmp("sales.trend", gap === 0 ? "cur" : gap === 1 ? "prev" : gap === 2 ? "prev2" : "old");
       var base = { label: r.label, data: r.vals.map(function (v) { return v == null ? null : Math.round(v); }) };
-      if (type === "bar") datasets.push(Object.assign(base, { type: "bar", backgroundColor: cur ? c : alpha(c, .55), borderColor: c, borderWidth: 0, borderRadius: 2, order: 2 }));
+      if (type === "bar") datasets.push(Object.assign(base, { type: "bar", backgroundColor: c, borderColor: c, borderWidth: 0, borderRadius: 2, order: 2 }));
       else datasets.push(Object.assign(base, { type: "line", borderColor: c, backgroundColor: c, tension: .25, pointRadius: 3, borderWidth: cur ? 2.6 : 1.6, spanGaps: false, order: 2 }));
     });
     if (md.tgt) datasets.push({ type: "line", label: md.tgt.label, data: md.tgt.vals.map(function (v) { return v == null ? null : Math.round(v); }), borderColor: cmp, backgroundColor: cmp, borderDash: [6, 4], tension: 0, pointRadius: 3, borderWidth: 1.6, spanGaps: false, order: 1 });
-    return {
+    return DC.mixed({
       type: type === "bar" ? "bar" : "line",
       data: { labels: FY_ORDER.map(function (mm) { return MON[mm - 1]; }), datasets: datasets },
       options: {
@@ -293,7 +294,7 @@
         plugins: { legend: { labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 11 } } }, tooltip: { callbacks: { label: function (c) { return " " + c.dataset.label + ": " + (c.parsed.y == null ? "-" : Math.round(c.parsed.y).toLocaleString("ko-KR")); } } } },
         scales: { x: { ticks: { color: tick }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: tick, callback: function (v) { return v.toLocaleString("ko-KR"); } }, grid: { color: grid } } }
       }
-    };
+    });
   }
 
   function renderTrend() {
@@ -314,6 +315,8 @@
     if (chart) { chart.destroy(); chart = null; }
     if (window.Chart) chart = new window.Chart(el.chart, chartConfig(md, S.cfg.chart, false));
   }
+
+  document.addEventListener("dycolors:change", function () { if (S.ready && S.cfg && started) renderTrend(); });
 
   // 회계연도 시작~기준 월 중 목표가 비어 있는 달이 있으면 알림 (회계연도·기준 월 아래, 리포트 위)
   function renderNotice() {
@@ -417,6 +420,9 @@
       lab.appendChild(r); lab.appendChild(document.createTextNode(o[1])); rd.appendChild(lab);
     });
     panels.chart.appendChild(rd);
+    panels.chart.appendChild(DC.section([{ id: "sales.trend", title: "전체 매출 추이", series: [
+      { key: "cur", label: "현재 회계연도 " + fyLabel(fy), def: DC.GREEN }, { key: "prev", label: "전 회계연도", def: DC.DARK }, { key: "prev2", label: "전전 회계연도", def: DC.LIGHT },
+      { key: "old", label: "그 이전", def: "#e1e3e6" }, { key: "tgt", label: "목표(TGT)", def: "#e5a63a" }] }]));
 
     ["note", "hl", "chart"].forEach(function (t) { card.appendChild(panels[t]); });
     function showTab(t) { Object.keys(panels).forEach(function (x) { panels[x].hidden = x !== t; tabBtns[x].setAttribute("aria-selected", String(x === t)); }); if (t === "note") ta.focus(); }

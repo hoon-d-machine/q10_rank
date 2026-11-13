@@ -293,10 +293,11 @@
   }
 
   // ---------- 그래프 ----------
-  function chartConfig(rows, basis, dir, light) {
+  var DC = window.dyColors;
+  function chartConfig(rows, basis, dir, light, cid) {
     var root = getComputedStyle(pane), cs = function (n, d) { return root.getPropertyValue(n).trim() || d; };
     var tick = light ? "#444444" : cs("--dash-tick", "#7a4a1c"), grid = light ? "rgba(0,0,0,.1)" : cs("--dash-grid", "rgba(0,0,0,.08)");
-    var c1 = cs("--dash-c1", "#0072e4"), cmp = light ? "#b0b0b0" : cs("--dash-cmp", "#a19a82");
+    var c1 = DC.cmp(cid, "cur"), cmp = DC.cmp(cid, "prev");
     var kt = basis === "ytd" ? "ytd" : "ty", kl = basis === "ytd" ? "lyytd" : "ly";
     var list = rows.slice(0, 12);
     var horiz = dir !== "v";
@@ -314,26 +315,28 @@
         });
       }); x.restore();
     } };
-    return {
+    return DC.mixed({
       type: "bar", plugins: [labels],
       data: { labels: list.map(function (r) { return r.name; }), datasets: [
         { label: basis === "ytd" ? "누계" : "당월", data: list.map(function (r) { return Math.round(r[kt]); }), backgroundColor: c1, borderRadius: 2 },
-        { label: basis === "ytd" ? "작년 누계" : "작년 동월", data: list.map(function (r) { return Math.round(r[kl]); }), backgroundColor: alpha(cmp.charAt(0) === "#" ? cmp : "#a19a82", .75), borderRadius: 2 }
+        { label: basis === "ytd" ? "작년 누계" : "작년 동월", data: list.map(function (r) { return Math.round(r[kl]); }), backgroundColor: cmp, borderRadius: 2 }
       ] },
       options: {
         indexAxis: horiz ? "y" : "x", layout: { padding: horiz ? { right: 44 } : { top: 18 } }, responsive: !light, maintainAspectRatio: false, animation: { duration: light ? 0 : 300 }, interaction: { mode: "index", intersect: false },
         plugins: { legend: { labels: { color: tick, boxWidth: 10, boxHeight: 10, font: { size: 11 } } }, tooltip: { callbacks: { label: function (c) { return " " + c.dataset.label + ": " + Math.round(c.parsed[horiz ? "x" : "y"]).toLocaleString("ko-KR"); } } } },
         scales: horiz ? { x: valAxis, y: catAxis } : { x: catAxis, y: valAxis }
       }
-    };
+    });
   }
   function drawCharts() {
     ["line", "cat"].forEach(function (k) { if (charts[k]) { charts[k].destroy(); charts[k] = null; } });
     if (!window.Chart) return;
     var basis = S.cfg.basis, dir = S.cfg.dir;
-    var lc = chartConfig(S.data.lines, basis, dir, false), cc = chartConfig(S.data.cats, basis, dir, false);
+    var lc = chartConfig(S.data.lines, basis, dir, false, "product.line"), cc = chartConfig(S.data.cats, basis, dir, false, "product.cat");
     charts.line = new window.Chart(el.chartLine, lc); charts.cat = new window.Chart(el.chartCat, cc);
   }
+
+  document.addEventListener("dycolors:change", function () { if (S.ready && S.data) drawCharts(); });
 
   function renderAll() {
     var k = S.ym, d = S.data;
@@ -438,6 +441,9 @@
       panels.chart.appendChild(rd);
     });
 
+    var cur = S.cfg.basis === "ytd" ? "누계(현재)" : "당월(현재)", ly = S.cfg.basis === "ytd" ? "작년 누계" : "작년 동월";
+    panels.chart.appendChild(DC.section(["line", "cat"].map(function (k) { return { id: "product." + k, title: k === "line" ? "라인별" : "카테고리별", series: [{ key: "cur", label: cur, def: DC.GREEN }, { key: "prev", label: ly, def: DC.DARK }] }; })));
+
     ["note", "hl", "chart"].forEach(function (t) { card.appendChild(panels[t]); });
     function showTab(t) { Object.keys(panels).forEach(function (x) { panels[x].hidden = x !== t; tabBtns[x].setAttribute("aria-selected", String(x === t)); }); if (t === "note") ta.focus(); }
     Object.keys(tabBtns).forEach(function (t) { tabBtns[t].addEventListener("click", function () { showTab(t); }); });
@@ -479,10 +485,10 @@
   function fill(c) { return { type: "pattern", pattern: "solid", fgColor: { argb: c } }; }
   var XFMT = { yen: "#,##0", int: "#,##0", gr: "+0%;-0%;0%", cvr: "0.00%", gap: '+0.0"%p";-0.0"%p";0.0"%p"', pct: "0%", pct1: "0.0%" };
   function xv(type, v) { return v == null ? null : (type === "gr" || type === "cvr" || type === "pct" || type === "pct1") ? v / 100 : v; }
-  function imageOf(wb, rows) {
+  function imageOf(wb, rows, cid) {
     var cv = document.createElement("canvas"); cv.width = 760; cv.height = 340; cv.style.cssText = "position:fixed;left:-3000px;top:0;width:760px;height:340px";
     document.body.appendChild(cv);
-    var cfg = chartConfig(rows, S.cfg.basis, S.cfg.dir, true);
+    var cfg = chartConfig(rows, S.cfg.basis, S.cfg.dir, true, cid);
     cfg.plugins = (cfg.plugins || []).concat([{ id: "bg", beforeDraw: function (ch) { var x = ch.ctx; x.save(); x.globalCompositeOperation = "destination-over"; x.fillStyle = "#ffffff"; x.fillRect(0, 0, ch.width, ch.height); x.restore(); } }]);
     cfg.options.responsive = false; cfg.options.devicePixelRatio = 1;
     var tmp = new window.Chart(cv, cfg); tmp.update("none");
@@ -528,7 +534,7 @@
       [["라인", d.lines, 0], ["카테고리", d.cats, IMG_W + GAP]].forEach(function (blk) {
         var cx = colX(blk[2]), ci = Math.floor(cx);
         C(r, ci + 1).value = blk[0] + "별 · " + basisTxt; C(r, ci + 1).font = { size: 12, bold: true };
-        ws.addImage(imageOf(wb, blk[1]), { tl: { col: cx, row: r }, ext: { width: IMG_W, height: IMG_H } });
+        ws.addImage(imageOf(wb, blk[1], blk[0] === "라인" ? "product.line" : "product.cat"), { tl: { col: cx, row: r }, ext: { width: IMG_W, height: IMG_H } });
       });
       r += 17;
       r++;

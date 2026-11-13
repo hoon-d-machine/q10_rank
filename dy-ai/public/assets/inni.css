@@ -172,3 +172,14 @@ html[data-theme="nature"] .inni-modal-card, html[data-theme="dark"] .inni-modal-
 /* 보드 표: 텍스트 열(상품명·기간 등)은 왼쪽 정렬 */
 .board-body .inni-table td.t:not(:first-child), .board-body .inni-table th.t:not(:first-child) { text-align: left; font-weight: 400; }
 .board-body .inni-table td.t:not(:first-child) { max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
+
+/* 그래프 색상 지정 (설정 모달 그래프 탭) */
+.inni-colorset { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--dash-grid, rgba(0,0,0,.1)); }
+.inni-colorset h4 { margin: 0 0 4px; font-size: 14px; }
+.inni-colorset > p { margin: 0 0 12px; font-size: 12px; opacity: .75; }
+.inni-colorgrp { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--dash-grid, rgba(0,0,0,.1)); border-radius: 10px; }
+.inni-colorhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.inni-colorhead h5 { margin: 0; font-size: 13px; }
+.inni-colorhead .dash-btn { padding: 3px 10px; font-size: 12px; }
+.inni-colorrow { display: flex; align-items: center; gap: 10px; padding: 3px 0; font-size: 13px; cursor: pointer; }
+.inni-colorrow input[type=color] { width: 34px; height: 24px; padding: 0; border: 1px solid rgba(0,0,0,.2); border-radius: 5px; background: none; cursor: pointer; }

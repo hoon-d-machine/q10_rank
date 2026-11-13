@@ -8,6 +8,7 @@
  *   o.cfg    : 현재 설정 객체 { <표키>: { rows:[], cols:[], color }, <선택키>: 값 }
  *   o.tables : [{ key, title, rows:[[id, 이름]], cols:[[id, 이름]], scroll }]    강조 탭
  *   o.selects: [{ key, label, options:[[값, 이름]] }]                           그래프 탭 (o.chartNote: 안내 문구)
+ *   o.colors : [{ id, title, series:[{ key, label, def }] }]                    그래프 탭의 색상 지정 (chart-colors.js, 고르면 바로 저장)
  *   o.rpc(name, args) → Promise, o.toast(msg), o.friendly(err)
  *   o.onNote(c, key)  : 코멘트 저장 후 (key 는 o.notes 의 칸 이름), o.onCfg(draft) : 설정 저장 후 (화면 갱신)
  * 엑셀: loadExcelJs() → ExcelJS, header/comment/table 쓰기 도우미, imageOf(wb, chartConfig, w, h), download(wb, 파일명)
@@ -46,7 +47,7 @@
     card.appendChild(h("h3", null, o.title)); card.appendChild(h("p", null, o.desc));
     var tabs = h("div", "inni-mtabs"); tabs.setAttribute("role", "tablist");
     var panels = {}, tabBtns = {}, order = [];
-    var defs = []; if (notes.length) defs.push(["note", "코멘트"]); if (o.tables && o.tables.length) defs.push(["hl", "강조"]); if (o.selects && o.selects.length) defs.push(["chart", "그래프"]);
+    var defs = []; if (notes.length) defs.push(["note", "코멘트"]); if (o.tables && o.tables.length) defs.push(["hl", "강조"]); if ((o.selects && o.selects.length) || o.colors) defs.push(["chart", "그래프"]);
     defs.forEach(function (t) {
       var b = h("button", "inni-mtab", t[1]); b.type = "button"; b.setAttribute("role", "tab"); tabBtns[t[0]] = b; tabs.appendChild(b); order.push(t[0]);
       var p = h("div", "inni-mpanel"); p.setAttribute("role", "tabpanel"); panels[t[0]] = p;
@@ -91,7 +92,7 @@
     });
     if (panels.chart) {
       if (o.chartNote) panels.chart.appendChild(h("p", null, o.chartNote));
-      o.selects.forEach(function (grp) {
+      (o.selects || []).forEach(function (grp) {
         panels.chart.appendChild(h("h5", null, grp.label));
         var rd = h("div", "inni-radios");
         grp.options.forEach(function (op) {
@@ -101,6 +102,7 @@
         });
         panels.chart.appendChild(rd);
       });
+      if (o.colors && o.colors.length && window.dyColors) panels.chart.appendChild(window.dyColors.section(o.colors));
     }
     order.forEach(function (t) { card.appendChild(panels[t]); });
     function showTab(t) { order.forEach(function (x) { panels[x].hidden = x !== t; tabBtns[x].setAttribute("aria-selected", String(x === t)); }); if (t === "note" && tas.length) tas[0][1].focus(); }

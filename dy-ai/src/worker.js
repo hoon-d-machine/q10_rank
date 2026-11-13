@@ -39,10 +39,12 @@ export default {
       if (url.pathname.startsWith("/api/cron/")) return await manualCron(req, env, url);
       const user = await checkUser(req, env);
       if (!user) return json({ error: "로그인이 필요해요" }, 401);
-      if (url.pathname === "/api/event/collect" && req.method === "POST") { // 행사 랭킹 '지금 한 번 수집' (로그인 사용자)
+      if (url.pathname === "/api/event/collect" && req.method === "POST") { // 행사 랭킹 '지금 한 번 수집' (menu.event 권한)
+        await needPerm(req, env, "menu.event");
         return json(await collectEvent(env, Date.now(), { sid: url.searchParams.get("sid") || undefined, force: true }));
       }
       if (url.pathname.startsWith("/api/admin/")) return await adminApi(req, env, url);
+      await needPerm(req, env, "feat.collect");   // 구글 시트 프록시는 수집 권한이 있는 계정만
       return await route(req, env, url);
     } catch (e) {
       return json({ error: String((e && e.message) || e) }, e && e.status ? e.status : 500);
@@ -130,6 +132,27 @@ async function adminUser(req, env) {
   const rows = await sb(env, "GET", "/rest/v1/dy_user_perms?user_id=eq." + enc(u.id) + "&select=is_admin,disabled");
   if (!rows || !rows[0] || !rows[0].is_admin || rows[0].disabled) throw httpError(403, "관리자만 쓸 수 있어요");
   return u;
+}
+// 권한 확인: 관리자·'*' 는 통과, 행이 없거나 사용 중지면 거부. 30초 캐시. 권한 표가 아직 없으면(DB 미설치) 통과(옛 동작)
+const permCache = new Map();
+async function needPerm(req, env, key) {
+  if (!env.SUPABASE_SERVICE_KEY) return;
+  const token = (req.headers.get("Authorization") || "").slice(7);
+  let ent = permCache.get(token);
+  if (!ent || ent.until < Date.now()) {
+    const r = await fetch(env.SUPABASE_URL + "/auth/v1/user", { headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: "Bearer " + token } });
+    if (!r.ok) throw httpError(401, "로그인이 필요해요");
+    const u = await r.json();
+    let row = null, open = false;
+    try { const rows = await sb(env, "GET", "/rest/v1/dy_user_perms?user_id=eq." + enc(u.id) + "&select=is_admin,perms,disabled"); row = rows && rows[0]; }
+    catch (e) { if (/dy_user_perms|relation|schema cache/i.test(String(e.message))) open = true; else throw e; }
+    ent = { open, row, until: Date.now() + 30000 };
+    if (permCache.size > 200) permCache.clear();
+    permCache.set(token, ent);
+  }
+  if (ent.open) return;
+  const p = ent.row;
+  if (!p || p.disabled || !(p.is_admin || (p.perms || []).includes("*") || (p.perms || []).includes(key))) throw httpError(403, "이 기능을 쓸 권한이 없어요");
 }
 async function otherActiveAdmins(env, exceptId) {
   const rows = await sb(env, "GET", "/rest/v1/dy_user_perms?is_admin=eq.true&disabled=eq.false&select=user_id");

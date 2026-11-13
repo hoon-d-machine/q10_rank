@@ -13,7 +13,7 @@
 
   var $ = function (s) { return pane.querySelector(s); };
   var el = {
-    fy: $(".js-o-fy"), month: $(".js-o-month"), reload: $(".js-o-reload"), manualBtn: $(".js-o-manual"), noteBtn: $(".js-o-note-btn"),
+    fy: $(".js-o-fy"), month: $(".js-o-month"), reload: $(".js-o-reload"), manualBtn: $(".js-o-manual"),
     setBtn: $(".js-o-set"), xlsxBtn: $(".js-o-xlsx"), msg: $(".js-o-msg"), notice: $(".js-o-notice"), title: $(".js-o-title"), auto: $(".js-o-auto"),
     manualBox: $(".js-o-manual-box"), manualBody: $(".js-o-manual-body"), manualMeta: $(".js-o-manual-meta"),
     chart: $(".js-o-chart"), spend: $(".js-o-spend"), sales: $(".js-o-sales"), roas: $(".js-o-roas"), note: $(".js-o-note"),
@@ -134,7 +134,6 @@
     el.manualBox.hidden = !S.note;
     el.manualBody.textContent = S.note ? S.note.body : "";
     el.manualMeta.textContent = S.note ? "직접 입력 · " + (S.note.by || "") + (S.note.at ? " · " + String(S.note.at).slice(0, 16).replace("T", " ") : "") : "";
-    el.noteBtn.textContent = S.note ? "코멘트 수정" : "코멘트 입력";
   }
   function renderComment(k) {
     el.auto.innerHTML = "";
@@ -267,7 +266,7 @@
     S.ym = ms.indexOf(keep) >= 0 ? keep : ms[ms.length - 1]; el.month.value = S.ym;
   }
 
-  // ---------- 모달 (코멘트 · 월별 광고비 입력) ----------
+  // ---------- 모달 (월별 광고비 입력) ----------
   function modal(title, desc, build) {
     var prev = document.activeElement, ov = h("div", "inni-modal"), card = h("div", "inni-modal-card is-wide");
     ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", title);
@@ -285,24 +284,6 @@
     cancel.addEventListener("click", close);
     if (first && first.focus) first.focus();
     return api;
-  }
-
-  function openNoteModal() {
-    var k = S.ym;
-    modal("코멘트 입력 · " + k.slice(0, 4) + " " + MON[mOf(k) - 1], "자동 코멘트 아래에 같이 보여요. 줄바꿈은 그대로 보여요.", function (m) {
-      var ta = h("textarea"); ta.maxLength = 4000; ta.value = S.note ? S.note.body : ""; m.card.appendChild(ta);
-      var del = h("button", "dash-btn", "지우기"); del.type = "button"; del.hidden = !S.note; m.extra.push(del);
-      function commit(body) {
-        m.save.disabled = del.disabled = true; m.err.textContent = "";
-        rpc("dy_inni_comment_set", { p_report: "onsite", p_ym: k, p_body: body }).then(function (c) {
-          if (k === S.ym) showManual(c); toast(c ? "코멘트를 저장했어요" : "코멘트를 지웠어요"); m.close();
-        }).catch(function (e) { m.err.textContent = friendly(e); m.save.disabled = del.disabled = false; });
-      }
-      m.save.addEventListener("click", function () { commit(ta.value); });
-      del.addEventListener("click", function () { commit(""); });
-      ta.addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(ta.value); } });
-      return ta;
-    });
   }
 
   function openManualModal() {
@@ -389,7 +370,6 @@
   el.xlsxBtn.addEventListener("click", exportXlsx);
   el.month.addEventListener("change", function () { S.ym = el.month.value; recompute(); });
   el.reload.addEventListener("click", function () { D.clearCache(); S.ready = false; start(true); });
-  el.noteBtn.addEventListener("click", function () { if (S.ready && S.ym) openNoteModal(); });
   el.manualBtn.addEventListener("click", function () { if (S.ready) openManualModal(); });
   document.addEventListener("dy:theme", function () { if (S.ready && S.ym && started) drawChart(); });
 

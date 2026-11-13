@@ -50,10 +50,19 @@ DY-AI 메인 아래 설명서에서 zip을 받아 압축을 풀고 아래 순서
 - DB 반영은 로그인 사용자 권한으로 `inni_replace_*` 함수를 호출한다(`supabase/web_collector.sql` 3번 구간, 페이지 쪽 `public/assets/q10-extra.js`). 추가 항목은 DY-AI 페이지로 넘길 때만 수집한다(페이지가 없어 xlsx 만 내려받는 경우엔 건너뜀).
 - 0.5.0 은 `ads.qoo10.jp` 접근 권한이 새로 필요해서, 업데이트 뒤 크롬이 확장을 꺼 두면 `chrome://extensions` 에서 다시 켜 주세요.
 
+## 수집기 페이지 없이 저장 (0.6.0~)
+수집 중에 수집기 페이지를 벗어나거나 탭을 닫아도 확장이 결과를 잃지 않는다.
+- 사이트 페이지(`auth.js`)가 로그인 세션(access_token 만, refresh_token 은 제외)을 확장에 넘겨 두고(`bridge.js` → `background.js` 의 `chrome.storage.local.dySession`), 수집기 페이지가 열려 있지 않을 때 `save.js` 가 그 세션으로 **DB(판매 3종) · 구글 시트(Worker `/api/sheet/*`) · 추가 항목 · 수집 로그**를 직접 저장한다. 페이지가 열려 있으면 지금처럼 페이지가 저장한다(엑셀 원본 포함).
+- 엑셀 원본은 브라우저 보안상 페이지에서만 열 수 있어서, 확장이 저장하는 경우에는 새 xlsx 파일을 내려받는다.
+- 세션이 없거나 만료(1시간)돼서 저장하지 못하면 결과를 `pendingResult` 로 보관하고, 수집기 페이지를 열면 "저장하지 못한 수집 결과가 있어요" 모달로 저장할지 묻는다(48시간).
+- 수집기가 아닌 DY-AI 페이지로 이동했다면 진행·완료 안내가 그 페이지의 토스트(`[Q10 수집] …`)로 보인다.
+- 새 권한: `dy-ai.xogns1381.workers.dev`(시트 Worker), `*.supabase.co`(DB), 로컬 `localhost:8765`.
+
 ## 파일
 - `manifest.json` — MV3. DY-AI 사이트(`dy-ai.xogns1381.workers.dev`, 로컬 `localhost:8765`)에서만 연결
 - `bridge.js` — DY-AI 페이지 ↔ 확장 메시지 중계 (`window.postMessage`)
 - `background.js` — 로그인 대기, 토큰 캡처, 수집, 다운로드, 추가 수집용 탭(광고센터·QSM) 열기
+- `save.js` — 수집기 페이지 없이 DB·시트·추가 항목·로그를 저장 (`q10-sync.js`·`q10-extra.js`·`q10-log.js` 와 같은 규칙, 세션은 사이트가 넘겨 줌)
 - `extra.js` — 추가 수집 로직(판매자센터·광고센터·QSM). `ctx` 만 바꾸면 Node 에서도 시험 가능
 - `qsm-login.js` — QSM 로그인 창 자동 입력 (Qoo10_RPA.py qsm_login 과 같은 칸)
 - `options.html` / `options.js` — Qoo10 로그인 정보 저장 (chrome.storage.local, 이 PC에만)

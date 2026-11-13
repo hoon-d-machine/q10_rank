@@ -8,7 +8,7 @@
  *   6. 결과를 DY-AI 페이지로 넘긴다 → 페이지가 원본 엑셀의 시트를 덮어쓰거나 새 파일로 저장하고, 추가 작업 목록을 DB 에 반영
  *      (페이지가 없으면/구버전 페이지면 여기서 xlsx 를 만들어 다운로드 — 이때는 추가 수집을 하지 않는다)
  */
-importScripts("xlsx-writer.js", "extra.js");
+importScripts("xlsx-writer.js", "extra.js", "save.js");
 
 // ============================================================
 // 상수
@@ -67,7 +67,7 @@ var CONVERSION_HEADERS = CONVERSION_COLUMNS.map(function (c) { return CONVERSION
 // ============================================================
 // 상태
 // ============================================================
-var job = null; // { dyTabId, tabId, token, custNo, deliver, adsTabId, adsToken, qsmTabId }
+var job = null; // { dyTabId, tabId, token, custNo, deliver, runId, adsTabId, adsToken, qsmTabId }
 
 function UserError(msg) { this.message = msg; }
 
@@ -97,7 +97,14 @@ chrome.runtime.onMessage.addListener(function (msg, sender) {
     chrome.tabs.sendMessage(sender.tab.id, { type: "q10-status", state: "busy", text: "이미 수집 중이에요. 끝날 때까지 기다려 주세요." }).catch(function () {});
     return;
   }
-  run(sender.tab.id, msg.deliver === "page" ? "page" : "download");
+  run(sender.tab.id, msg.deliver === "page" ? "page" : "download", msg.runId || null);
+});
+
+// 사이트 페이지(auth.js)가 넘겨 주는 로그인 세션: 수집기 페이지가 없을 때 확장이 DB·시트에 직접 저장할 때 쓴다 (이 PC의 확장 저장소에만 보관)
+chrome.runtime.onMessage.addListener(function (msg) {
+  if (!msg || msg.type !== "dy-session") return;
+  if (msg.session && msg.session.access_token) chrome.storage.local.set({ dySession: msg.session }).catch(function () {});
+  else chrome.storage.local.remove("dySession").catch(function () {});
 });
 
 // ---------- QSM 로그인 자동 입력 (qsm-login.js) · 설정 화면 ----------
@@ -420,6 +427,21 @@ function closeTabs() {
   if (job) { job.adsTabId = null; job.qsmTabId = null; }
 }
 
+// 수집기 페이지 없이 저장: 저장된 로그인 세션이 있고 만료 전이면 Q10Save 로 DB·시트·추가 항목·로그를 직접 저장. 세션이 없거나 만료면 null
+async function saveInBackground(payload) {
+  var o = await chrome.storage.local.get("dySession").catch(function () { return {}; });
+  var S = o.dySession;
+  if (!S || !S.access_token || !S.url || !S.anonKey || !S.origin) return null;
+  if ((S.expires_at || 0) * 1000 - Date.now() < 90 * 1000) return null;
+  try {
+    status("progress", "수집기 페이지가 닫혀 있어서 확장이 DB·구글 시트에 직접 저장하는 중…");
+    return await self.Q10Save.save(payload, S, { runId: job && job.runId, progress: function (t) { status("progress", t); } });
+  } catch (e) {
+    console.error("[DY-AI Q10] 확장 저장 실패", e);
+    return { ok: false, line: (e && e.message) || String(e), parts: [], extra: null };
+  }
+}
+
 async function collectExtras(range) {
   var ctx = {
     sleep: sleep, today: function () { return ymd(new Date()); }, progress: function (t) { status("progress", t); },
@@ -465,8 +487,8 @@ async function deliverToPage(payload) {
   }
 }
 
-async function run(dyTabId, deliver) {
-  job = { dyTabId: dyTabId, tabId: null, token: null, custNo: null, deliver: deliver };
+async function run(dyTabId, deliver, runId) {
+  job = { dyTabId: dyTabId, tabId: null, token: null, custNo: null, deliver: deliver, runId: runId || null };
   // 수집 중 서비스 워커가 잠들지 않도록 주기적으로 확장 API 호출
   var keepAlive = setInterval(function () { chrome.runtime.getPlatformInfo(function () {}); }, 20000);
 
@@ -495,7 +517,7 @@ async function run(dyTabId, deliver) {
       { name: "raw_conversion", header: CONVERSION_HEADERS, rows: convRows, dateIdx: 1 }
     ];
     // 추가 수집 (페이지로 넘길 때만): 한 묶음이 실패해도 나머지는 계속, 판매 3종 결과는 그대로 둔다
-    var extra = null;
+    var extra = null, savedLine = null;
     if (job.deliver === "page") {
       try { extra = await collectExtras(range); }
       catch (e) { if (e instanceof UserError) warnings.push("추가 수집 중단: " + e.message); else extra = { jobs: [], errors: [{ name: "추가 수집", message: (e && e.message) || String(e) }] }; }
@@ -508,18 +530,23 @@ async function run(dyTabId, deliver) {
         filename: filename, warnings: warnings, extra: extra
       });
       if (delivered) return; // 저장·완료 안내는 페이지가 한다
-      // 수집기 페이지가 열려 있지 않다(다른 페이지로 이동했거나 탭을 닫음): 결과를 보관해 두고, 수집기 페이지를 다시 열면 저장할지 물어본다
-      try {
-        await chrome.storage.local.set({ pendingResult: { savedAt: Date.now(), payload: {
-          sheets: sheets, cutoff: ymd(range.start), start: ymd(range.start), end: ymd(range.end), filename: filename, warnings: warnings, extra: extra
-        } } });
-        warnings.push("수집기 페이지가 닫혀 있어서 결과를 보관해 뒀어요. DY-AI 수집기 페이지를 열면 DB·시트에 저장할지 물어봐요");
-      } catch (e) { console.error("[DY-AI Q10] 결과 보관 실패", e); }
+      // 수집기 페이지가 열려 있지 않다(다른 페이지로 이동했거나 탭을 닫음): 확장이 로그인 세션으로 DB·구글 시트·추가 항목을 직접 저장한다
+      // (엑셀 원본은 페이지에서만 열 수 있어서 아래에서 xlsx 파일로 내려받음). 저장하지 못하면 결과를 보관해 두고 수집기 페이지를 열면 저장할지 물어본다
+      var full = { sheets: sheets, cutoff: ymd(range.start), start: ymd(range.start), end: ymd(range.end), filename: filename, warnings: warnings, extra: extra };
+      var saved = await saveInBackground(full);
+      if (saved && saved.ok) {
+        savedLine = saved.line;
+      } else {
+        try {
+          await chrome.storage.local.set({ pendingResult: { savedAt: Date.now(), payload: full } });
+          warnings.push((saved ? "확장 저장이 일부 실패했어요(" + saved.line + "). " : saved === null ? "저장할 로그인 정보가 없거나 만료돼서 " : "") + "결과를 보관해 뒀어요. DY-AI 수집기 페이지를 열면 DB·시트에 저장할지 물어봐요");
+        } catch (e) { console.error("[DY-AI Q10] 결과 보관 실패", e); }
+      }
     }
 
     status("progress", "엑셀 파일 만드는 중…");
     await downloadXlsx(filename, sheets);
-    var summary = filename + " 다운로드 완료 (" + ymd(range.start) + " ~ " + ymd(range.end) +
+    var summary = (savedLine ? "확장이 저장 완료 (" + savedLine + ") — " : "") + filename + " 다운로드 완료 (" + ymd(range.start) + " ~ " + ymd(range.end) +
       ", 품목별 " + dataRows.length + "행 · 거래 " + tradeRows.length + "행 · 페이지뷰 " + convRows.length + "행)";
     if (warnings.length) summary += " ⚠ 일부 누락 가능: " + warnings.join(", ");
     status("done", summary);

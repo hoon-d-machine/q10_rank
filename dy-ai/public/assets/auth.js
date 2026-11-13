@@ -19,6 +19,17 @@
     return Promise.reject(new Error("Supabase 설정(assets/config.js)이 비어 있어요"));
   }
 
+  // 확장 프로그램(Q10 수집)이 수집기 페이지 없이도 저장할 수 있게 로그인 세션을 넘겨 둔다 (refresh_token 은 넘기지 않음: 확장이 갱신하면 이 페이지의 세션이 깨짐)
+  function pushSession(s) {
+    window.postMessage({ source: "dy-ai", type: "session", session: s && s.access_token ? {
+      url: cfg.SUPABASE_URL, anonKey: cfg.SUPABASE_ANON_KEY, origin: location.origin, access_token: s.access_token, expires_at: s.expires_at, email: s.user && s.user.email
+    } : null }, location.origin);
+  }
+  if (client) {
+    client.auth.getSession().then(function (res) { pushSession(res.data && res.data.session); }).catch(function () {});
+    client.auth.onAuthStateChange(function (ev, s) { pushSession(s); });
+  }
+
   window.dyAuth = {
     ready: !!client,
 

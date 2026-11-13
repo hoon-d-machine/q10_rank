@@ -295,6 +295,14 @@
     timer = setTimeout(function () { toast.classList.remove("on"); }, ms || 2400);
   };
 
+  // 확장 프로그램(Q10 수집)이 보내는 진행·완료 안내: 수집 중에 수집기 페이지를 벗어나도 어디서든 토스트로 보인다
+  window.addEventListener("message", function (e) {
+    if (e.source !== window || e.origin !== location.origin) return;
+    var d = e.data;
+    if (!d || d.source !== "dy-ext" || d.type !== "notify" || !d.text) return;
+    window.dyToast("[Q10 수집] " + d.text, d.state === "progress" || d.state === "login" ? 0 : 9000);
+  });
+
   // ----- 확인 창 (모달) -----
   // opt: { title, tone: "file" | "warn", body: [문자열 | { file: 파일이름 } | { note: 문자열 }],
   //        actions: [{ label, value, kind: "primary" | "quiet" }], cancelValue }

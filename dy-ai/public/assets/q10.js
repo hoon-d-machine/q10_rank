@@ -281,7 +281,7 @@
           run = window.dyLog ? window.dyLog.start({}) : null;
           if (run) run.step("시작", "info", "저장 대상: " + (t.mode === "file" ? "원본 파일 " + t.handle.name : t.mode === "none" ? "엑셀 없이 진행" : "새 파일로 받기") + " · 확장 v" + installed);
           setBusy(true);
-          window.postMessage({ source: "dy-ai", type: "q10-collect", deliver: "page" }, location.origin);
+          window.postMessage({ source: "dy-ai", type: "q10-collect", deliver: "page", runId: run && run.id }, location.origin);
         })
         .catch(function (e) { window.dyToast("저장 위치를 정하지 못했어요: " + (e && e.message || e), 5000); })
         .then(function () { choosing = false; });

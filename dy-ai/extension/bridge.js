@@ -22,8 +22,9 @@
     if (d.type === "q10-pending-take") { takePending(); return; }
     if (d.type === "q10-pending-drop") { chrome.storage.local.remove("pendingResult").catch(function () {}); return; }
     if (d.type === "open-options") { chrome.runtime.sendMessage({ type: "open-options" }).catch(function () {}); return; }
+    if (d.type === "session") { chrome.runtime.sendMessage({ type: "dy-session", session: d.session || null }).catch(function () {}); return; }
     if (d.type === "q10-collect") {
-      chrome.runtime.sendMessage({ type: "q10-collect", deliver: d.deliver }).catch(function () {
+      chrome.runtime.sendMessage({ type: "q10-collect", deliver: d.deliver, runId: d.runId }).catch(function () {
         toPage({ type: "q10-status", state: "error", text: "확장 프로그램과 연결하지 못했어요. 확장 프로그램을 새로고침한 뒤 이 페이지도 새로고침해 주세요." });
       });
     }
@@ -35,6 +36,8 @@
       // 다른 DY-AI 페이지로 이동한 탭이면 ok:false → 확장이 결과를 잃지 않고 xlsx 로 내려받는다.
       var collector = document.documentElement.hasAttribute("data-q10-collector");
       if (msg.state === "data" && !collector) { sendResponse({ ok: false }); return; }
+      // 수집기가 아닌 DY-AI 페이지(수집 중에 이동한 곳)에서는 진행·완료 안내를 일반 알림(토스트)으로 보여 준다
+      if (!collector && msg.state !== "data") { toPage({ type: "notify", state: msg.state, text: msg.text }); sendResponse({ ok: true }); return; }
       toPage(msg);
       sendResponse({ ok: true }); // 결과(data)를 받았음을 알림 → 확장은 따로 다운로드하지 않음
     }

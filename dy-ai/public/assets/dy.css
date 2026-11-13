@@ -254,3 +254,13 @@ button, input { font: inherit; color: inherit; }
 
 /* 계정 권한: 권한 확인 중에는 화면을 숨겨 깜빡임 방지 (perm.js 가 풀어 줌, 6초 안전장치) */
 html.dy-perm-wait body { visibility: hidden; }
+
+/* 표 열 너비 조절 (col-resize.js) */
+.col-rz { position: absolute; top: 0; right: -4px; bottom: 0; width: 9px; cursor: col-resize; z-index: 3; touch-action: none; user-select: none; }
+.col-rz::after { content: ""; position: absolute; top: 22%; bottom: 22%; left: 4px; width: 2px; border-radius: 2px; background: currentColor; opacity: 0; transition: opacity .12s; }
+th:hover > .col-rz::after, .col-rz.is-on::after { opacity: .35; }
+.col-rz:hover::after, .col-rz.is-on::after { opacity: .75; }
+html.col-rz-drag, html.col-rz-drag * { cursor: col-resize !important; user-select: none !important; }
+table[data-rz-fixed] td, table[data-rz-fixed] th { overflow: hidden; text-overflow: ellipsis; }
+table[data-rz-fixed] td { white-space: nowrap; }
+table[data-rz-fixed] td input[type=text] { min-width: 0 !important; }

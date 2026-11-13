@@ -244,19 +244,17 @@
   function mkComments() {
     SECS.forEach(function (sc) {
       var host = $(".js-m-c-" + sc[0]); if (!host || CM[sc[0]]) return;
-      var box = h("div", "inni-comment"), head = h("div", "inni-comment-head"), btn = h("button", "dash-btn", "코멘트 입력");
-      btn.type = "button"; btn.setAttribute("aria-haspopup", "dialog"); head.appendChild(h("h3", null, "코멘트 · " + sc[1])); head.appendChild(btn); box.appendChild(head);
+      var box = h("div", "inni-comment"), head = h("div", "inni-comment-head");
+      head.appendChild(h("h3", null, "코멘트 · " + sc[1])); box.appendChild(head);
       var auto = h("div", "inni-auto"), man_ = h("div", "inni-manual"), body = h("p", "inni-manual-body"), meta = h("small", "inni-note");
       man_.hidden = true; man_.appendChild(body); man_.appendChild(meta); box.appendChild(auto); box.appendChild(man_); host.appendChild(box);
-      CM[sc[0]] = { auto: auto, box: man_, body: body, meta: meta, btn: btn };
-      btn.addEventListener("click", function () { if (S.ready && S.ev) openNoteModal(sc[0]); });
+      CM[sc[0]] = { auto: auto, box: man_, body: body, meta: meta };
     });
   }
   function showManual(key, c) {
     var m = CM[key]; S.notes[key] = c && c.body ? c : null; var n = S.notes[key];
     m.box.hidden = !n; m.body.textContent = n ? n.body : "";
     m.meta.textContent = n ? "직접 입력 · " + (n.by || "") + (n.at ? " · " + String(n.at).slice(0, 16).replace("T", " ") : "") : "";
-    m.btn.textContent = n ? "코멘트 수정" : "코멘트 입력";
   }
   function noteKey() { return S.ev.start_dt.slice(0, 8) + "01"; }   // 같은 종류의 행사는 한 달에 한 번이라 시작 월로 구분한다
   function renderComment() {
@@ -423,30 +421,6 @@
     S.events.forEach(function (e) { var o = h("option", null, evLabel(e) + " (" + evRange(e) + ")" + (e.end_dt > S.anchor ? " · 진행 중" : "")); o.value = String(e.no); el.ev.appendChild(o); });
     if (!S.ev) S.ev = S.events.filter(function (e) { return e.end_dt <= S.anchor; })[0] || S.events[0];   // 기본은 가장 최근에 끝난 행사
     if (S.ev) el.ev.value = String(S.ev.no);
-  }
-
-  // ---------- 코멘트 입력 모달 (칸별) ----------
-  function openNoteModal(key) {
-    var ev = S.ev, k = noteKey(), n = S.notes[key], prev = document.activeElement, ov = h("div", "inni-modal"), card = h("div", "inni-modal-card");
-    ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "코멘트 입력");
-    card.appendChild(h("h3", null, "코멘트 입력 · " + secLabel(key) + " · " + evLabel(ev))); card.appendChild(h("p", null, "‘" + secLabel(key) + "’ 칸의 자동 코멘트 아래에 같이 보여요. 줄바꿈은 그대로 보여요."));
-    var ta = h("textarea"); ta.maxLength = 4000; ta.value = n ? n.body : ""; card.appendChild(ta);
-    var err = h("div", "inni-modal-err"); card.appendChild(err);
-    var acts = h("div", "inni-modal-acts"), del = h("button", "dash-btn", "지우기"), gap = h("span", "inni-gap"), cancel = h("button", "dash-btn", "취소"), save = h("button", "dash-btn is-primary", "저장");
-    del.type = cancel.type = save.type = "button"; del.hidden = !n;
-    [del, gap, cancel, save].forEach(function (x) { acts.appendChild(x); }); card.appendChild(acts); ov.appendChild(card); document.body.appendChild(ov);
-    ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
-    function close() { document.removeEventListener("keydown", onKey, true); if (ov.parentNode) ov.parentNode.removeChild(ov); if (prev && prev.focus) prev.focus(); }
-    function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(); } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(ta.value); } }
-    function commit(body) {
-      save.disabled = del.disabled = true; err.textContent = "";
-      rpc("dy_inni_comment_set", { p_report: secReport(key), p_ym: k, p_body: body }).then(function (c) {
-        if (ev === S.ev) showManual(key, c); toast(c ? "코멘트를 저장했어요" : "코멘트를 지웠어요"); close();
-      }).catch(function (e) { err.textContent = friendly(e); save.disabled = del.disabled = false; });
-    }
-    document.addEventListener("keydown", onKey, true);
-    ov.addEventListener("mousedown", function (e) { if (e.target === ov) close(); });
-    cancel.addEventListener("click", close); save.addEventListener("click", function () { commit(ta.value); }); del.addEventListener("click", function () { commit(""); });
   }
 
   // ---------- 설정 · 엑셀 ----------

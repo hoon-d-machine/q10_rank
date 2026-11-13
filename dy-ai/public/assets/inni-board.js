@@ -123,7 +123,7 @@
       pane.innerHTML = "";
       var bar = h("div", "inni-bar"); bar.setAttribute("role", "toolbar"); bar.setAttribute("aria-label", def.label + " 설정");
       el.ctrls = h("span", "board-ctrls"); bar.appendChild(el.ctrls); bar.appendChild(h("span", "dash-bar-gap"));
-      [["help", "설명", "이 화면과 코멘트 기준 설명"], ["note", "코멘트 입력", "이 화면 코멘트 직접 입력"], ["set", "설정", "코멘트 · 강조 · 그래프 설정"], ["xlsx", "엑셀 다운로드", "서식이 들어간 엑셀로 내려받기"], ["reload", "새로고침", "DB 에서 다시 불러오기"]].forEach(function (b) {
+      [["help", "설명", "이 화면과 코멘트 기준 설명"], ["set", "설정", "코멘트 · 강조 · 그래프 설정"], ["xlsx", "엑셀 다운로드", "서식이 들어간 엑셀로 내려받기"], ["reload", "새로고침", "DB 에서 다시 불러오기"]].forEach(function (b) {
         var btn = h("button", "dash-btn js-b-" + b[0], b[1]); btn.type = "button"; btn.title = b[2]; if (b[0] !== "reload" && b[0] !== "xlsx") btn.setAttribute("aria-haspopup", "dialog"); el[b[0]] = btn; bar.appendChild(btn);
       });
       pane.appendChild(bar);
@@ -137,7 +137,7 @@
       el.manualBox.appendChild(el.manualBody); el.manualBox.appendChild(el.manualMeta); cm.appendChild(el.manualBox); card.appendChild(cm);
       el.body = h("div", "board-body"); card.appendChild(el.body);
       pane.appendChild(card);
-      el.help.addEventListener("click", openHelp); el.note.addEventListener("click", function () { if (S.view) openNote(); });
+      el.help.addEventListener("click", openHelp);
       el.set.addEventListener("click", function () { if (S.view) openSettings(); }); el.xlsx.addEventListener("click", exportXlsx);
       el.reload.addEventListener("click", function () { B.clearCache(); run(true); });
     }
@@ -160,7 +160,6 @@
     function showManual(c) {
       S.note = c && c.body ? c : null; el.manualBox.hidden = !S.note; el.manualBody.textContent = S.note ? S.note.body : "";
       el.manualMeta.textContent = S.note ? "직접 입력 · " + (S.note.by || "") + (S.note.at ? " · " + String(S.note.at).slice(0, 16).replace("T", " ") : "") : "";
-      el.note.textContent = S.note ? "코멘트 수정" : "코멘트 입력";
     }
     function renderComments() {
       el.auto.innerHTML = "";
@@ -253,25 +252,6 @@
         card.appendChild(h("h3", null, def.label + " 설명"));
         (def.help || []).forEach(function (sec) { card.appendChild(h("h4", null, sec[0])); var ul = h("ul"); sec[1].forEach(function (t) { ul.appendChild(h("li", null, t)); }); card.appendChild(ul); });
         var acts = h("div", "inni-modal-acts"), ok = h("button", "dash-btn is-primary", "닫기"); ok.type = "button"; acts.appendChild(h("span", "inni-gap")); acts.appendChild(ok); card.appendChild(acts); ok.addEventListener("click", close); return ok;
-      });
-    }
-    function openNote() {
-      var k = key();
-      modal("코멘트 입력", "", function (card, close) {
-        card.appendChild(h("h3", null, "코멘트 입력 · " + def.label)); card.appendChild(h("p", null, "자동 코멘트 아래에 같이 보여요. 줄바꿈은 그대로 보여요."));
-        var ta = h("textarea"); ta.maxLength = 4000; ta.value = S.note ? S.note.body : ""; card.appendChild(ta);
-        var err = h("div", "inni-modal-err"); card.appendChild(err);
-        var acts = h("div", "inni-modal-acts"), del = h("button", "dash-btn", "지우기"), cancel = h("button", "dash-btn", "취소"), save = h("button", "dash-btn is-primary", "저장");
-        del.type = cancel.type = save.type = "button"; del.hidden = !S.note;
-        [del, h("span", "inni-gap"), cancel, save].forEach(function (x) { acts.appendChild(x); }); card.appendChild(acts);
-        function commit(body) {
-          save.disabled = del.disabled = true; err.textContent = "";
-          rpc("dy_inni_comment_set", { p_report: "board_" + def.id, p_ym: k, p_body: body }).then(function (c) { showManual(c); toast(c ? "코멘트를 저장했어요" : "코멘트를 지웠어요"); close(); })
-            .catch(function (e) { err.textContent = friendly(e); save.disabled = del.disabled = false; });
-        }
-        cancel.addEventListener("click", close); save.addEventListener("click", function () { commit(ta.value); }); del.addEventListener("click", function () { commit(""); });
-        ta.addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(ta.value); } });
-        ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); return ta;
       });
     }
     function openSettings() {

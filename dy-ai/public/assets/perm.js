@@ -21,7 +21,7 @@
       ["data.t.mega_event", "행사 달력"], ["data.t.cpm_daily", "Beauty Brand AD 일자별"], ["data.t.cpm_keyword", "Beauty Brand AD 키워드"], ["data.t.cpm_campaign", "Beauty Brand AD 캠페인"],
       ["data.t.rank", "랭킹(일·주·월)"], ["data.t.products", "상품코드"]] },
     { group: "행사 랭킹 탭", items: [["event.t.trend", "순위 트렌드"], ["event.t.price", "가격·리뷰 분석"], ["event.t.share", "카테고리 점유율"]] },
-    { group: "화면 기능 버튼", items: [["feat.help", "설명(정보) 버튼"], ["feat.settings", "설정 버튼 (코멘트·강조·그래프·색상)"], ["feat.comment", "코멘트 입력 버튼"],
+    { group: "화면 기능 버튼", items: [["feat.help", "설명(정보) 버튼"], ["feat.settings", "설정 버튼 (코멘트·강조·그래프·색상)"],
       ["feat.input", "입력 버튼 (월별 목표·월별 광고비)"], ["feat.xlsx", "엑셀 다운로드 버튼"], ["feat.collect", "Q10 수집 버튼"]] }
   ];
   var PAGES = { main: "menu.main", dashboard: "menu.dashboard", event: "menu.event", data: "menu.data", logs: "menu.logs", admin: "admin" };
@@ -31,7 +31,6 @@
   var FEATURES = {
     "feat.help": ".js-help, .js-b-help",
     "feat.settings": ".js-s-set, .js-p-set, .js-o-set, .js-m-set, .js-b-set",
-    "feat.comment": ".js-b-note",
     "feat.input": ".js-s-tgt-btn, .js-s-notice-btn, .js-o-manual",
     "feat.xlsx": ".js-s-xlsx, .js-p-xlsx, .js-o-xlsx, .js-m-xlsx, .js-b-xlsx, .js-dl-one, .js-dl-all",
     "feat.collect": ".js-collect"
@@ -68,7 +67,7 @@
     // 상단 메뉴
     $$(".top-nav a").forEach(function (a) {
       var p = (a.getAttribute("href") || "").replace(/^\//, "").replace(/\.html$/, "");
-      if (a.hasAttribute("data-perm-admin")) hide(a, !me.is_admin);
+      if (a.hasAttribute("data-perm-admin")) { a.hidden = !me.is_admin; a.style.display = me.is_admin ? "" : "none"; }
       else if (PAGES[p]) hide(a, !can(PAGES[p]));
     });
     // 탭

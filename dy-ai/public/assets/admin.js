@@ -97,7 +97,7 @@
     var groupsEl = h("div", "admin-groups"), cbs = [];
     function setKeys(keys) { cbs.forEach(function (x) { x.cb.checked = keys === "all" || keys.indexOf(x.key) >= 0; }); refresh(); }
     [["메뉴만", function () { setKeys(P.allKeys().filter(function (k) { return k.indexOf("menu.") === 0; })); }],
-      ["조회만 (설명·엑셀 가능, 설정·입력 불가)", function () { setKeys(P.allKeys().filter(function (k) { return ["feat.settings", "feat.comment", "feat.input", "feat.collect", "edit.codes"].indexOf(k) < 0; })); }],
+      ["조회만 (설명·엑셀 가능, 설정·입력 불가)", function () { setKeys(P.allKeys().filter(function (k) { return ["feat.settings", "feat.input", "feat.collect", "edit.codes"].indexOf(k) < 0; })); }],
       ["모두 선택", function () { setKeys("all"); }], ["모두 해제", function () { setKeys([]); }]].forEach(function (p) {
       var b = h("button", "logs-btn", p[0]); b.type = "button"; b.addEventListener("click", p[1]); presets.appendChild(b);
     });

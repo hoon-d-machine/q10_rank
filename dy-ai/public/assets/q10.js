@@ -54,6 +54,15 @@
       old: "업데이트 필요" + (installed && installed !== "unknown" ? " · v" + installed : "") + (latest ? " → v" + latest : ""),
       ok: "설치됨 · v" + installed + (latest ? " (최신)" : "")
     }[s];
+    // 확장이 없거나 업데이트가 필요하면 수집 버튼을 잠근다 (누르면 안내만)
+    var locked = s !== "ok" && s !== "checking";
+    collectBtns.forEach(function (b) {
+      b.setAttribute("aria-disabled", locked ? "true" : "false");
+      b.classList.toggle("is-locked", locked);
+      b.title = locked ? (s === "old" ? "확장 프로그램 업데이트가 필요해요" : "확장 프로그램을 먼저 설치해 주세요") : "";
+      var l = b.querySelector(".label");
+      if (l && !busy) l.textContent = s === "old" ? "업데이트 필요" : s === "none" ? "확장 설치 필요" : "Q10 수집";
+    });
     pills.forEach(function (p) {
       p.setAttribute("data-state", s);
       p.querySelector("span").textContent = text;
@@ -99,6 +108,7 @@
       var l = b.querySelector(".label");
       if (l) l.textContent = on ? "수집 중…" : "Q10 수집";
     });
+    if (!on) render();   // 끝났으면 잠금 상태(업데이트 필요 등)에 맞는 표시로 되돌림
   }
 
   function goGuide() {
@@ -112,6 +122,7 @@
     if (!d || d.source !== "dy-ext") return;
     if (installed === null || installed === "unknown") installed = d.version || "unknown";
     if (d.type === "ready") { detected = true; if ("autoLogin" in d) autoLogin = !!d.autoLogin; render(); return; }
+    if (d.type === "pending") { offerPending(d); return; }
     if (d.type !== "q10-status") return;
     if (d.state === "data") {
       // 수집 결과 → 엑셀 저장 → DB·구글 시트 (끝나야 버튼이 풀림)
@@ -136,6 +147,30 @@
     if (d.state === "done" || d.state === "error") { setBusy(false); target = null; run = null; }
     if (d.state === "busy") setBusy(true);
   });
+
+  // ---------- 보관된 수집 결과 (수집 중에 이 페이지를 벗어나서 저장하지 못한 것) ----------
+  var pendingAsked = false;
+  async function offerPending(d) {
+    if (pendingAsked || busy) return;
+    pendingAsked = true;
+    var when = new Date(d.savedAt), hm = when.getMonth() + 1 + "/" + when.getDate() + " " + String(when.getHours()).padStart(2, "0") + ":" + String(when.getMinutes()).padStart(2, "0");
+    var v = await window.dyModal({
+      tone: "warn",
+      title: "저장하지 못한 수집 결과가 있어요",
+      body: ["수집은 끝났는데 저장되기 전에 이 페이지를 벗어나서 확장 프로그램이 보관해 둔 결과예요.",
+        { note: "수집 시각 " + hm + " · 기간 " + d.start + " ~ " + d.end + ". 저장하면 DB와 구글 시트가 이 결과로 교체돼요(엑셀 파일은 건드리지 않아요). 버리면 다시 수집해야 해요." }],
+      actions: [{ label: "지금 저장", value: "take", kind: "primary" }, { label: "버리기", value: "drop", kind: "quiet" }, { label: "나중에", value: null, kind: "quiet" }]
+    });
+    if (v === "take") {
+      target = { mode: "none" };
+      run = null;
+      setBusy(true);
+      window.postMessage({ source: "dy-ai", type: "q10-pending-take" }, location.origin);
+    } else if (v === "drop") {
+      window.postMessage({ source: "dy-ai", type: "q10-pending-drop" }, location.origin);
+      window.dyToast("보관된 수집 결과를 버렸어요", 4000);
+    }
+  }
 
   // ---------- 수집 뒤: 엑셀 → DB·시트, 단계마다 로그 ----------
   var run = null; // 이번 수집 건의 로그 (q10-log.js)
@@ -223,6 +258,11 @@
         goGuide();
         return;
       }
+      if (s === "old") {
+        window.dyToast("확장 프로그램 업데이트가 필요해요. 아래 설명서에서 최신 버전을 받아 덮어쓰고, 확장을 새로고침한 뒤 이 페이지도 새로고침해 주세요", 7000);
+        goGuide();
+        return;
+      }
       var pageSave = installed && installed !== "unknown" && cmp(installed, PAGE_SAVE_FROM) >= 0 && window.dyQ10Save;
       if (!pageSave) {
         // 구버전 확장: 확장이 새 파일로 바로 다운로드
@@ -233,7 +273,6 @@
         window.postMessage({ source: "dy-ai", type: "q10-collect" }, location.origin);
         return;
       }
-      if (s === "old") window.dyToast("확장 프로그램 새 버전이 있어요. 수집은 그대로 진행할게요", 3000);
       choosing = true;
       window.dyQ10Save.chooseTarget()
         .then(function (t) {

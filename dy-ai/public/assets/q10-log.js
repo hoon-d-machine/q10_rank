@@ -37,6 +37,12 @@
       return chain;
     }
 
+    // 내 수집 중 15분 넘게 끝나지 않은 기록(페이지를 이동·종료해서 마무리 못 한 것)은 '중단됨'으로 정리
+    send(function () {
+      return client.from("dy_collect_runs").update({ status: "error", ended_at: new Date().toISOString(), summary: "중단됨 — 수집 중에 페이지를 이동하거나 닫아서 끝나지 않았어요" })
+        .eq("status", "running").lt("started_at", new Date(Date.now() - 15 * 60000).toISOString());
+    });
+
     send(function () {
       return client.from("dy_collect_runs").insert({
         id: id,

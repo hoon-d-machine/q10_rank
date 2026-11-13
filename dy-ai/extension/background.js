@@ -508,6 +508,13 @@ async function run(dyTabId, deliver) {
         filename: filename, warnings: warnings, extra: extra
       });
       if (delivered) return; // 저장·완료 안내는 페이지가 한다
+      // 수집기 페이지가 열려 있지 않다(다른 페이지로 이동했거나 탭을 닫음): 결과를 보관해 두고, 수집기 페이지를 다시 열면 저장할지 물어본다
+      try {
+        await chrome.storage.local.set({ pendingResult: { savedAt: Date.now(), payload: {
+          sheets: sheets, cutoff: ymd(range.start), start: ymd(range.start), end: ymd(range.end), filename: filename, warnings: warnings, extra: extra
+        } } });
+        warnings.push("수집기 페이지가 닫혀 있어서 결과를 보관해 뒀어요. DY-AI 수집기 페이지를 열면 DB·시트에 저장할지 물어봐요");
+      } catch (e) { console.error("[DY-AI Q10] 결과 보관 실패", e); }
     }
 
     status("progress", "엑셀 파일 만드는 중…");

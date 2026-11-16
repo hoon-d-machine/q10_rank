@@ -91,13 +91,17 @@ alter table inni_product_codes add column if not exists auto_added boolean not n
 alter table inni_product_codes add column if not exists created_at timestamptz not null default now();
 alter table inni_product_codes add column if not exists updated_by uuid;
 
--- 새 상품번호 자동 등록: 판매·PV·광고·찜 데이터에 처음 나온 상품번호를 상품명 없이 등록(상품명은 화면에서 원본 상품명으로 대신 보임)
+-- 새 상품번호 자동 등록: 판매·PV·광고·찜 데이터에 처음 나온 상품번호를 원본 상품명(gd_nm)과 함께 등록 (codes_autoname.sql 로 고침)
 create or replace function inni_codes_autoadd() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
-  insert into inni_product_codes (gd_no, auto_added)
-  select distinct btrim(gd_no), true from new_rows where gd_no is not null and btrim(gd_no) <> ''
-  on conflict (gd_no) do nothing;
+  insert into inni_product_codes (gd_no, product_name, auto_added)
+  select distinct on (btrim(gd_no)) btrim(gd_no), nullif(btrim(gd_nm), ''), true
+    from new_rows where gd_no is not null and btrim(gd_no) <> ''
+   order by btrim(gd_no), (nullif(btrim(gd_nm), '') is null)
+  on conflict (gd_no) do update
+    set product_name = excluded.product_name
+  where inni_product_codes.auto_added and inni_product_codes.product_name is null and excluded.product_name is not null;
   return null;
 end;
 $$;

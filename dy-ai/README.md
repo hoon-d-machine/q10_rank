@@ -44,6 +44,14 @@ cd dy-ai
 npx wrangler deploy
 ```
 
+## 변경 이력 · 롤백
+
+편집 가능한 표(상품코드·코멘트·보고서 설정·월별 목표·광고비 수기·대시보드·브랜드 즐겨찾기·행사 랭킹 설정·계정 권한 = `inni_product_codes`, `inni_comments`, `inni_settings`, `inni_targets`, `inni_ad_manual`, `dy_dashboards`, `brand_favorites`, `dy_event_config`, `dy_user_perms`)에 행 단위 트리거(`trg_audit`)가 걸려 있어서, 어느 화면·RPC 로 저장해도 입력·수정·삭제가 `dy_audit_log` 에 남습니다(누가·언제·바뀌기 전/후 전체 행, 같은 저장 동작은 같은 `txid`). 수정 시각만 바뀐 경우는 기록하지 않습니다. 관리 화면(`/admin`) 아래 **변경 이력**에서 표·사용자·기간으로 거르고, 선택해서 되돌립니다(`dy_audit_rollback`, 관리자만). 입력은 삭제, 수정은 이전 값, 삭제는 다시 입력하고, 그 뒤에 또 바뀐 행은 건너뛰며(강제 덮어쓰기 선택 가능) 되돌린 것도 이력에 남습니다. 제외: 자동 수집 표, 수집 로그, 화면 환경설정(열 너비·색), 로그인 계정 자체(Auth) 삭제. 이력은 `supabase/audit.sql` 적용 시점부터 쌓입니다.
+
+## 상품코드 자동 등록
+
+새 상품번호는 판매·PV·고객·광고 표에 처음 들어올 때 원본 상품명(`gd_nm`)과 함께 자동 등록됩니다(`supabase/codes_autoname.sql`). 예전에는 번호만 넣어서, PV·광고 표로 먼저 들어온 상품은 상품명이 비어 보였습니다.
+
 ## Q10 랭킹 수집 (GitHub Actions)
 
 2026-11-15 무렵부터 Qoo10 이 Cloudflare Worker IP 요청에 523 을 돌려줘서, 수집을 Actions 러너로 옮겼습니다 (`.github/workflows/q10-rank.yml`, `scripts/rank_ci.mjs`). 규칙은 이전과 같고(일간 매일, 주간 월요일, 월간 1일, 표가 비면 한 번), 결과는 `q10_rank_log` 로 들어갑니다. 매일 00:20 KST 예약, 수동 실행은 Actions 화면의 Run workflow (`only`: daily/weekly/monthly, `dry`: 1 이면 저장 없이 개수만). 저장소 secret `SUPABASE_SERVICE_KEY`(서비스 키) 가 필요합니다. 실패하면 Actions 가 실패 메일을 보내고, 재시도는 하지 않습니다. 요청 간격은 2초(robots.txt Crawl-delay)입니다. Worker 의 랭킹 cron 은 껐고 `/api/cron/rank`·관리 화면 점검 버튼은 진단용으로 남겨 뒀습니다.

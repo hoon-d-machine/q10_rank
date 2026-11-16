@@ -67,6 +67,25 @@
       <thead><tr><th>이름</th><th>아이디</th><th>구분</th><th>상태</th><th>권한</th><th>마지막 접속</th><th>관리</th></tr></thead>
       <tbody class="js-rows"><tr><td colspan="7" class="admin-empty">불러오는 중…</td></tr></tbody>
     </table></div>
+    <section class="admin-audit js-audit">
+      <h2>변경 이력</h2>
+      <p>상품코드 · 코멘트 · 보고서 설정 · 월별 목표 · 광고비 · 대시보드 · 즐겨찾기 · 행사 설정 · 계정 권한의 입력 · 수정 · 삭제가 서버(DB)에 모두 기록돼요. 선택해서 이전 값으로 되돌릴 수 있어요.</p>
+      <div class="audit-filters">
+        <select class="js-a-tbl" aria-label="표"></select>
+        <input class="js-a-user" type="search" placeholder="사용자(아이디 일부, 시스템)" aria-label="사용자">
+        <label class="audit-date">부터 <input class="js-a-from" type="date"></label>
+        <label class="audit-date">까지 <input class="js-a-to" type="date"></label>
+        <button class="logs-btn js-a-refresh" type="button">새로고침</button>
+        <button class="dash-btn is-primary js-a-do" type="button">선택한 변경 되돌리기</button>
+        <span class="logs-count js-a-count" aria-live="polite"></span>
+      </div>
+      <p class="dash-msg js-a-msg" role="alert" hidden></p>
+      <div class="admin-wrap"><table class="admin-table audit-table">
+        <thead><tr><th><input class="js-a-all" type="checkbox" aria-label="전체 선택"></th><th>시각</th><th>사용자</th><th>표</th><th>구분</th><th>대상</th><th>변경 내용</th></tr></thead>
+        <tbody class="js-a-rows"><tr><td colspan="7" class="admin-empty">불러오는 중…</td></tr></tbody>
+      </table></div>
+      <button class="logs-btn js-a-more" type="button" hidden>더 보기</button>
+    </section>
     <section class="admin-diag">
       <h2>점검</h2>
       <p>랭킹 수집이 서버(Cloudflare Worker)에서 실제로 되는지 시험해 봐요. 저장은 하지 않고 결과만 보여 줘요.</p>
@@ -90,6 +109,7 @@
 <script src="/assets/perm.js"></script>
 <script src="/assets/col-resize.js"></script>
 <script src="/assets/admin.js"></script>
+<script src="/assets/admin-audit.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });

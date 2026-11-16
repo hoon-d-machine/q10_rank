@@ -80,7 +80,7 @@
         var t = h("td"); t.appendChild(cellInput(cur(r, fl), function (v, inp) { setEdit(r, fl, v, inp); }, fl === "product_name" && r.src_name ? r.src_name : "", !S.canEdit)); tr.appendChild(t);
       });
       var ref = h("td", "c-ref", val(r.src_name)); ref.title = val(r.src_name); tr.appendChild(ref);
-      tr.appendChild(h("td", "c-ref", val(r.last_date).slice(0, 10)));
+      tr.appendChild(h("td", "c-ref", val(r.last_date).slice(0, 10) || "-"));
       tr.appendChild(h("td"));
       tb.appendChild(tr);
     });
@@ -211,7 +211,7 @@
   function exportXlsx() {
     if (!window.dyXlsx) return;
     var header = ["상품번호", "상품명", "라인", "카테고리", "비고", "원본 상품명", "마지막 판매일", "신규(자동 등록)"];
-    var rows = S.rows.map(function (r) { return [r.gd_no, cur(r, "product_name"), cur(r, "line"), cur(r, "category"), cur(r, "note"), val(r.src_name), val(r.last_date).slice(0, 10), r.auto_added ? "신규" : ""]; });
+    var rows = S.rows.map(function (r) { return [r.gd_no, cur(r, "product_name"), cur(r, "line"), cur(r, "category"), cur(r, "note"), val(r.src_name), val(r.last_date).slice(0, 10) || "-", r.auto_added ? "신규" : ""]; });
     Promise.resolve(window.dyXlsx.buildXlsx([{ name: "상품코드", header: header, rows: rows }])).then(function (bytes) {
       var url = URL.createObjectURL(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })), a = document.createElement("a"), d = new Date();
       a.href = url; a.download = "DY-AI_상품코드_" + d.getFullYear() + ("0" + (d.getMonth() + 1)).slice(-2) + ("0" + d.getDate()).slice(-2) + ".xlsx"; document.body.appendChild(a); a.click(); a.remove();

@@ -218,6 +218,21 @@
     });
   }
 
+  // ---------- 랭킹 수집 시험 (저장 안 함) ----------
+  Array.prototype.forEach.call(document.querySelectorAll(".js-rank-test"), function (btn) {
+    btn.addEventListener("click", function () {
+      var out = $(".js-rank-out"), old = btn.textContent;
+      out.hidden = false; out.textContent = "서버에서 Qoo10 을 불러 보는 중… (최대 1분)"; btn.disabled = true;
+      api("POST", "/api/admin/rank-test", { only: btn.dataset.only }).then(function (r) {
+        var res = r.result || {}, lines = ["실행 " + (r.ms / 1000).toFixed(1) + "초 · 대상 " + r.only + " · 날짜 " + res.date];
+        (res.steps || []).forEach(function (s) { lines.push("✓ " + s.label + ": " + s.rows + "행"); });
+        (res.failures || []).forEach(function (f) { lines.push("✕ " + f.label + ": " + f.error); });
+        if (!(res.steps || []).length && !(res.failures || []).length) lines.push("(오늘 돌릴 대상이 아니에요: 주간은 월요일, 월간은 1일)");
+        out.textContent = lines.join("\n");
+      }).catch(function (e) { out.textContent = "시험하지 못했어요: " + friendly(e); }).then(function () { btn.disabled = false; btn.textContent = old; });
+    });
+  });
+
   // ---------- 시작 ----------
   $(".js-new").addEventListener("click", newUser);
   $(".js-refresh").addEventListener("click", load);

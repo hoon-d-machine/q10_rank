@@ -175,6 +175,12 @@ async function adminApi(req, env, url) {
     } catch (e) { await sb(env, "DELETE", "/auth/v1/admin/users/" + created.id).catch(() => {}); throw e; }
     return json({ ok: true, id: created.id, email });
   }
+  if (p === "/api/admin/rank-test" && req.method === "POST") {   // 랭킹 수집 시험 실행(저장 안 함): Worker 에서 실제로 Qoo10 을 불러 결과·오류를 보여 준다
+    const only = ["daily", "weekly", "monthly"].includes(body.only) ? body.only : undefined;
+    const t0 = Date.now();
+    const out = await collectRank(env, Date.now(), { dry: true, only });
+    return json({ ok: true, ms: Date.now() - t0, only: only || "all", result: out, colo: req.headers.get("cf-ray") || "" });
+  }
   if (m && m[2] === "password" && req.method === "POST") {
     const pw = String(body.password || "");
     if (pw.length < 8 || pw.length > 72) throw httpError(400, "비밀번호는 8자 이상으로 입력해 주세요");

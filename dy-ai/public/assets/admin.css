@@ -30,3 +30,9 @@
 .admin-items { display: flex; flex-wrap: wrap; }
 .admin-name { white-space: nowrap; }
 .admin-rename { margin-left: 8px; padding: 2px 8px !important; font-size: 11.5px !important; opacity: .75; }
+
+.admin-diag { margin-top: 26px; padding: 14px 16px; border: 1px solid var(--lg-line, rgba(0,0,0,.14)); border-radius: 10px; }
+.admin-diag h2 { margin: 0 0 4px; font-size: 15px; }
+.admin-diag p { margin: 0 0 10px; font-size: 12.5px; opacity: .75; }
+.admin-diag-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-diag-out { margin: 12px 0 0; padding: 10px 12px; font: 12.5px/1.6 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-all; border-radius: 8px; background: rgba(128,128,128,.12); }

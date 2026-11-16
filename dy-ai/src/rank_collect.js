@@ -21,6 +21,13 @@ const CATEGORIES = [ // [이름, gdlcCd, gdmcCd, gdscCd]
 const DAILY_URL = "https://m.qoo10.jp/gmkt.inc/BestSellers/?g=2";
 const OFFICIAL_URL = "https://m.qoo10.jp/gmkt.inc/Mobile/Beauty/OfficialRanking.aspx/GetBestSellerBeautyOfficialRanking";
 
+// 응답 요약: 상태·크기·페이지 제목·오류 번호 (점검·차단 페이지 구분용)
+function describe(status, text) {
+  const title = (/<title>\s*([^<]{0,60})/i.exec(text) || [])[1];
+  const err = (/(\d{3})\s*Error/i.exec(text) || [])[1];
+  const msg = (/<p>([^<]{1,80})<\/p>/.exec(text) || [])[1];
+  return `HTTP ${status}, ${text.length.toLocaleString()}B` + (title ? `, 제목 "${title.trim()}"` : "") + (err ? `, 오류 ${err}` : "") + (msg ? `, 문구 "${msg}"` : "");
+}
 export function kstParts(ms) { // 한국 날짜·요일(월=0)·일
   const d = new Date(ms + 9 * 3600 * 1000);
   return { date: d.toISOString().slice(0, 10), weekday: (d.getUTCDay() + 6) % 7, day: d.getUTCDate() };
@@ -52,7 +59,7 @@ export async function fetchDaily(date) {
     if (!Number.isFinite(rank) || rank > 200 || !title || !Number.isFinite(price)) continue;
     rows.push({ rank_date: date, category: "데일리 뷰티", rank, brand: (it.brand || "").trim(), product_name: title, price, period: "daily" });
   }
-  if (!rows.length) throw new Error("일일 베스트셀러 상품 0개 (응답 " + buf.byteLength.toLocaleString() + "B, 점검·차단 페이지일 수 있음)");
+  if (!rows.length) throw new Error("일일 베스트셀러 상품 0개 (" + describe(res.status, new TextDecoder().decode(buf)) + ")");
   return rows;
 }
 
@@ -69,7 +76,7 @@ export async function fetchOfficial(period, date) { // period: "W" | "M"
     const text = await res.text();
     let goods;
     try { goods = (JSON.parse(text).d || {}).goods || []; } catch (e) {
-      throw new Error(`공식 랭킹(${name}_${periodName}) 응답이 JSON이 아님: HTTP ${res.status}, ${text.length.toLocaleString()}B (점검·차단 페이지일 수 있음)`);
+      throw new Error(`공식 랭킹(${name}_${periodName}) 응답이 JSON이 아님: ` + describe(res.status, text));
     }
     const seen = new Set();
     for (const it of goods) {

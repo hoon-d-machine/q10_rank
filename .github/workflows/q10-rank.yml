@@ -1,0 +1,48 @@
+name: Q10 Rank Collect
+
+# Qoo10 이 Cloudflare Worker IP 를 막아(523) Worker cron 대신 Actions 러너에서 수집한다. 결과는 Supabase q10_rank_log.
+# 매일 00:20 KST (= 15:20 UTC). Actions 예약은 몇 분~수십 분 늦을 수 있다. 일간은 "실행 시점의 베스트셀러"를 그날 값으로 저장한다.
+on:
+  schedule:
+    - cron: "20 15 * * *"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "하나만 실행 (daily / weekly / monthly), 비우면 규칙대로"
+        required: false
+        default: ""
+      dry:
+        description: "DB에 쓰지 않고 개수만 (1)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: q10-rank
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: cheerio 설치 (저장소에는 기록하지 않음)
+        working-directory: dy-ai
+        run: npm install --no-save --no-package-lock cheerio@1.0.0
+
+      - name: 랭킹 수집
+        working-directory: dy-ai
+        env:
+          SUPABASE_URL: https://dlgyvqcfastqguudzcob.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ONLY: ${{ github.event.inputs.only }}
+          DRY: ${{ github.event.inputs.dry }}
+        run: node scripts/rank_ci.mjs

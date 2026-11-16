@@ -64,10 +64,13 @@ export async function fetchDaily(date) {
 }
 
 // ---- 공식 주간·월간 랭킹 (JSON) ----
-export async function fetchOfficial(period, date) { // period: "W" | "M"
+export async function fetchOfficial(period, date, delayMs = 0) { // period: "W" | "M", delayMs: 카테고리 사이 간격(robots Crawl-delay 2초)
   const periodName = period === "W" ? "주간" : "월간";
   const rows = [];
+  let first = true;
   for (const [name, gdlc, gdmc, gdsc] of CATEGORIES) {
+    if (!first && delayMs) await new Promise((r) => setTimeout(r, delayMs));
+    first = false;
     const res = await fetch(OFFICIAL_URL, {
       method: "POST",
       headers: { ...HEADERS, "content-type": "application/json" },
@@ -112,7 +115,7 @@ export async function upsertRows(env, rows) {
   }
 }
 
-async function tableEmpty(env, period) {
+export async function tableEmpty(env, period) {
   const { url, key } = sb(env);
   const res = await fetch(`${url}/rest/v1/q10_rank_log?select=rank_date&period=eq.${period}&limit=1`, { headers: { apikey: key, authorization: "Bearer " + key } });
   if (!res.ok) return false;

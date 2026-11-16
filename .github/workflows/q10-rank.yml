@@ -42,7 +42,7 @@ jobs:
         working-directory: dy-ai
         env:
           SUPABASE_URL: https://dlgyvqcfastqguudzcob.supabase.co
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_KEY }}
           ONLY: ${{ github.event.inputs.only }}
           DRY: ${{ github.event.inputs.dry }}
         run: node scripts/rank_ci.mjs

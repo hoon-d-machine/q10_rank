@@ -46,7 +46,7 @@ npx wrangler deploy
 
 ## Q10 랭킹 수집 (GitHub Actions)
 
-2026-11-15 무렵부터 Qoo10 이 Cloudflare Worker IP 요청에 523 을 돌려줘서, 수집을 Actions 러너로 옮겼습니다 (`.github/workflows/q10-rank.yml`, `scripts/rank_ci.mjs`). 규칙은 이전과 같고(일간 매일, 주간 월요일, 월간 1일, 표가 비면 한 번), 결과는 `q10_rank_log` 로 들어갑니다. 매일 00:20 KST 예약, 수동 실행은 Actions 화면의 Run workflow (`only`: daily/weekly/monthly, `dry`: 1 이면 저장 없이 개수만). 저장소 secret `SUPABASE_SERVICE_KEY` 가 필요합니다. 실패하면 Actions 가 실패 메일을 보내고, 재시도는 하지 않습니다. 요청 간격은 2초(robots.txt Crawl-delay)입니다. Worker 의 랭킹 cron 은 껐고 `/api/cron/rank`·관리 화면 점검 버튼은 진단용으로 남겨 뒀습니다.
+2026-11-15 무렵부터 Qoo10 이 Cloudflare Worker IP 요청에 523 을 돌려줘서, 수집을 Actions 러너로 옮겼습니다 (`.github/workflows/q10-rank.yml`, `scripts/rank_ci.mjs`). 규칙은 이전과 같고(일간 매일, 주간 월요일, 월간 1일, 표가 비면 한 번), 결과는 `q10_rank_log` 로 들어갑니다. 매일 00:20 KST 예약, 수동 실행은 Actions 화면의 Run workflow (`only`: daily/weekly/monthly, `dry`: 1 이면 저장 없이 개수만). 저장소 secret `SUPABASE_KEY`(서비스 키) 가 필요합니다. 실패하면 Actions 가 실패 메일을 보내고, 재시도는 하지 않습니다. 요청 간격은 2초(robots.txt Crawl-delay)입니다. Worker 의 랭킹 cron 은 껐고 `/api/cron/rank`·관리 화면 점검 버튼은 진단용으로 남겨 뒀습니다.
 
 ## 디자인 메모
 - 무드: wiggle-wiggle.com 러그 제품 사진 — 주황 바탕, 코발트 블루 러그 패치(노란 테두리·스티치), 데이지, 무지개, 털 질감

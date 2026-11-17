@@ -32,7 +32,7 @@
     "feat.help": ".js-help, .js-b-help",
     "feat.settings": ".js-s-set, .js-p-set, .js-o-set, .js-m-set, .js-b-set",
     "feat.input": ".js-s-tgt-btn, .js-s-notice-btn, .js-o-manual",
-    "feat.xlsx": ".js-s-xlsx, .js-p-xlsx, .js-o-xlsx, .js-m-xlsx, .js-b-xlsx, #view-inni .js-html, .js-dl-one, .js-dl-all",
+    "feat.xlsx": ".js-s-xlsx, .js-p-xlsx, .js-o-xlsx, .js-m-xlsx, .js-b-xlsx, #view-inni .js-html, .js-b-html, .js-dash-html, .js-dl-one, .js-dl-all",
     "feat.collect": ".js-collect"
   };
 

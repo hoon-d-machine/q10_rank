@@ -192,57 +192,103 @@
   }
 
   var LABEL = { sales: "SALES", product: "PRODUCT", onsite: "ONSITE AD" };
-  function addMonths(ym, n) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1 + n; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return y + "-" + ("0" + (m + 1)).slice(-2); }
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function ymStr(y, m) { return y + "-" + ("0" + m).slice(-2) + "-01"; }
+  function addMonths(ym, n) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1 + n; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return ymStr(y, m + 1); }
+  function monthsBetween(a, b) { var out = [], k = a; while (k <= b && out.length < 400) { out.push(k); k = addMonths(k, 1); } return out; }
+  function field(text, control) { var l = h("label", "dash-field"); l.appendChild(h("span", null, text)); l.appendChild(control); return l; } // 사이트 선택칸과 같은 모양(.dash-field)
+  function opt(sel, value, text) { var o = h("option", null, text); o.value = value; sel.appendChild(o); return o; }
 
-  // 통합 HTML 옵션 창 (알림창 대신 화면 안 모달): 담을 화면 체크 · 기준 월 · ONSITE AD 보기(회계연도/기간)
+  // 선택할 수 있는 월 범위: 대시보드 데이터의 처음~마지막 (ONSITE AD 는 그 화면이 이미 불러왔으면 그 화면 범위)
+  function bounds() {
+    var D = window.dyDash, lo = null, hi = null;
+    try { lo = D.minDate(); hi = D.anchor(); } catch (e) { }
+    var now = new Date(), cur = ymStr(now.getFullYear(), now.getMonth() + 1);
+    lo = lo ? lo.slice(0, 8) + "01" : addMonths(cur, -23); hi = hi ? hi.slice(0, 8) + "01" : cur;
+    var of = document.querySelector(".js-o-from"), onsite = null;
+    if (of && of.options.length) onsite = [of.options[0].value, of.options[of.options.length - 1].value];
+    return { lo: lo, hi: hi, onsite: onsite };
+  }
+
+  // 통합 HTML 옵션 창 (알림창 대신 화면 안 모달): 담을 화면 체크 · 기준 월(회계연도+월) · ONSITE AD 기간 설정(회계연도/기간)
   function askOptions(def) {
     return new Promise(function (res) {
-      var prev = document.activeElement, ov = h("div", "inni-modal"), card = h("div", "inni-modal-card");
+      var B = bounds(), prev = document.activeElement, ov = h("div", "inni-modal"), card = h("div", "inni-modal-card");
       ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "통합 HTML");
       card.appendChild(h("h3", null, "통합 HTML 다운로드"));
-      card.appendChild(h("p", null, "고른 화면을 한 파일에 탭으로 담아요. 기준 월을 고르면 SALES · PRODUCT는 그 월이 속한 회계연도로 맞춰지고, 강조와 코멘트도 그 월에 저장된 것이 들어가요. 받은 뒤 화면은 원래대로 돌아와요."));
+      card.appendChild(h("p", null, "고른 화면을 한 파일에 탭으로 담아요. SALES · PRODUCT는 고른 회계연도·기준 월로 맞춰지고, 강조와 코멘트도 그 월에 저장된 것이 들어가요. 받은 뒤 화면은 원래대로 돌아와요."));
       var checks = {}, row = h("div", "inni-checks"); row.style.margin = "8px 0";
       ALL.forEach(function (sub) {
         var lab = h("label"), cb = h("input"); cb.type = "checkbox"; cb.checked = true; checks[sub] = cb;
         lab.appendChild(cb); lab.appendChild(document.createTextNode(LABEL[sub])); row.appendChild(lab);
       });
       card.appendChild(h("h5", null, "담을 화면")); card.appendChild(row);
-      var mi = h("input"); mi.type = "month"; mi.value = def || ""; mi.setAttribute("aria-label", "기준 월");
-      card.appendChild(h("h5", null, "기준 월 (SALES · PRODUCT)")); card.appendChild(mi);
-      card.appendChild(h("h5", null, "ONSITE AD 보기"));
+
+      // 기준 월: 회계연도 → 월 (사이트 대시보드 위쪽 선택칸과 같은 구성)
+      var base = B.hi, d0 = def ? def + "-01" : B.hi; if (d0 >= B.lo && d0 <= B.hi) base = d0;
+      var fyOf2 = function (ym) { return +ym.slice(0, 4) + (+ym.slice(5, 7) >= 7 ? 1 : 0); };
+      var fySel = h("select"), moSel = h("select");
+      fySel.setAttribute("aria-label", "회계연도"); moSel.setAttribute("aria-label", "기준 월");
+      for (var f = fyOf2(B.hi); f >= fyOf2(B.lo); f--) opt(fySel, String(f), "BY" + String(f).slice(2) + " (" + (f - 1) + "-07 ~ " + f + "-06)");
+      function fillMo(keep) {
+        var f2 = +fySel.value; moSel.innerHTML = "";
+        monthsBetween(ymStr(f2 - 1, 7), ymStr(f2, 6)).filter(function (k) { return k >= B.lo && k <= B.hi; })
+          .forEach(function (k) { opt(moSel, k, k.slice(0, 4) + " " + MON[+k.slice(5, 7) - 1]); });
+        if (keep && Array.prototype.some.call(moSel.options, function (o) { return o.value === keep; })) moSel.value = keep;
+        else moSel.value = moSel.options.length ? moSel.options[moSel.options.length - 1].value : "";
+      }
+      fySel.value = String(fyOf2(base)); fillMo(base); fySel.addEventListener("change", function () { fillMo(null); });
+      var baseTitle = h("h5", null, "SALES · PRODUCT 기준"), baseRow = h("div"); baseRow.style.cssText = "display:flex;gap:12px;flex-wrap:wrap";
+      baseRow.appendChild(field("회계연도", fySel)); baseRow.appendChild(field("기준 월", moSel));
+      card.appendChild(baseTitle); card.appendChild(baseRow);
+
+      // ONSITE AD 기간 설정
+      var osTitle = h("h5", null, "ONSITE AD 기간 설정"), osBox = h("div");
       var rd = h("div", "inni-radios"), modes = {};
       [["fy", "기준 월과 같은 회계연도"], ["range", "기간 지정"]].forEach(function (o) {
         var lab = h("label"), r = h("input"); r.type = "radio"; r.name = "dy-html-onsite"; r.value = o[0]; r.checked = o[0] === "fy"; modes[o[0]] = r;
         lab.appendChild(r); lab.appendChild(document.createTextNode(o[1])); rd.appendChild(lab);
       });
-      card.appendChild(rd);
-      var rg = h("div"); rg.style.cssText = "display:flex;gap:8px;align-items:center;margin:6px 0";
-      var fi = h("input"), ti = h("input"); fi.type = ti.type = "month"; fi.setAttribute("aria-label", "시작 연월"); ti.setAttribute("aria-label", "끝 연월");
-      ti.value = def || ""; fi.value = def ? addMonths(def + "-01", -5).slice(0, 7) : "";
-      rg.appendChild(fi); rg.appendChild(document.createTextNode("~")); rg.appendChild(ti); rg.appendChild(h("small", "inni-note", "최대 36개월"));
-      card.appendChild(rg);
-      function sync() { var on = modes.range.checked; fi.disabled = ti.disabled = !on; rg.style.opacity = on ? "1" : ".5"; }
+      osBox.appendChild(rd);
+      var ms = monthsBetween(B.onsite ? B.onsite[0] : B.lo, B.onsite ? B.onsite[1] : B.hi);
+      var fi = h("select"), ti = h("select"); fi.setAttribute("aria-label", "시작 연월"); ti.setAttribute("aria-label", "끝 연월");
+      [fi, ti].forEach(function (s) { ms.forEach(function (k) { opt(s, k, k.slice(0, 4) + "-" + k.slice(5, 7)); }); });
+      var tdef = ms.indexOf(base) >= 0 ? base : ms[ms.length - 1], fdef = addMonths(tdef, -5);
+      ti.value = tdef; fi.value = ms.indexOf(fdef) >= 0 ? fdef : ms[0];
+      var rg = h("div"); rg.style.cssText = "display:flex;gap:12px;flex-wrap:wrap;margin-top:8px";
+      rg.appendChild(field("시작 연월", fi)); rg.appendChild(field("끝 연월 (최대 36개월)", ti));
+      osBox.appendChild(rg);
+      card.appendChild(osTitle); card.appendChild(osBox);
+
+      function sync() { // 체크를 풀면 그 화면 설정은 잠근다
+        var osOn = checks.onsite.checked, baseOn = checks.sales.checked || checks.product.checked || (osOn && modes.fy.checked);
+        modes.fy.disabled = modes.range.disabled = !osOn;
+        fi.disabled = ti.disabled = !osOn || !modes.range.checked;
+        fySel.disabled = moSel.disabled = !baseOn;
+        osBox.style.opacity = osOn ? "1" : ".45"; rg.style.opacity = fi.disabled ? ".45" : "1"; baseRow.style.opacity = baseOn ? "1" : ".45";
+      }
+      ALL.forEach(function (s) { checks[s].addEventListener("change", sync); });
       modes.fy.addEventListener("change", sync); modes.range.addEventListener("change", sync); sync();
+
       var err = h("div", "inni-modal-err"); card.appendChild(err);
       var acts = h("div", "inni-modal-acts"), gap = h("span", "inni-gap"), cancel = h("button", "dash-btn", "취소"), ok = h("button", "dash-btn is-primary", "받기");
       cancel.type = ok.type = "button"; [gap, cancel, ok].forEach(function (x) { acts.appendChild(x); });
-      card.appendChild(acts); ov.appendChild(card); document.body.appendChild(ov); mi.focus();
+      card.appendChild(acts); ov.appendChild(card); document.body.appendChild(ov); fySel.focus();
       function close(v) { document.removeEventListener("keydown", onKey, true); ov.remove(); if (prev && prev.focus) prev.focus(); res(v); }
       function go() {
         var subs = ALL.filter(function (s) { return checks[s].checked; });
         if (!subs.length) { err.textContent = "담을 화면을 하나 이상 골라 주세요"; return; }
-        var need = subs.some(function (s) { return s !== "onsite"; }) || !modes.range.checked;
-        if (need && !/^\d{4}-\d{2}$/.test(mi.value)) { err.textContent = "기준 월을 골라 주세요"; return; }
-        var out = { subs: subs, ym: /^\d{4}-\d{2}$/.test(mi.value) ? mi.value + "-01" : null, range: null };
+        var out = { subs: subs, ym: moSel.value || null, range: null };
         if (subs.indexOf("onsite") >= 0 && modes.range.checked) {
-          if (!/^\d{4}-\d{2}$/.test(fi.value) || !/^\d{4}-\d{2}$/.test(ti.value)) { err.textContent = "ONSITE AD 기간의 시작·끝 연월을 골라 주세요"; return; }
           if (fi.value > ti.value) { err.textContent = "시작 연월이 끝 연월보다 늦어요"; return; }
           if ((+ti.value.slice(0, 4) - +fi.value.slice(0, 4)) * 12 + (+ti.value.slice(5, 7) - +fi.value.slice(5, 7)) + 1 > 36) { err.textContent = "기간은 최대 36개월이에요"; return; }
-          out.range = { from: fi.value + "-01", to: ti.value + "-01" };
+          out.range = { from: fi.value, to: ti.value };
         }
+        if (!out.ym && !out.range) { err.textContent = "기준 월을 골라 주세요"; return; }
+        if (!out.ym) out.ym = out.range.to;
         close(out);
       }
-      function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(null); } else if (e.key === "Enter" && e.target.tagName !== "BUTTON") { e.preventDefault(); go(); } }
+      function onKey(e) { if (e.key === "Escape") { e.preventDefault(); close(null); } else if (e.key === "Enter" && e.target.tagName !== "BUTTON" && e.target.tagName !== "SELECT") { e.preventDefault(); go(); } }
       document.addEventListener("keydown", onKey, true);
       ov.addEventListener("mousedown", function (e) { if (e.target === ov) close(null); });
       cancel.addEventListener("click", function () { close(null); }); ok.addEventListener("click", go);

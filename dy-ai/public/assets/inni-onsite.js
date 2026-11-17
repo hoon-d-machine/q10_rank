@@ -160,8 +160,9 @@
     c = c || {};
     return { spend: K.normSpec(c.spend), sales: K.normSpec(c.sales), roas: K.normSpec(c.roas), type: c.type === "line" ? "line" : "bar", roasLine: c.roasLine === "off" ? "off" : "on" };
   }
-  function loadCfg(fy) {
-    return rpc("dy_inni_settings_get", { p_report: "onsite", p_fy: fy }).then(function (c) { S.cfg = normCfg(c); }).catch(function (e) { S.cfg = normCfg(null); showMsg(friendly(e)); });
+  function loadCfg() { // 강조는 기준월(구간 모드는 끝 달)별, 그래프 설정은 전체 (inni-cfg.js)
+    var ym = S.ym;
+    return window.dyInniCfg.get(rpc, "onsite", ym, S.fy).then(function (c) { if (ym === S.ym) S.cfg = normCfg(c); }).catch(function (e) { S.cfg = normCfg(null); showMsg(friendly(e)); });
   }
 
   // ---------- 표 ----------
@@ -296,7 +297,7 @@
   // 기간을 바꾼 뒤: 기준 월 = 끝 연월, 설정은 끝 연월이 속한 회계연도 것을 쓴다
   function reloadRange() {
     S.ym = S.to; S.fy = fyOf(S.to);
-    return Promise.all([loadView(), loadCfg(S.fy)]).then(recompute).catch(function (e) { showMsg(friendly(e)); });
+    return Promise.all([loadView(), loadCfg()]).then(recompute).catch(function (e) { showMsg(friendly(e)); });
   }
 
   // ---------- 모달 (월별 광고비 입력) ----------
@@ -360,8 +361,8 @@
     var def = function (key, title) { return { key: key, title: title, rows: S.rows[key].map(function (r) { return [r.id, r.label]; }), cols: cols }; };
     K.openSettings({
       title: "설정 · ONSITE AD · " + fyLabel(S.fy) + " · " + k.slice(0, 4) + " " + MON[mOf(k) - 1],
-      desc: "코멘트는 기준 월마다, 강조와 그래프는 회계연도(" + fyLabel(S.fy) + ")마다 저장돼요. 모두가 같이 봐요.",
-      report: "onsite", fy: S.fy, note: { ym: k, body: S.note ? S.note.body : "", label: k.slice(0, 4) + " " + MON[mOf(k) - 1] },
+      desc: "코멘트와 강조는 기준 월(" + k.slice(0, 7) + ")마다, 그래프는 기간과 상관없이 하나로 저장돼요. 모두가 같이 봐요.",
+      report: "onsite", fy: S.fy, ym: k, note: { ym: k, body: S.note ? S.note.body : "", label: k.slice(0, 4) + " " + MON[mOf(k) - 1] },
       cfg: S.cfg, tables: [def("spend", "광고비 표"), def("sales", "광고 매출 표"), def("roas", "ROAS 표")],
       selects: [{ key: "type", label: "광고비·광고 매출 표시", options: [["bar", "막대"], ["line", "꺾은선"]] }, { key: "roasLine", label: "ROAS 선", options: [["on", "표시"], ["off", "숨김"]] }],
       chartNote: "월별 광고비·광고 매출 그래프예요.",
@@ -399,11 +400,11 @@
   }
 
   // ---------- 이벤트 ----------
-  el.fy.addEventListener("change", function () { S.fy = +el.fy.value; S.ym = null; fillMonths(); Promise.all([loadView(), loadCfg(S.fy)]).then(recompute).catch(function (e) { showMsg(friendly(e)); }); });
+  el.fy.addEventListener("change", function () { S.fy = +el.fy.value; S.ym = null; fillMonths(); Promise.all([loadView(), loadCfg()]).then(recompute).catch(function (e) { showMsg(friendly(e)); }); });
   el.mode.addEventListener("change", function () {
     S.mode = el.mode.value; applyMode();
     if (S.mode === "range") { fillRange(); reloadRange(); }
-    else { S.fy = fyOf(S.ym || maxYm()); fillFy(); S.ym = null; fillMonths(); Promise.all([loadView(), loadCfg(S.fy)]).then(recompute).catch(function (e) { showMsg(friendly(e)); }); }
+    else { S.fy = fyOf(S.ym || maxYm()); fillFy(); S.ym = null; fillMonths(); Promise.all([loadView(), loadCfg()]).then(recompute).catch(function (e) { showMsg(friendly(e)); }); }
   });
   el.from.addEventListener("change", function () { S.from = el.from.value; if (S.from > S.to) { S.to = S.from; el.to.value = S.to; } clampRange("from"); reloadRange(); });
   el.to.addEventListener("change", function () { S.to = el.to.value; if (S.to < S.from) { S.from = S.to; el.from.value = S.from; } clampRange("to"); reloadRange(); });
@@ -415,7 +416,7 @@
   }
   el.setBtn.addEventListener("click", function () { if (S.ready && S.cfg && S.rows) openSettingsDlg(); });
   el.xlsxBtn.addEventListener("click", exportXlsx);
-  el.month.addEventListener("change", function () { S.ym = el.month.value; recompute(); });
+  el.month.addEventListener("change", function () { S.ym = el.month.value; loadCfg().then(recompute); });
   el.reload.addEventListener("click", function () { D.clearCache(); S.ready = false; start(true); });
   el.manualBtn.addEventListener("click", function () { if (S.ready) openManualModal(); });
   document.addEventListener("dycolors:change", function () { if (S.ready && S.ym && started) drawChart(); });
@@ -430,7 +431,7 @@
       if (!S.ready) { started = false; return; }
       fillFy(); fillMonths(); applyMode();
       if (S.mode === "range") { fillRange(); return reloadRange(); }
-      return Promise.all([loadView(), loadCfg(S.fy)]).then(recompute);
+      return Promise.all([loadView(), loadCfg()]).then(recompute);
     }).catch(function (e) { showMsg(friendly(e)); });
   }
   document.addEventListener("inni:show", function (e) { if (e.detail.view === "inni" && e.detail.sub === "onsite") start(); });

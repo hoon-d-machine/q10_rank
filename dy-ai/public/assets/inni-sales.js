@@ -1,6 +1,6 @@
 /* inni 탭 · SALES 월간 리포트 (AP Talk 시트의 SALES 탭을 DB 로 대체)
  *   - 회계연도(BY, 7월~6월) 단위로 월별 SALES · YoY · 목표 · 달성률 · PV · ORDERS · CVR · AOV, BY 별 월 매출 추이(막대/꺾은선)
- *   - 코멘트(자동 생성 + 직접 입력), 표 강조(행·열·색), 그래프 종류는 '설정' 모달에서 (강조·그래프는 회계연도별로 저장)
+ *   - 코멘트(자동 생성 + 직접 입력), 표 강조(행·열·색), 그래프 종류는 '설정' 모달에서 (강조는 기준월별, 그래프는 전체 하나로 저장)
  *   - 엑셀 다운로드: 화면과 같은 서식(강조 색 포함)과 그래프 그림, 월별 원본 시트
  *   - 집계는 dash-core.js(window.dyDash.query) 의 월 단위 집계를 그대로 씀. 목표·코멘트·설정은 supabase/inni.sql 의 함수.
  * 정의: SALES = 순매출(final_buy_bpv), PV = 총 PV, ORDERS = 구매수(purchase_cnt), CVR = ORDERS ÷ PV, AOV = SALES ÷ ORDERS
@@ -78,8 +78,9 @@
     });
     return d;
   }
-  function loadCfg(fy) {
-    return rpc("dy_inni_settings_get", { p_report: "sales", p_fy: fy }).then(function (c) { S.cfg = normCfg(c); }).catch(function (e) { S.cfg = normCfg(null); showMsg(friendly(e)); });
+  function loadCfg() { // 강조는 기준월별, 그래프 설정은 전체 (inni-cfg.js)
+    var ym = S.ym;
+    return window.dyInniCfg.get(rpc, "sales", ym, S.fy).then(function (c) { if (ym === S.ym) S.cfg = normCfg(c); }).catch(function (e) { S.cfg = normCfg(null); showMsg(friendly(e)); });
   }
 
   // ---------- 데이터 ----------
@@ -358,7 +359,7 @@
     var ov = h("div", "inni-modal"), card = h("div", "inni-modal-card is-wide");
     ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "설정");
     card.appendChild(h("h3", null, "설정 · " + fyLabel(fy) + " · " + k.slice(0, 4) + " " + MON[mOf(k) - 1]));
-    card.appendChild(h("p", null, "코멘트는 기준 월마다, 강조와 그래프는 회계연도(" + fyLabel(fy) + ")마다 저장돼요. 모두가 같이 봐요."));
+    card.appendChild(h("p", null, "코멘트와 강조는 기준 월(" + k.slice(0, 7) + ")마다, 그래프는 기간과 상관없이 하나로 저장돼요. 모두가 같이 봐요."));
 
     var tabs = h("div", "inni-mtabs"); tabs.setAttribute("role", "tablist");
     var panels = {}, tabBtns = {};
@@ -447,7 +448,7 @@
       if (!noteChanged && !cfgChanged) { close(); return; }
       save.disabled = true; err.textContent = "";
       if (noteChanged) jobs.push(rpc("dy_inni_comment_set", { p_report: "sales", p_ym: k, p_body: ta.value }).then(function (c) { if (k === S.ym) showManual(c); }));
-      if (cfgChanged) jobs.push(rpc("dy_inni_settings_set", { p_report: "sales", p_fy: fy, p_config: draft }).then(function () { if (fy === S.fy) { S.cfg = normCfg(draft); renderKpi(); renderTrend(); } }));
+      if (cfgChanged) jobs.push(window.dyInniCfg.set(rpc, "sales", k, JSON.parse(cfg0), draft).then(function () { if (k === S.ym) { S.cfg = normCfg(draft); renderKpi(); renderTrend(); } }));
       Promise.all(jobs).then(function () { toast("설정을 저장했어요"); close(); }).catch(function (e) { err.textContent = friendly(e); save.disabled = false; });
     }
     document.addEventListener("keydown", onKey, true);
@@ -652,8 +653,8 @@
   }
 
   // ---------- 이벤트 ----------
-  el.fy.addEventListener("change", function () { S.fy = +el.fy.value; S.ym = null; fillMonths(); loadCfg(S.fy).then(render); });
-  el.month.addEventListener("change", function () { S.ym = el.month.value; render(); });
+  el.fy.addEventListener("change", function () { S.fy = +el.fy.value; S.ym = null; fillMonths(); loadCfg().then(render); });
+  el.month.addEventListener("change", function () { S.ym = el.month.value; loadCfg().then(render); });
   el.reload.addEventListener("click", function () { D.clearCache(); S.ready = false; start(true); });
   el.tgtBtn.addEventListener("click", function () {
     var open = el.tgt.hidden; el.tgt.hidden = !open; el.tgtBtn.setAttribute("aria-expanded", String(open));
@@ -673,7 +674,7 @@
     return load().then(function () {
       if (!S.ready) { started = false; return; }
       fillFy(); fillMonths();
-      return loadCfg(S.fy).then(render);
+      return loadCfg().then(render);
     });
   }
   document.addEventListener("inni:show", function (e) { if (e.detail.view === "inni" && e.detail.sub === "sales") start(); });

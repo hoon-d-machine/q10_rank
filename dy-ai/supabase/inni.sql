@@ -91,7 +91,7 @@ end; $$;
 revoke all on function dy_inni_comment_set(text, date, text) from public, anon;
 grant execute on function dy_inni_comment_set(text, date, text) to authenticated;
 
--- ---- 화면 설정 (강조 행·열·색, 그래프 종류): 리포트 종류 + 회계연도마다 하나, 모두가 같이 봄 ----
+-- ---- 화면 설정: 강조(행·열·색)는 리포트 + 기준월(fy 열에 YYYYMM)마다, 그래프 설정은 리포트마다 하나(fy=0), 모두가 같이 봄. 옛 회계연도 행은 값이 없을 때 대신 읽음 ----
 create table if not exists inni_settings (
   report text not null,                -- sales | product | onsite | megapo
   fy int not null,                     -- 회계연도 (BY27 = 2027)
@@ -119,7 +119,8 @@ as $$
 begin
   if auth.uid() is null then raise exception 'login required'; end if;
   if (p_report not in ('sales', 'product', 'onsite', 'megapo', 'megawari') and p_report !~ '^board_[a-z]+$') then raise exception 'bad report'; end if;
-  if p_fy < 2000 or p_fy > 2100 then raise exception 'bad fy'; end if;
+  -- p_fy 는 저장 단위 키: 0 = 리포트 전체(그래프 설정), YYYYMM(200001~210012) = 기준월별(강조), 2000~2100 = 옛 회계연도 값(읽기 대체용)
+  if not (p_fy = 0 or p_fy between 2000 and 2100 or (p_fy between 200001 and 210012 and p_fy % 100 between 1 and 12)) then raise exception 'bad fy'; end if;
   if jsonb_typeof(p_config) <> 'object' or length(p_config::text) > 8000 then raise exception 'bad config'; end if;
   insert into inni_settings (report, fy, config, updated_by, updated_at)
   values (p_report, p_fy, p_config, auth.jwt() ->> 'email', now())

@@ -119,7 +119,7 @@
       if (!changed.length && !cfgChanged) { close(); return; }
       save.disabled = true; err.textContent = "";
       changed.forEach(function (x) { jobs.push(o.rpc("dy_inni_comment_set", { p_report: x[0].report, p_ym: x[0].ym, p_body: x[1].value }).then(function (c) { if (o.onNote) o.onNote(c, x[0].key); })); });
-      if (cfgChanged) jobs.push(o.rpc("dy_inni_settings_set", { p_report: o.report, p_fy: o.fy, p_config: draft }).then(function () { if (o.onCfg) o.onCfg(draft); }));
+      if (cfgChanged) jobs.push((o.ym && window.dyInniCfg ? window.dyInniCfg.set(o.rpc, o.report, o.ym, JSON.parse(cfg0), draft) : o.rpc("dy_inni_settings_set", { p_report: o.report, p_fy: o.fy, p_config: draft })).then(function () { if (o.onCfg) o.onCfg(draft); }));
       Promise.all(jobs).then(function () { o.toast("설정을 저장했어요"); close(); }).catch(function (e) { err.textContent = o.friendly(e); save.disabled = false; });
     }
     document.addEventListener("keydown", onKey, true);

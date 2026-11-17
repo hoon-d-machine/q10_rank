@@ -60,7 +60,7 @@
     <!-- 큰 탭: 기존 대시보드 / inni(월간 리포트 4종: SALES · PRODUCT · ONSITE AD · MEGAPO) -->
     <div class="inni-tabs inni-main js-views" role="tablist" aria-label="대시보드 종류">
       <button class="inni-tab" type="button" role="tab" data-view="dash" aria-selected="true">대시보드</button>
-      <button class="inni-tab" type="button" role="tab" data-view="inni" aria-selected="false">inni</button>
+      <button class="inni-tab" type="button" role="tab" data-view="inni" aria-selected="false">Sell Thru</button>
       <button class="inni-tab" type="button" role="tab" data-view="codes" aria-selected="false">상품코드관리</button>
     </div>
 
@@ -103,7 +103,7 @@
     </div>
 
     <div id="view-inni" hidden>
-      <div class="inni-tabs inni-sub js-subs" role="tablist" aria-label="inni 대시보드">
+      <div class="inni-tabs inni-sub js-subs" role="tablist" aria-label="Sell Thru 대시보드">
         <button class="inni-tab" type="button" role="tab" data-sub="sales" aria-selected="true">SALES</button>
         <button class="inni-tab" type="button" role="tab" data-sub="product" aria-selected="false">PRODUCT</button>
         <button class="inni-tab" type="button" role="tab" data-sub="onsite" aria-selected="false">ONSITE AD</button>
@@ -348,6 +348,7 @@
 <script src="/assets/xlsx-writer.js"></script>
 <script src="/assets/inni-codes.js"></script>
 <script src="/assets/inni-help.js"></script>
+<script src="/assets/inni-html.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });

@@ -14,7 +14,7 @@
     { group: "메뉴 (화면 전체)", items: [["menu.main", "수집기"], ["menu.dashboard", "대시보드"], ["menu.event", "행사 랭킹"], ["menu.data", "데이터"], ["menu.logs", "로그"]] },
     { group: "대시보드 · 보드 탭", items: [["dash.board.custom", "커스텀"], ["dash.board.ad", "광고 효율"], ["dash.board.rank", "랭킹·판매"], ["dash.board.channel", "유입 경로"],
       ["dash.board.customer", "고객 구조"], ["dash.board.events", "행사 비교"], ["dash.board.wish", "찜·장바구니"], ["dash.board.exec", "경영 요약"]] },
-    { group: "대시보드 · inni 리포트 탭", items: [["dash.inni.sales", "SALES"], ["dash.inni.product", "PRODUCT"], ["dash.inni.onsite", "ONSITE AD"], ["dash.inni.megapo", "MEGAPO"]] },
+    { group: "대시보드 · Sell Thru 리포트 탭", items: [["dash.inni.sales", "SALES"], ["dash.inni.product", "PRODUCT"], ["dash.inni.onsite", "ONSITE AD"], ["dash.inni.megapo", "MEGAPO"]] },
     { group: "대시보드 · 상품코드", items: [["dash.codes", "상품코드관리 탭 보기"], ["edit.codes", "상품코드 등록·수정·삭제"]] },
     { group: "데이터 표 탭", items: [["data.t.goods", "일자·품목별 거래"], ["data.t.pvgoods", "일자·상품별 PV"], ["data.t.sales", "일자별 거래"], ["data.t.pageview", "일자별 페이지뷰"],
       ["data.t.customer", "고객(일자별)"], ["data.t.custgoods", "찜·장바구니"], ["data.t.ad_daily", "광고비·광고 매출"], ["data.t.ad_goods", "상품별 광고"], ["data.t.ad_keyword", "광고 키워드"],
@@ -32,7 +32,7 @@
     "feat.help": ".js-help, .js-b-help",
     "feat.settings": ".js-s-set, .js-p-set, .js-o-set, .js-m-set, .js-b-set",
     "feat.input": ".js-s-tgt-btn, .js-s-notice-btn, .js-o-manual",
-    "feat.xlsx": ".js-s-xlsx, .js-p-xlsx, .js-o-xlsx, .js-m-xlsx, .js-b-xlsx, .js-dl-one, .js-dl-all",
+    "feat.xlsx": ".js-s-xlsx, .js-p-xlsx, .js-o-xlsx, .js-m-xlsx, .js-b-xlsx, #view-inni .js-html, .js-dl-one, .js-dl-all",
     "feat.collect": ".js-collect"
   };
 

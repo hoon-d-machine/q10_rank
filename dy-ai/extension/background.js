@@ -107,6 +107,32 @@ chrome.runtime.onMessage.addListener(function (msg) {
   else chrome.storage.local.remove("dySession").catch(function () {});
 });
 
+// 팀 공용 Qoo10 로그인 정보: DB(dy_qsm_cred_get, 수집 권한 필요)에서 받는다. 값은 DB 에 암호화돼 있고 이 PC 에는 저장하지 않는다(메모리 캐시만, 수집 한 번 동안).
+async function teamCred() {
+  if (job && job.teamCred) return job.teamCred;
+  var o = await chrome.storage.local.get("dySession").catch(function () { return {}; });
+  var S = o.dySession;
+  if (!S || !S.access_token || !S.url || !S.anonKey) return { skip: "nosession" };
+  if ((S.expires_at || 0) * 1000 - Date.now() < 30 * 1000) return { skip: "session" };
+  try {
+    var r = await fetch(S.url.replace(/\/$/, "") + "/rest/v1/rpc/dy_qsm_cred_get", {
+      method: "POST", headers: { apikey: S.anonKey, Authorization: "Bearer " + S.access_token, "Content-Type": "application/json" }, body: "{}"
+    });
+    var t = await r.text(), j = null;
+    try { j = JSON.parse(t); } catch (e) {}
+    if (!r.ok) {
+      var m = (j && (j.message || j.error)) || t.slice(0, 120) || ("HTTP " + r.status);
+      if (/Could not find the function/i.test(m)) return { skip: "nodb" };
+      if (/no permission|permission denied/i.test(m)) return { skip: "noperm" };
+      return { skip: "dberr", err: m };
+    }
+    if (!j || !j.id) return { skip: "nocred" };
+    var c = { id: j.id, pw: j.pw || "", ep: j.ep || "", from: "team" };
+    if (job) job.teamCred = c;
+    return c;
+  } catch (e) { return { skip: "dberr", err: String((e && e.message) || e) }; }
+}
+
 // ---------- QSM 로그인 자동 입력 (qsm-login.js) · 설정 화면 ----------
 chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   if (!msg) return;
@@ -116,11 +142,12 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     if (!job) { sendResponse({ skip: "nojob" }); return; }
     var okTab = sender.tab && (sender.tab.id === job.tabId || sender.tab.id === job.qsmTabId);
     if (!okTab) { sendResponse({ skip: "othertab", tab: sender.tab && sender.tab.id, jobTab: job.tabId }); return; }
+    // 1) 이 PC 확장 옵션에 저장한 정보가 먼저, 2) 없으면 관리 화면에 저장된 팀 공용 정보(DB)
     chrome.storage.local.get("qsmLogin").then(function (o) {
       var v = o.qsmLogin;
-      if (!v || !v.id) sendResponse({ skip: "nocred" });
-      else if (v.auto === false) sendResponse({ skip: "off" });
-      else sendResponse({ id: v.id, pw: v.pw || "", ep: v.ep || "" });
+      if (v && v.id && v.auto !== false) { sendResponse({ id: v.id, pw: v.pw || "", ep: v.ep || "", from: "local" }); return; }
+      if (v && v.id && v.auto === false) { sendResponse({ skip: "off" }); return; }
+      return teamCred().then(sendResponse);
     }, function (e) { sendResponse({ skip: "storage", err: String((e && e.message) || e) }); });
     return true; // 비동기 응답
   }
@@ -291,9 +318,11 @@ async function waitForAuth() {
       if (!loginNotified) {
         loginNotified = true;
         var saved = (await chrome.storage.local.get("qsmLogin").catch(function () { return {}; })).qsmLogin;
-        status("login", saved && saved.id && saved.auto !== false
+        var auto = !!(saved && saved.id && saved.auto !== false);
+        if (!auto && !(saved && saved.id)) { var tc = await teamCred(); auto = !!(tc && tc.id); }
+        status("login", auto
           ? "Qoo10 로그인 창을 열었어요. 아이디·비밀번호는 자동으로 들어가요. 로그인이 끝나면 자동으로 수집을 시작해요."
-          : "Qoo10 로그인 창에서 로그인해 주세요. (설명서의 '로그인 정보 설정'에 저장하면 아이디·비밀번호를 자동으로 넣어 줘요)");
+          : "Qoo10 로그인 창에서 로그인해 주세요. (관리 화면의 '팀 공용 로그인 정보' 또는 확장 옵션에 저장하면 자동으로 넣어 줘요)");
         chrome.tabs.update(job.tabId, { active: true }).catch(function () {});
         if (tab.windowId != null) chrome.windows.update(tab.windowId, { focused: true }).catch(function () {});
       }

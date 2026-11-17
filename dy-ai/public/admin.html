@@ -67,6 +67,19 @@
       <thead><tr><th>이름</th><th>아이디</th><th>구분</th><th>상태</th><th>권한</th><th>마지막 접속</th><th>관리</th></tr></thead>
       <tbody class="js-rows"><tr><td colspan="7" class="admin-empty">불러오는 중…</td></tr></tbody>
     </table></div>
+    <section class="admin-cred js-cred">
+      <h2>Qoo10 로그인 정보 (팀 공용)</h2>
+      <p>여기에 한 번만 저장하면, 수집 권한이 있는 모두가 Q10 수집 때 뜨는 QSM 로그인 창에 아이디·비밀번호가 자동으로 들어가요(확장 프로그램 0.7.0 이상). 값은 DB에 암호화해서 보관하고, 저장한 비밀번호는 화면에 다시 보여 주지 않아요. 각자 확장 옵션에 따로 저장한 정보가 있으면 그것이 먼저 쓰여요. reCAPTCHA와 로그인 버튼은 직접 눌러야 해요.</p>
+      <p class="admin-cred-state js-c-state" data-on="0">불러오는 중…</p>
+      <form class="admin-cred-form js-c-form" autocomplete="off">
+        <input name="id" type="text" placeholder="Qoo10 아이디" autocomplete="off" spellcheck="false" aria-label="Qoo10 아이디">
+        <input name="pw" type="password" placeholder="비밀번호" autocomplete="new-password" aria-label="비밀번호">
+        <input name="ep" type="text" placeholder="확인 화면용 아이디 (비우면 아이디와 같음)" autocomplete="off" spellcheck="false" aria-label="확인 화면용 아이디">
+        <button class="dash-btn is-primary" type="submit">저장</button>
+        <button class="logs-btn js-c-clear" type="button">삭제</button>
+      </form>
+      <p class="dash-msg js-c-msg" role="alert" hidden></p>
+    </section>
     <section class="admin-audit js-audit">
       <h2>변경 이력</h2>
       <p>상품코드 · 코멘트 · 보고서 설정 · 월별 목표 · 광고비 · 대시보드 · 즐겨찾기 · 행사 설정 · 계정 권한의 입력 · 수정 · 삭제가 서버(DB)에 모두 기록돼요. 선택해서 이전 값으로 되돌릴 수 있어요.</p>
@@ -110,6 +123,7 @@
 <script src="/assets/col-resize.js"></script>
 <script src="/assets/admin.js"></script>
 <script src="/assets/admin-audit.js"></script>
+<script src="/assets/admin-cred.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {
     window.dyAuth.signOut().then(function () { location.replace("/"); });

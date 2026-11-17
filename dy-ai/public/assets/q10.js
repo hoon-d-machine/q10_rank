@@ -20,6 +20,7 @@
   var target = null;      // 이번 수집의 저장 대상 (q10-save.js chooseTarget 결과)
   var autoLogin = null;   // 확장에 Qoo10 로그인 정보가 저장돼 있는지 (0.4.0+)
   var AUTOLOGIN_FROM = "0.4.0";
+  var teamCred = false;   // 관리 화면에 팀 공용 Qoo10 로그인 정보가 저장돼 있는지 (DB, 수집 권한 필요)
   var autoEl = document.querySelector(".js-autologin");
   var optBtn = document.querySelector(".js-options");
 
@@ -70,11 +71,11 @@
 
     if (autoEl) {
       var canAuto = installed && installed !== "unknown" && cmp(installed, AUTOLOGIN_FROM) >= 0;
-      autoEl.setAttribute("data-state", s === "checking" ? "checking" : !installed || installed === null ? "none" : !canAuto ? "old" : autoLogin ? "ok" : "off");
+      autoEl.setAttribute("data-state", s === "checking" ? "checking" : !installed || installed === null ? "none" : !canAuto ? "old" : (autoLogin || teamCred) ? "ok" : "off");
       autoEl.textContent = s === "checking" ? "확인 중…"
         : installed === null ? "확장 프로그램을 먼저 설치해 주세요"
         : !canAuto ? "확장 프로그램 v" + AUTOLOGIN_FROM + "부터 쓸 수 있어요 (업데이트 필요)"
-        : autoLogin ? "자동 입력 켜짐" : "아직 설정 안 됨";
+        : autoLogin ? "자동 입력 켜짐" : teamCred ? "자동 입력 켜짐 (팀 공용 정보)" : "아직 설정 안 됨";
     }
 
     if (dlBtn) {
@@ -319,4 +320,11 @@
   });
 
   render();
+
+  // 팀 공용 로그인 정보가 저장돼 있는지 (실패해도 무시)
+  try {
+    if (window.dyAuth && window.dyAuth.client) {
+      window.dyAuth.client.rpc("dy_qsm_cred_status").then(function (r) { if (r && r.data && r.data.set) { teamCred = true; render(); } }, function () {});
+    }
+  } catch (_) {}
 })();

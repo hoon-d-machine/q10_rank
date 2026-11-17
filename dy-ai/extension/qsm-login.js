@@ -38,14 +38,19 @@
   var SKIP = {
     nojob: "수집 중이 아니라 건너뛰었어요 (Q10 수집 버튼으로 연 창에서만 넣어요)",
     othertab: "수집용 탭이 아니라 건너뛰었어요",
-    nocred: "저장된 로그인 정보가 없어요 (확장 옵션에서 저장)",
+    nocred: "저장된 로그인 정보가 없어요 (관리 화면의 ‘팀 공용 로그인 정보’ 또는 확장 옵션에서 저장)",
     off: "‘로그인 창에 자동으로 넣기’가 꺼져 있어요 (확장 옵션)",
-    storage: "저장 정보를 읽지 못했어요"
+    storage: "저장 정보를 읽지 못했어요",
+    nosession: "DY-AI 로그인 세션이 없어요 (사이트에 로그인한 뒤 수집 버튼을 눌러 주세요)",
+    session: "DY-AI 로그인 세션이 만료됐어요 (사이트를 새로고침한 뒤 다시 수집해 주세요)",
+    nodb: "팀 공용 정보 기능이 서버(DB)에 아직 설치되지 않았어요",
+    noperm: "팀 공용 정보를 읽을 권한(수집 권한)이 없어요",
+    dberr: "팀 공용 정보를 불러오지 못했어요"
   };
 
   chrome.runtime.sendMessage({ type: "qsm-autofill" }).then(function (cred) {
     if (!cred) { banner("확장 백그라운드가 응답하지 않았어요 (확장을 새로고침해 보세요)", true); return; }
-    if (cred.skip) { banner((SKIP[cred.skip] || cred.skip) + (cred.skip === "othertab" ? " [탭 " + cred.tab + " / 작업 " + cred.jobTab + "]" : ""), true, cred.skip === "nojob"); return; }
+    if (cred.skip) { banner((SKIP[cred.skip] || cred.skip) + (cred.skip === "othertab" ? " [탭 " + cred.tab + " / 작업 " + cred.jobTab + "]" : "") + (cred.err ? " (" + String(cred.err).slice(0, 60) + ")" : ""), true, cred.skip === "nojob"); return; }
     if (!cred.id) return;
     var filledLogin = false, filledEp = false;
     var until = Date.now() + 10 * 60 * 1000;

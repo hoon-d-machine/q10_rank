@@ -9,7 +9,7 @@
   var $ = function (s) { return root.querySelector(s); };
   var PAGE = 50, items = [], oldest = null, more = false;
 
-  var TABLES = { inni_product_codes: "상품코드", inni_comments: "코멘트", inni_settings: "보고서 설정", inni_targets: "월별 목표", inni_ad_manual: "광고비(수기)",
+  var TABLES = { inni_product_codes: "상품코드", inni_comments: "코멘트", qsm_login: "Qoo10 로그인 정보", inni_settings: "보고서 설정", inni_targets: "월별 목표", inni_ad_manual: "광고비(수기)",
     dy_dashboards: "대시보드", brand_favorites: "브랜드 즐겨찾기", dy_event_config: "행사 랭킹 설정", dy_user_perms: "계정 권한" };
   var OPS = { I: "입력", U: "수정", D: "삭제" };
   var SKIP = { updated_at: 1, updated_by: 1, created_at: 1 };

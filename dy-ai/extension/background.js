@@ -112,11 +112,16 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   if (!msg) return;
   if (msg.type === "qsm-autofill") {
     // 수집 중에 확장이 연 탭에만 로그인 정보를 줌
-    if (!job || !sender.tab || sender.tab.id !== job.tabId) { sendResponse(null); return; }
+    // 거절할 때도 이유를 돌려줘서 로그인 탭에 보이게 한다(진단용): 수집 중 아님 / 수집용 탭이 아님 / 저장 정보 없음 / 자동 입력 꺼짐
+    if (!job) { sendResponse({ skip: "nojob" }); return; }
+    var okTab = sender.tab && (sender.tab.id === job.tabId || sender.tab.id === job.qsmTabId);
+    if (!okTab) { sendResponse({ skip: "othertab", tab: sender.tab && sender.tab.id, jobTab: job.tabId }); return; }
     chrome.storage.local.get("qsmLogin").then(function (o) {
       var v = o.qsmLogin;
-      sendResponse(v && v.id && v.auto !== false ? { id: v.id, pw: v.pw || "", ep: v.ep || "" } : null);
-    }, function () { sendResponse(null); });
+      if (!v || !v.id) sendResponse({ skip: "nocred" });
+      else if (v.auto === false) sendResponse({ skip: "off" });
+      else sendResponse({ id: v.id, pw: v.pw || "", ep: v.ep || "" });
+    }, function (e) { sendResponse({ skip: "storage", err: String((e && e.message) || e) }); });
     return true; // 비동기 응답
   }
   if (msg.type === "qsm-autofill-done") {

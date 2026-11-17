@@ -17,7 +17,7 @@
     ["base_date", "날짜"], ["weekday", "요일"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"], ["gd_no", "상품코드"],
     ["outer_gd_no", "외부상품코드"], ["buy_cnt", "수주수량"], ["cancel_cnt", "취소수량"], ["net_cnt", "순수량"],
     ["buy_bpv", "수주금액"], ["cancel_bpv", "취소금액"], ["net_bpv", "순수금액"],
-    ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"]
+    ["product_name", "상품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"]
   ];
   var SALES = [
     ["base_year", "기준연도"], ["base_start_dt", "시작일"], ["base_end_dt", "종료일"], ["base_weekday_no", "요일"],
@@ -38,12 +38,12 @@
     mainPv: "홈페이지", mnMegawariPv: "메가와리", mnMegapoPv: "메가포", mnMyinterestPv: "즐겨찾기", searchPv: "총 검색"
   };
   var PAGEVIEW = PV_NAMES.map(function (n) { return [snake(n), PV_RENAME[n] || n]; });
-  var PRODUCTS = [["gd_no", "상품번호"], ["product_name", "제품명"], ["line", "라인"], ["category", "카테고리"]];
+  var PRODUCTS = [["gd_no", "상품번호"], ["product_name", "상품명"], ["line", "라인"], ["category", "카테고리"], ["note", "비고"]];
 
   // 상품별 일자 PV (판매자센터 pageview/date-goods). 유입 경로 54개 중 주요 경로만 보여 준다 (전부는 DB·대시보드 지표에 있음)
   var PVGOODS = [
     ["base_date", "날짜"], ["gd_no", "상품코드"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"],
-    ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"],
+    ["product_name", "상품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"],
     ["total_pv", "총 PV"], ["main_pv", "홈"], ["mn_megawari_pv", "메가와리"], ["mn_megapo_pv", "메가포"],
     ["search_pv", "검색"], ["sch_keywordplus_pv", "키워드플러스"], ["sch_powerrank_pv", "파워랭크업"], ["sch_cps_pv", "스마트세일즈"],
     ["bestseller_pv", "베스트셀러"], ["beautyhub_pv", "뷰티허브"], ["deal_pv", "딜"], ["wish_pv", "찜"], ["todaysview_pv", "오늘 본 상품"],
@@ -58,7 +58,7 @@
   // 상품별 찜·장바구니: 판매자센터는 현재 누적값만 줘서 수집한 날의 스냅샷으로 쌓는다
   var CUSTGOODS = [
     ["snapshot_date", "스냅샷 날짜"], ["gd_no", "상품코드"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"],
-    ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"], ["wish_cnt", "찜 수"], ["basket_cnt", "장바구니 수"]
+    ["product_name", "상품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"], ["wish_cnt", "찜 수"], ["basket_cnt", "장바구니 수"]
   ];
 
   // 광고센터 (inni_RPA/ads_extra.py): 광고비·광고 매출은 엔 단위. ad_type 'all' 은 전체(스토어 총 매출 포함)라서 유형별 행과 더하면 두 번 세어진다
@@ -84,7 +84,7 @@
   ];
   var CPMKEYWORD = [["base_date", "날짜"], ["campaign_no", "캠페인 번호"], ["keyword", "키워드"], ["impressions", "광고 노출 수"]];
   var ADGOODS = [
-    ["base_date", "날짜"], ["gd_no", "상품코드"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"], ["product_name", "제품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"],
+    ["base_date", "날짜"], ["gd_no", "상품코드"], ["brand_nm", "브랜드"], ["gd_nm", "상품명"], ["product_name", "상품명(상품코드표)"], ["line", "라인"], ["category", "카테고리"],
     ["ad_type", "광고 유형"], ["ad_price", "광고비(엔)"], ["ad_sales", "광고 매출(엔)"], ["expose_cnt", "노출"], ["click_cnt", "클릭"], ["cart_cnt", "장바구니"], ["purchase_cnt", "구매수량"]
   ];
 
@@ -97,18 +97,18 @@
 
   var SOURCES = {
     goods:    { label: "일자·품목별 거래", cols: GOODS,    dated: true,  file: "품목별거래",
-                hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
+                hint: "상품명 · 브랜드 · 상품코드 · 라인 · 카테고리 검색" },
     sales:    { label: "일자별 거래",     cols: SALES,    dated: true,  file: "일자별거래", hint: "" },
     pageview: { label: "일자별 페이지뷰", cols: PAGEVIEW, dated: true,  file: "페이지뷰",   hint: "" },
     pvgoods:  { label: "일자·상품별 PV", cols: PVGOODS,  dated: true,  file: "상품별PV",
-                hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
+                hint: "상품명 · 브랜드 · 상품코드 · 라인 · 카테고리 검색" },
     customer: { label: "고객(일자별)",   cols: CUSTOMER, dated: true,  file: "고객일자별", hint: "" },
     custgoods:{ label: "찜·장바구니(스냅샷)", cols: CUSTGOODS, dated: true, file: "찜장바구니",
-                hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
+                hint: "상품명 · 브랜드 · 상품코드 · 라인 · 카테고리 검색" },
     ad_daily: { label: "광고비·광고 매출", cols: ADDAILY, dated: true, file: "광고일자별",
                 hint: "광고 유형 검색 (예: keywordplus, cps, power_rankup, all)" },
     ad_goods: { label: "상품별 광고",     cols: ADGOODS, dated: true, file: "상품별광고",
-                hint: "상품명 · 브랜드 · 상품코드 · 제품명 · 라인 · 카테고리 검색" },
+                hint: "상품명 · 브랜드 · 상품코드 · 라인 · 카테고리 검색" },
     mega_event:{ label: "행사 달력(메가와리·메가포)", cols: MEGAEVENT, dated: true, file: "행사달력", hint: "행사 이름 · 종류 검색 (날짜는 시작일 기준)" },
     cpm_daily: { label: "Beauty Brand AD(일자별)", cols: CPMDAILY, dated: true, file: "BeautyBrandAD일자별", hint: "" },
     cpm_keyword:{ label: "Beauty Brand AD 키워드", cols: CPMKEYWORD, dated: true, file: "BeautyBrandAD키워드", hint: "키워드 검색" },
@@ -118,7 +118,7 @@
     rank:     { label: "랭킹(일·주·월)", cols: RANK,   dated: true,  file: "랭킹",
                 hint: "상품명 · 브랜드 · 카테고리 검색" },
     products: { label: "상품코드",        cols: PRODUCTS, dated: false, file: "상품코드",
-                hint: "상품번호 · 제품명 · 라인 · 카테고리 검색" }
+                hint: "상품번호 · 상품명 · 라인 · 카테고리 검색" }
   };
   var ORDER = ["goods", "pvgoods", "sales", "pageview", "customer", "custgoods", "ad_daily", "ad_goods", "ad_keyword", "mega_event", "cpm_daily", "cpm_keyword", "cpm_campaign", "rank", "products"];
   var BOUNDS_KEY = { goods: "goods", sales: "sales", pageview: "pageview", pvgoods: "goods", customer: "customer", custgoods: "custgoods", ad_daily: "ad", ad_goods: "adgoods", ad_keyword: "ad", cpm_daily: "cpm", cpm_keyword: "cpm", cpm_campaign: "cpm", mega_event: "ad", rank: "rank" };

@@ -495,5 +495,13 @@
     }).catch(function (e) { showMsg(friendly(e)); });
   }
   document.addEventListener("inni:show", function (e) { if (e.detail.view === "inni" && e.detail.sub === "megapo") start(); });
+  // 통합 HTML(inni-html.js)이 행사 종류·행사 목록을 읽어 가는 입구
+  window.dyInniEvent = {
+    ready: function () { return start().then(function () { return S.ready; }); },
+    types: function () { return TYPES.map(function (t) { return { value: t[0], label: t[1] }; }); },
+    events: function (type) {
+      return S.all.filter(function (e) { return e.type === type; }).map(function (e) { return { no: String(e.no), label: evLabel(e) + " (" + evRange(e) + ")" + (e.end_dt > S.anchor ? " · 진행 중" : ""), name: evLabel(e), done: e.end_dt <= S.anchor }; });
+    }
+  };
   if (/^#inni\/megapo/.test(location.hash || "")) start();
 })();

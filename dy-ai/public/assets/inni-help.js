@@ -38,7 +38,7 @@
       ]
     },
     megapo: {
-      title: "MEGAPO 설명",
+      title: "EVENT 설명",
       sections: [
         ["이 화면은", [
           "AP Talk 시트의 MEGAPO 탭을 DB 로 대체한 메가포(Qoo10 포인트 행사)·메가와리 리포트예요. 위에서 종류와 행사를 고르면 그 행사 기간(시작일~종료일)의 매출·PV·ORDERS 로 일별 표, 유입 경로별 PV, 상품별 실적을 만들어요.",

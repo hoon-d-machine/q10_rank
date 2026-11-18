@@ -132,7 +132,7 @@
   }
 
   // ---------- 통합 HTML ----------
-  var ALL = ["sales", "product", "onsite"], PFX = { sales: "s", product: "p", onsite: "o" }, busy = false, pending = 0;
+  var ALL = ["sales", "product", "onsite", "megapo"], PFX = { sales: "s", product: "p", onsite: "o", megapo: "m" }, busy = false, pending = 0;
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function ready(pane, tries) { return pane.querySelector(".inni-report table") ? Promise.resolve(true) : tries <= 0 ? Promise.resolve(false) : wait(200).then(function () { return ready(pane, tries - 1); }); }
 
@@ -161,7 +161,21 @@
   function fyOf(ym) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7); return m >= 7 ? y + 1 : y; }
 
   // 화면의 기준 월을 ym("YYYY-MM-01")로 맞춘다. 되돌릴 때 쓸 이전 상태를 돌려준다
-  function aim(pane, sub, ym, range) {
+  // EVENT 화면: 행사 종류 → 행사 순으로 맞춘다
+  function aimEvent(pane, ev) {
+    var type = pane.querySelector(".js-m-type"), sel = pane.querySelector(".js-m-event");
+    var prev = { type: type && type.value, ev: sel && sel.value };
+    var undo = function () {
+      return Promise.resolve().then(function () { if (type && prev.type && type.value !== prev.type) { setSel(type, prev.type); return settle(); } })
+        .then(function () { if (sel && prev.ev && sel.value !== prev.ev) { setSel(sel, prev.ev); return settle(); } });
+    };
+    return Promise.resolve().then(function () { if (type.value !== ev.type) { setSel(type, ev.type); return settle(); } })
+      .then(function () { var ok = setSel(sel, ev.no); return (sel.value !== ev.no ? settle() : Promise.resolve()).then(function () { return ok && sel.value === ev.no; }); })
+      .then(function (ok) { return { ok: ok, prev: prev, undo: undo }; });
+  }
+
+  function aim(pane, sub, ym, range, ev) {
+    if (sub === "megapo") return aimEvent(pane, ev);
     var p = PFX[sub], q = function (n) { return pane.querySelector(".js-" + p + "-" + n); };
     var fy = q("fy"), mo = q("month"), mode = q("mode"), from = q("from"), to = q("to");
     var prev = { fy: fy && fy.value, mo: mo && mo.value, mode: mode && mode.value, from: from && from.value, to: to && to.value };
@@ -191,7 +205,7 @@
       .then(function () { if (prev.mode !== "range" && mo && prev.mo && mo.value !== prev.mo) { setSel(mo, prev.mo); return settle(); } });
   }
 
-  var LABEL = { sales: "SALES", product: "PRODUCT", onsite: "ONSITE AD" };
+  var LABEL = { sales: "SALES", product: "PRODUCT", onsite: "ONSITE AD", megapo: "EVENT" };
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   function ymStr(y, m) { return y + "-" + ("0" + m).slice(-2) + "-01"; }
   function addMonths(ym, n) { var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1 + n; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12; return ymStr(y, m + 1); }
@@ -213,12 +227,14 @@
   // 통합 HTML 옵션 창 (알림창 대신 화면 안 모달): 담을 화면 체크 · 기준 월(회계연도+월) · ONSITE AD 기간 설정(회계연도/기간)
   function askOptions(def) {
     return new Promise(function (res) {
+      var X = window.dyInniEvent, E = X && (X.events("SUPERPOINT").length + X.events("MEGAWARI").length) ? X : null;
       var B = bounds(), prev = document.activeElement, ov = h("div", "inni-modal"), card = h("div", "inni-modal-card");
       ov.setAttribute("role", "dialog"); ov.setAttribute("aria-modal", "true"); ov.setAttribute("aria-label", "통합 HTML");
       card.appendChild(h("h3", null, "통합 HTML 다운로드"));
       card.appendChild(h("p", null, "고른 화면을 한 파일에 탭으로 담아요. SALES · PRODUCT는 고른 회계연도·기준 월로 맞춰지고, 강조와 코멘트도 그 월에 저장된 것이 들어가요. 받은 뒤 화면은 원래대로 돌아와요."));
       var checks = {}, row = h("div", "inni-checks"); row.style.margin = "8px 0";
-      ALL.forEach(function (sub) {
+      var avail = ALL.filter(function (s) { return s !== "megapo" || E; });
+      avail.forEach(function (sub) {
         var lab = h("label"), cb = h("input"); cb.type = "checkbox"; cb.checked = true; checks[sub] = cb;
         lab.appendChild(cb); lab.appendChild(document.createTextNode(LABEL[sub])); row.appendChild(lab);
       });
@@ -260,14 +276,31 @@
       osBox.appendChild(rg);
       card.appendChild(osTitle); card.appendChild(osBox);
 
+      // EVENT: 행사 종류 → 행사 (사이트 EVENT 화면 위쪽 선택칸과 같은 구성)
+      var evTitle = h("h5", null, "EVENT 행사 선택"), evRow = h("div"), tSel = h("select"), eSel = h("select");
+      evRow.style.cssText = "display:flex;gap:12px;flex-wrap:wrap";
+      tSel.setAttribute("aria-label", "행사 종류"); eSel.setAttribute("aria-label", "행사");
+      if (E) {
+        E.types().forEach(function (t) { opt(tSel, t.value, t.label); });
+        var fillEv = function () {
+          eSel.innerHTML = ""; var list = E.events(tSel.value);
+          list.forEach(function (x) { opt(eSel, x.no, x.label); });
+          var dflt = list.filter(function (x) { return x.done; })[0] || list[0]; if (dflt) eSel.value = dflt.no;   // 기본: 가장 최근에 끝난 행사
+        };
+        tSel.addEventListener("change", fillEv); fillEv();
+        evRow.appendChild(field("행사 종류", tSel)); evRow.appendChild(field("행사", eSel));
+        card.appendChild(evTitle); card.appendChild(evRow);
+      }
+
       function sync() { // 체크를 풀면 그 화면 설정은 잠근다
         var osOn = checks.onsite.checked, baseOn = checks.sales.checked || checks.product.checked || (osOn && modes.fy.checked);
         modes.fy.disabled = modes.range.disabled = !osOn;
         fi.disabled = ti.disabled = !osOn || !modes.range.checked;
         fySel.disabled = moSel.disabled = !baseOn;
+        var evOn = !!E && checks.megapo.checked; tSel.disabled = eSel.disabled = !evOn; evRow.style.opacity = evOn ? "1" : ".45";
         osBox.style.opacity = osOn ? "1" : ".45"; rg.style.opacity = fi.disabled ? ".45" : "1"; baseRow.style.opacity = baseOn ? "1" : ".45";
       }
-      ALL.forEach(function (s) { checks[s].addEventListener("change", sync); });
+      avail.forEach(function (s) { checks[s].addEventListener("change", sync); });
       modes.fy.addEventListener("change", sync); modes.range.addEventListener("change", sync); sync();
 
       var err = h("div", "inni-modal-err"); card.appendChild(err);
@@ -276,9 +309,14 @@
       card.appendChild(acts); ov.appendChild(card); document.body.appendChild(ov); fySel.focus();
       function close(v) { document.removeEventListener("keydown", onKey, true); ov.remove(); if (prev && prev.focus) prev.focus(); res(v); }
       function go() {
-        var subs = ALL.filter(function (s) { return checks[s].checked; });
+        var subs = avail.filter(function (s) { return checks[s].checked; });
         if (!subs.length) { err.textContent = "담을 화면을 하나 이상 골라 주세요"; return; }
-        var out = { subs: subs, ym: moSel.value || null, range: null };
+        var out = { subs: subs, ym: moSel.value || null, range: null, event: null };
+        if (subs.indexOf("megapo") >= 0) {
+          if (!eSel.value) { err.textContent = "EVENT 행사를 골라 주세요"; return; }
+          var cur = E.events(tSel.value).filter(function (x) { return x.no === eSel.value; })[0];
+          out.event = { type: tSel.value, no: eSel.value, name: cur ? cur.name : "" };
+        }
         if (subs.indexOf("onsite") >= 0 && modes.range.checked) {
           if (fi.value > ti.value) { err.textContent = "시작 연월이 끝 연월보다 늦어요"; return; }
           if ((+ti.value.slice(0, 4) - +fi.value.slice(0, 4)) * 12 + (+ti.value.slice(5, 7) - +fi.value.slice(5, 7)) + 1 > 36) { err.textContent = "기간은 최대 36개월이에요"; return; }
@@ -298,12 +336,15 @@
   function saveAll(btn) {
     if (busy) return;
     var cur = document.querySelector(".js-s-month"), def = cur && cur.value ? cur.value.slice(0, 7) : "";
-    askOptions(def).then(function (opt) {
+    var lab0 = btn.textContent; btn.disabled = true; btn.textContent = "준비 중…";
+    var evReady = window.dyInniEvent ? window.dyInniEvent.ready().catch(function () { return false; }) : Promise.resolve(false);
+    evReady.then(function () { btn.disabled = false; btn.textContent = lab0; return askOptions(def); }).then(function (opt) {
       if (!opt || busy) return;
       busy = true;
       var old = btn.textContent; btn.disabled = true; btn.textContent = "만드는 중…";
       var untrack = track(), parts = [], missing = [], misses = [];
-      var tag = opt.range ? opt.range.from.slice(0, 7) + "_" + opt.range.to.slice(0, 7) : opt.ym.slice(0, 7);
+      var tag0 = opt.range ? opt.range.from.slice(0, 7) + "_" + opt.range.to.slice(0, 7) : opt.ym.slice(0, 7);
+      var evTag = opt.event ? opt.event.name.replace(/\s+/g, "_") : "", tag = opt.subs.length === 1 && opt.event ? evTag : tag0 + (evTag ? "_" + evTag : "");
       return opt.subs.reduce(function (chain, sub) {
         return chain.then(function () {
           var pane = document.querySelector('#view-inni .inni-pane[data-pane="' + sub + '"]'), was = pane.hidden, state = null;
@@ -311,7 +352,7 @@
           document.dispatchEvent(new CustomEvent("inni:show", { detail: { view: "inni", sub: sub } }));
           return settle().then(function () { return ready(pane, 75); }).then(function (ok) {
             if (!ok) { missing.push(LABEL[sub]); return; }
-            return aim(pane, sub, opt.ym, sub === "onsite" ? opt.range : null).then(function (st) {
+            return aim(pane, sub, opt.ym, sub === "onsite" ? opt.range : null, opt.event).then(function (st) {
               state = st; if (!st.ok) misses.push(LABEL[sub]);
               window.dispatchEvent(new Event("resize"));
               return wait(900);

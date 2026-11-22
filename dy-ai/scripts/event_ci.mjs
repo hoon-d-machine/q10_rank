@@ -18,13 +18,15 @@ try {
   const { sample, ...rest } = r;
   console.log(JSON.stringify(rest, null, 2));
   if (sample) console.log("sample", JSON.stringify(sample));
-  if (r.skipped) console.log("건너뜀:", r.skipped);
-  else console.log(`저장 ${opt.dry ? "(시험, 저장 안 함) " : ""}${r.rows || 0}건 · SID ${r.sid}`);
+  // ::notice / ::error 는 Actions 실행 화면 맨 위(annotation)에 요약으로 보인다
+  const oneLine = (s) => String(s).replace(/[\r\n]+/g, " ").slice(0, 900);
+  if (r.skipped) console.log("::notice title=행사 랭킹 건너뜀::" + oneLine(r.skipped + (r.sid ? " · SID " + r.sid : "") + (r.discover ? " · 탐색 " + r.discover.tried.join(" ") : "")));
+  else console.log("::notice title=행사 랭킹 저장::" + oneLine(`${opt.dry ? "(시험, 저장 안 함) " : ""}${r.rows || 0}건 · SID ${r.sid} · ${r.event || ""}`));
   if (r.failures && r.failures.length) {
-    console.error("실패:\n" + r.failures.map((f) => " - " + f.label + ": " + f.error).join("\n"));
+    console.log("::error title=행사 랭킹 실패::" + oneLine(r.failures.map((f) => f.label + ": " + f.error).join(" / ")));
     process.exit(1);
   }
 } catch (e) {
-  console.error("행사 랭킹 수집 실패:", (e && e.message) || e);
+  console.log("::error title=행사 랭킹 실패::" + String((e && e.message) || e).replace(/[\r\n]+/g, " "));
   process.exit(1);
 }

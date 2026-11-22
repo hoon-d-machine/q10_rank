@@ -75,6 +75,8 @@ const HEADERS_MAIN = {
   "user-agent": UA_MAIN, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "accept-language": "ko-KR,ko;q=0.8,en-US;q=0.5,en;q=0.3", "upgrade-insecure-requests": "1",
 };
+// Qoo10 은 접속을 막을 때 "523 Error" 오류 화면을 HTTP 200 으로 돌려준다 (상태 코드만 보면 정상처럼 보임)
+const isBlockPage = (html) => html.length < 5000 && /section_error_full|\b52\d Error\b/.test(html);
 const specialUrl = (sid) => "https://www.qoo10.jp/gmkt.inc/Special/Special.aspx?sid=" + encodeURIComponent(sid);
 const RANK_URL = "https://www.qoo10.jp/gmkt.inc/swe_SpecialAjaxService.asmx/GetPromotionRankingData";
 
@@ -86,6 +88,7 @@ export async function probeSid(sid) {
     const init = await fetch(specialUrl(sid), { headers: HEADERS_MAIN, signal: AbortSignal.timeout(15000) });
     jar.absorb(init);
     const text = await init.text();
+    if (isBlockPage(text)) return { sid, ok: false, why: "Qoo10 523 차단 페이지" };
     if (!init.url.includes("Special.aspx")) return { sid, ok: false, why: "행사 기간이 아니에요(리다이렉트)" };
     if (text.includes("Queue-it")) return { sid, ok: false, why: "Queue-it 대기열" };
     const res = await fetch(RANK_URL, {
@@ -185,7 +188,7 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
     text = await init.text();
     out.initStatus = init.status;
   }
-  if (init.status >= 520 && init.status < 530) throw new Error("Qoo10 행사 페이지 HTTP " + init.status + " — 접속이 막혔어요 (수집 서버 IP 차단)");
+  if ((init.status >= 520 && init.status < 530) || isBlockPage(text)) throw new Error("Qoo10 행사 페이지 HTTP " + init.status + (isBlockPage(text) ? " (523 차단 페이지)" : "") + " — 접속이 막혔어요 (수집 서버 IP 차단)");
   if (!init.url.includes("Special.aspx")) { out.skipped = "현재 이벤트 기간이 아니에요 (리다이렉트 발생)"; return out; }
   if (text.includes("Queue-it")) throw new Error("Queue-it 대기열 페이지가 떴어요 (Cloudflare IP 가 차단됐거나 대기열)");
 

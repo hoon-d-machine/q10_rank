@@ -12,7 +12,7 @@
  * 예약 작업 (wrangler.jsonc 의 triggers.crons, UTC 기준) — 예전 cron-job.org + GitHub Actions 를 대체
  *   (Q10 랭킹 수집은 Qoo10 이 Worker IP 를 막아 GitHub Actions 로 이전: .github/workflows/q10-rank.yml, scripts/rank_ci.mjs)
  *   0 0 * * 1    (월요일 09:00 KST) 주간 랭킹 리포트 메일          (src/rank_report.js)
- *   0 14 * * *   (매일 23:00 KST) 행사(메가와리) 랭킹 수집 → DB     (src/event_collect.js, 사이트에서 SID 를 켜 둔 때만)
+ *   (행사 랭킹 수집은 Qoo10 의 Worker IP 차단(523)으로 GitHub Actions 로 옮김: .github/workflows/q10-event.yml)
  * 수동 실행: POST /api/cron/rank?only=daily|weekly|monthly&dry=1, POST /api/cron/report?dry=1, POST /api/cron/event?dry=1&sid=..&force=1&probe=상품번호  (헤더 x-cron-token = secret CRON_TOKEN)
  *
  * secret (wrangler secret put): GOOGLE_SA_JSON(서비스 계정 JSON), SHEET_ID,

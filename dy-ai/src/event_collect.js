@@ -1,4 +1,5 @@
-/* Q10 메가와리(행사) 랭킹 수집 (Cloudflare cron) — 예전 collector.py(GitHub Actions + cron-job.org)를 옮긴 것.
+/* Q10 메가와리(행사) 랭킹 수집 — 예전 collector.py 를 옮긴 것. 예약 실행은 GitHub Actions(scripts/event_ci.mjs, .github/workflows/q10-event.yml):
+ * Qoo10 이 Cloudflare Worker IP 를 막아(523) Worker cron 에서는 수집이 안 된다. Worker 의 /api/cron/event 는 수동 시험용으로만 남김.
  * 행사 번호(SID)는 secret 이 아니라 DB 의 dy_event_config 에 두고 사이트(행사 랭킹 화면)에서 바꾼다. 꺼져 있거나 비어 있으면 건너뜀.
  * 결과는 qoo10_rankings 에 쌓는다 (collected_at 은 예전처럼 UTC 기준 시각, 화면에서 +9시간).
  */
@@ -184,6 +185,7 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
     text = await init.text();
     out.initStatus = init.status;
   }
+  if (init.status >= 520 && init.status < 530) throw new Error("Qoo10 행사 페이지 HTTP " + init.status + " — 접속이 막혔어요 (수집 서버 IP 차단)");
   if (!init.url.includes("Special.aspx")) { out.skipped = "현재 이벤트 기간이 아니에요 (리다이렉트 발생)"; return out; }
   if (text.includes("Queue-it")) throw new Error("Queue-it 대기열 페이지가 떴어요 (Cloudflare IP 가 차단됐거나 대기열)");
 
@@ -248,7 +250,7 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
       await sleep(1000);
     }
   }
-  if (!dbRows.length && !out.steps.some((x) => x.rows) && out.failures.length && out.failures.every((f) => /HTTP 5\d\d/.test(f.error))) {
+  if (!dbRows.length && !out.steps.some((x) => x.rows) && out.failures.length && out.failures.every((f) => /HTTP 5(?!2\d)\d\d/.test(f.error))) { // 52x 는 Cloudflare 계열 차단이라 건너뛰지 않고 실패로 남긴다
     out.failures = []; out.skipped = "랭킹 API 가 응답하지 않아요 (행사가 끝났을 수 있어요)"; return out;
   }
   out.rows = dbRows.length;

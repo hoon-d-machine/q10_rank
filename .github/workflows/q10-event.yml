@@ -1,0 +1,57 @@
+name: Q10 Event Rank Collect
+
+# 메가와리(행사) 랭킹 수집. Qoo10 이 Cloudflare Worker IP 를 막아(523) Worker cron 대신 Actions 러너에서 수집한다.
+# 결과는 Supabase qoo10_rankings. 행사 SID·켜기/끄기는 사이트 '행사 랭킹' 화면(dy_event_config).
+# 매일 23:00 KST (= 14:00 UTC). Actions 예약은 몇 분~몇 시간 늦을 수 있다 (collected_at 은 실제 수집 시각).
+# 수집 스크립트·이 파일이 main 에 올라오면 한 번 바로 실행한다 (3시간 안에 이미 수집했으면 건너뜀).
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/q10-event.yml
+      - dy-ai/scripts/event_ci.mjs
+      - dy-ai/src/event_collect.js
+  workflow_dispatch:
+    inputs:
+      sid:
+        description: "행사 SID 지정 (비우면 사이트 설정·자동 탐색)"
+        required: false
+        default: ""
+      force:
+        description: "행사 기간·중복 검사 무시 (1)"
+        required: false
+        default: ""
+      dry:
+        description: "DB에 쓰지 않고 개수만 (1)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: q10-event
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: 행사 랭킹 수집
+        working-directory: dy-ai
+        env:
+          SUPABASE_URL: https://dlgyvqcfastqguudzcob.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SID: ${{ github.event.inputs.sid }}
+          FORCE: ${{ github.event.inputs.force }}
+          DRY: ${{ github.event.inputs.dry }}
+        run: node scripts/event_ci.mjs

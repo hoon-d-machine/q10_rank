@@ -78,7 +78,56 @@ const HEADERS_MAIN = {
 // Qoo10 은 접속을 막을 때 "523 Error" 오류 화면을 HTTP 200 으로 돌려준다 (상태 코드만 보면 정상처럼 보임)
 const isBlockPage = (html) => html.length < 5000 && /section_error_full|\b52\d Error\b/.test(html);
 const specialUrl = (sid) => "https://www.qoo10.jp/gmkt.inc/Special/Special.aspx?sid=" + encodeURIComponent(sid);
-const RANK_URL = "https://www.qoo10.jp/gmkt.inc/swe_SpecialAjaxService.asmx/GetPromotionRankingData";
+// 랭킹 API: Qoo10 이 2026-11 메가와리부터 GetPromotionRankingData(→ 500) 를 GetPromotionRankingDataPC 로 바꿨다
+// (인자 categoryCode·previous 추가, 상품이 goods 로 감싸이지 않고 평평한 소문자 필드). 새 것을 먼저 부르고 안 되면 옛 것.
+const RANK_API = "https://www.qoo10.jp/gmkt.inc/swe_SpecialAjaxService.asmx/";
+const RANK_METHODS = [["GetPromotionRankingDataPC", { categoryCode: "", previous: false }], ["GetPromotionRankingData", {}]];
+
+async function fetchRanking(jar, headers, base, label) {
+  let last = "";
+  for (const [method, extra] of RANK_METHODS) {
+    const res = await fetch(RANK_API + method, {
+      method: "POST", signal: AbortSignal.timeout(20000), headers: { ...headers, cookie: jar.header() },
+      body: JSON.stringify({ ...base, ...extra, ___cache_expire___: String(Date.now()) }),
+    });
+    jar.absorb(res);
+    if (res.status === 200) {
+      const d = await res.json();
+      return "d" in d ? (typeof d.d === "string" ? JSON.parse(d.d) : d.d) : d;
+    }
+    last = `${label} HTTP ${res.status}`;
+  }
+  throw new Error(last);
+}
+
+// 응답의 1위(firstItem) + 나머지(items) 를 같은 꼴로: { RANK, GD_NO, GD_NM, SALE, BRAND, REVIEW }
+function rankItems(root) {
+  if (!root) return [];
+  const norm = (x) => {
+    if (!x) return null;
+    if (x.goods) { // 옛 API
+      const g = x.goods, p = g.PROMOTION_INFO && g.PROMOTION_INFO[0] && g.PROMOTION_INFO[0].PROMOTION_PRICE;
+      return { GD_NO: String(g.GD_NO || ""), GD_NM: g.GD_NM || "", SALE: p || g.FINAL_PRICE || 0 };
+    }
+    if (x.gdNm && x.connectUrl) { // 새 API 의 1위(firstItem): 상품번호는 링크에, 가격은 "5,600円" 글자로만 온다
+      const m = String(x.connectUrl).match(/goodscode=(\d+)/i);
+      if (!m) return null;
+      return { GD_NO: m[1], GD_NM: x.gdNm, SALE: parseInt(String(x.finalPriceText || "").replace(/[^\d]/g, ""), 10) || 0 };
+    }
+    const no = String(x.gd_no || x.GD_NO || "");
+    if (!no) return null;
+    return {
+      RANK: parseInt(x.row_number, 10) || null, GD_NO: no, GD_NM: x.title || x.gd_nm || "",
+      SALE: x.pr_promotion_price || x.final_price || 0, BRAND: x.brand_nm || x.affiliated_info || "",
+      REVIEW: Number.isFinite(x.review_count) ? x.review_count : null,
+    };
+  };
+  const out = [];
+  const first = norm(root.firstItem);
+  if (first) out.push({ ...first, RANK: first.RANK || 1 });
+  for (const i of root.items || []) { const n = norm(i); if (n) out.push(n); }
+  return out;
+}
 
 // 행사 SID 후보 하나를 시험한다: 행사 페이지가 열리고(기간 밖이면 메인으로 리다이렉트됨) 랭킹 API 가 상품을 돌려주는지.
 // 반환: { sid, ok, items, wari(페이지에 'メガ割' 문구가 있는지), why }
@@ -91,15 +140,12 @@ export async function probeSid(sid) {
     if (isBlockPage(text)) return { sid, ok: false, why: "Qoo10 523 차단 페이지" };
     if (!init.url.includes("Special.aspx")) return { sid, ok: false, why: "행사 기간이 아니에요(리다이렉트)" };
     if (text.includes("Queue-it")) return { sid, ok: false, why: "Queue-it 대기열" };
-    const res = await fetch(RANK_URL, {
-      method: "POST", signal: AbortSignal.timeout(15000),
-      headers: { ...HEADERS_MAIN, accept: "application/json, text/javascript, */*; q=0.01", "content-type": "application/json; charset=UTF-8", origin: "https://www.qoo10.jp", referer: specialUrl(sid), "x-requested-with": "XMLHttpRequest", cookie: jar.header() },
-      body: JSON.stringify({ mobileYn: "N", type: "Q", tab: "C", groupCode: 2, age: 0, ___cache_expire___: String(Date.now()) }),
-    });
-    if (res.status !== 200) return { sid, ok: false, why: "랭킹 API HTTP " + res.status };
-    const d = await res.json();
-    const root = "d" in d ? (typeof d.d === "string" ? JSON.parse(d.d) : d.d) : d;
-    const items = root ? (root.firstItem ? 1 : 0) + (root.items ? root.items.length : 0) : 0;
+    let root;
+    try {
+      root = await fetchRanking(jar, { ...HEADERS_MAIN, accept: "application/json, text/javascript, */*; q=0.01", "content-type": "application/json; charset=UTF-8", origin: "https://www.qoo10.jp", referer: specialUrl(sid), "x-requested-with": "XMLHttpRequest" },
+        { mobileYn: "N", type: "Q", tab: "C", groupCode: 2, age: 0 }, "랭킹 API");
+    } catch (e) { return { sid, ok: false, why: String(e.message || e) }; }
+    const items = rankItems(root).length;
     return { sid, ok: items >= 10, items, wari: text.includes("メガ割"), why: items >= 10 ? "" : "랭킹 상품이 " + items + "개뿐이에요" };
   } catch (e) { return { sid, ok: false, why: String((e && e.message) || e).slice(0, 80) }; }
 }
@@ -206,21 +252,13 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
   const dbRows = [];
   let detailLeft = MAX_DETAIL;
   const fetchOne = async (rCode, rName, groupCode, age, sName) => {
-    const payload = { mobileYn: "N", type: rCode, tab: groupCode === 2 ? "C" : "A", groupCode, age, ___cache_expire___: String(Date.now()) };
-    const res = await fetch("https://www.qoo10.jp/gmkt.inc/swe_SpecialAjaxService.asmx/GetPromotionRankingData", {
-      method: "POST", headers: { ...hApi, cookie: jar.header() }, body: JSON.stringify(payload),
-    });
-    jar.absorb(res);
-    if (res.status !== 200) throw new Error(`${rName}-${sName} HTTP ${res.status}`);
-    const d = await res.json();
-    let root = null;
-    if ("d" in d) root = typeof d.d === "string" ? JSON.parse(d.d) : d.d; else root = d;
-    const items = [];
-    if (root) {
-      if (root.firstItem) items.push(root.firstItem.goods);
-      if (root.items) for (const i of root.items) items.push(i.goods);
-    }
+    const root = await fetchRanking(jar, hApi, { mobileYn: "N", type: rCode, tab: groupCode === 2 ? "C" : "A", groupCode, age }, `${rName}-${sName}`);
+    const items = rankItems(root);
     if (!items.length) return 0;
+    for (const it of items) { // 새 API 는 브랜드·리뷰 수를 바로 준다 → 캐시에 반영 (카테고리는 상세 페이지에서)
+      const c = cache[it.GD_NO];
+      if (c) { if (it.BRAND) c[0] = it.BRAND; if (it.REVIEW != null) c[4] = it.REVIEW; }
+    }
 
     // 처음 보는 상품은 상세 페이지에서 브랜드·카테고리·리뷰 수를 가져온다 (4개씩 동시에)
     const missing = [...new Set(items.map((i) => String(i.GD_NO)))].filter((g) => !(g in cache)).slice(0, Math.max(detailLeft, 0));
@@ -228,17 +266,18 @@ export async function collectEvent(env, now = Date.now(), opt = {}) {
     for (let i = 0; i < missing.length; i += 4) {
       const part = missing.slice(i, i + 4);
       const got = await Promise.all(part.map((g) => getDetail(jar, g, largeByMedium)));
-      part.forEach((g, k) => { const r = got[k] || {}; cache[g] = [r.brand || "", r.cats ? r.cats[1] : "", r.cats ? r.cats[2] : "", r.cats ? r.cats[3] : "", r.review || 0]; });
+      part.forEach((g, k) => {
+        const r = got[k] || {}, it = items.find((x) => x.GD_NO === g) || {};
+        cache[g] = [it.BRAND || r.brand || "", r.cats ? r.cats[1] : "", r.cats ? r.cats[2] : "", r.cats ? r.cats[3] : "", it.REVIEW != null ? it.REVIEW : r.review || 0];
+      });
     }
 
     items.forEach((item, idx) => {
-      const g = String(item.GD_NO || "");
-      const c = cache[g] || ["", "", "", "", 0];
-      let sale = item.FINAL_PRICE || 0;
-      if (item.PROMOTION_INFO && item.PROMOTION_INFO[0] && item.PROMOTION_INFO[0].PROMOTION_PRICE) sale = item.PROMOTION_INFO[0].PROMOTION_PRICE;
+      const g = item.GD_NO;
+      const c = cache[g] || [item.BRAND || "", "", "", "", item.REVIEW || 0];
       dbRows.push({
-        event_sid: sid, collected_at: nowTs, rank_type: rName, category: sName, rank: idx + 1,
-        brand: c[0], goods_no: g, goods_name: item.GD_NM || "", sale_price: sale, review_count: c[4],
+        event_sid: sid, collected_at: nowTs, rank_type: rName, category: sName, rank: item.RANK || idx + 1,
+        brand: c[0], goods_no: g, goods_name: item.GD_NM, sale_price: item.SALE, review_count: c[4],
         large_category: c[1], medium_category: c[2], small_category: c[3],
       });
     });

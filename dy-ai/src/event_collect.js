@@ -146,13 +146,14 @@ export async function probeSid(sid) {
         { mobileYn: "N", type: "Q", tab: "C", groupCode: 2, age: 0 }, "랭킹 API");
     } catch (e) { return { sid, ok: false, why: String(e.message || e) }; }
     const items = rankItems(root).length;
-    return { sid, ok: items >= 10, items, wari: text.includes("メガ割"), why: items >= 10 ? "" : "랭킹 상품이 " + items + "개뿐이에요" };
+    const title = ((text.match(/<title>([^<]*)/i) || [])[1] || "").trim();
+    return { sid, ok: items >= 10, items, wari: text.includes("メガ割"), title, ranking: /メガ割ランキング/.test(title), why: items >= 10 ? "" : "랭킹 상품이 " + items + "개뿐이에요" };
   } catch (e) { return { sid, ok: false, why: String((e && e.message) || e).slice(0, 80) }; }
 }
 
 // 행사 SID 자동 탐색 (메가와리 행사 기간 중에만 부른다). 후보: ① 예전에 수집에 쓴 SID(행사 페이지가 재사용되는 경우)
 // ② Qoo10 메인에 걸린 행사 링크의 SID. 랭킹 API 가 실제로 상품을 돌려주는 페이지 중에서 'メガ割' 문구가 있는 것을 고른다.
-// 문구가 있는 후보가 없을 때는 시험을 통과한 후보가 딱 하나일 때만 고르고, 여럿이면 고르지 않고 후보를 알려 준다.
+// 제목이 'メガ割ランキング' 인 후보를 고르고, 그런 후보가 없을 때는 시험을 통과한 후보가 딱 하나일 때만 고른다. 여럿이면 고르지 않고 후보를 알려 준다.
 export async function discoverSid(env, past) {
   const cand = [];
   const add = (v) => { v = String(v); if (/^\d+$/.test(v) && !cand.includes(v)) cand.push(v); };
@@ -169,8 +170,10 @@ export async function discoverSid(env, past) {
     if (r.ok) good.push(r);
     await sleep(300);
   }
-  const wari = good.filter((g) => g.wari);
-  const pick = wari.length ? wari.sort((a, b) => b.items - a.items)[0] : good.length === 1 ? good[0] : null;
+  // 메가와리 행사 기간에는 'メガ割' 문구가 있고 랭킹 API 가 상품을 주는 기획전이 수십 개 열려 있어서(2026-11 확인: 21개 통과) 문구만으론 못 고른다.
+  // 진짜 메가와리 랭킹 페이지는 제목이 'メガ割ランキング' 이다(SID 164938). 제목이 맞는 후보를 고르고, 없을 땐 통과한 후보가 하나뿐일 때만 고른다.
+  const titled = good.filter((g) => g.ranking);
+  const pick = titled.length ? titled.sort((a, b) => b.items - a.items)[0] : good.length === 1 ? good[0] : null;
   return { sid: pick ? pick.sid : null, tried, good: good.map((g) => g.sid), ambiguous: !pick && good.length > 1 };
 }
 

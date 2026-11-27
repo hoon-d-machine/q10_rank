@@ -17,6 +17,7 @@
     brandSum: $(".js-brand-sum"), brandQ: $(".js-brand-q"), brandList: $(".js-brand-list"),
     favSelect: $(".js-fav-select"), brandClear: $(".js-brand-clear"), favBrand: $(".js-fav-brand"), favColor: $(".js-fav-color"),
     favSave: $(".js-fav-save"), favList: $(".js-fav-list"), reload: $(".js-reload"), dlView: $(".js-dl-view"), dlAll: $(".js-dl-all"),
+    goodsQ: $(".js-goods-q"), tr: $(".js-tr"), hlClear: $(".js-hl-clear"), chips: $(".js-chips"),
     status: $(".js-status"), raw: $(".js-raw"), rawCount: $(".js-raw-count")
   };
 
@@ -40,22 +41,81 @@
     names.forEach(function (n) { m[n] = fav[n] || pastel(PALETTE[i++ % PALETTE.length]); });
     return m;
   }
+  function cssVar(n, d) { var v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || d; }
   function theme() {
-    return { font: window.dyColors ? window.dyColors.tick(false) : "#222", grid: "rgba(128,128,128,.25)" };
+    var dark = document.documentElement.getAttribute("data-theme") === "dark";
+    return { font: window.dyColors ? window.dyColors.tick(false) : "#222", grid: "rgba(128,128,128,.25)",
+      tipBg: dark ? "#17191f" : cssVar("--lg-card", "#fff"), tipLine: cssVar("--lg-line", "rgba(0,0,0,.2)"), tipText: dark ? "#f1f1f1" : cssVar("--lg-text", "#222") };
   }
   function baseLayout(extra) {
     var t = theme();
     var l = { paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", font: { color: t.font, family: "Pretendard Variable, Pretendard, sans-serif", size: 12 },
-      margin: { t: 16, l: 48, r: 12, b: 48 }, legend: { itemclick: "toggleothers", itemdoubleclick: "toggle" }, hoverlabel: { namelength: -1 } };
+      margin: { t: 16, l: 48, r: 12, b: 48 }, hovermode: "closest", hoverdistance: 24,
+      hoverlabel: { namelength: -1, align: "left", bgcolor: t.tipBg, bordercolor: t.tipLine, font: { color: t.tipText, family: "Pretendard Variable, Pretendard, sans-serif", size: 13 } } };
     Object.keys(extra || {}).forEach(function (k) { l[k] = extra[k]; });
     return l;
   }
+  // 호버 말풍선용: 긴 상품명을 줄바꿈(Plotly 는 자동으로 안 꺾음)
+  function wrap(s, n) { s = String(s == null ? "" : s); var o = []; for (var i = 0; i < s.length; i += n) o.push(s.slice(i, i + n)); return o.join("<br>"); }
+
+  // ---- 번역(브라우저 내장 Translator, 일본어→한국어) ----
+  var trOn = false, trCache = {}, trObj = null;
+  function tn(s) { s = s || ""; return trOn && trCache[s] ? trCache[s] : s; }
+  function trSupported() { return typeof window.Translator !== "undefined" && typeof window.Translator.create === "function"; }
+  function translateNames(names) {
+    var todo = names.filter(function (n) { return n && trCache[n] == null; });
+    if (!todo.length) return Promise.resolve();
+    var done = 0;
+    var getT = trObj ? Promise.resolve(trObj) : window.Translator.create({ sourceLanguage: "ja", targetLanguage: "ko", monitor: function (m) {
+      m.addEventListener("downloadprogress", function (e) { setStatus("번역 모델 내려받는 중… " + Math.round((e.loaded || 0) * 100) + "%", "load"); });
+    } }).then(function (t) { trObj = t; return t; });
+    return getT.then(function (t) {
+      var chain = Promise.resolve();
+      todo.forEach(function (n) {
+        chain = chain.then(function () { return t.translate(n).then(function (k) { trCache[n] = k; }, function () { trCache[n] = n; }).then(function () { done++; if (done % 10 === 0) setStatus("상품명 번역 중… " + done + "/" + todo.length, "load"); }); });
+      });
+      return chain;
+    });
+  }
+  function goodsNames(list) { var s = {}; list.forEach(function (r) { if (r.goods_name) s[r.goods_name] = 1; }); return Object.keys(s); }
+
+  // ---- 범례/선 클릭 강조 ----
+  var hl = {};   // 그래프 선택자 → { 이름: true }
+  function applyHL(node, sel) {
+    if (!node.data) return;
+    var set = hl[sel] || {}, any = Object.keys(set).length > 0, op = [], w = [], idx = [], lidx = [];
+    node.data.forEach(function (d, i) {
+      if (d.type !== "scatter") return;
+      var on = !any || set[d.name];
+      idx.push(i); op.push(on ? 1 : .12);
+      if (d.mode !== "markers") { lidx.push(i); w.push(on && any ? 4 : 2); }
+    });
+    if (idx.length) Plotly.restyle(node, { opacity: op }, idx);
+    if (lidx.length) Plotly.restyle(node, { "line.width": w }, lidx);
+    refreshHlBtn();
+  }
+  function refreshHlBtn() { el.hlClear.hidden = !Object.keys(hl).some(function (k) { return Object.keys(hl[k]).length; }); }
+  function bindHL(node, sel) {
+    if (node._evBound) return; node._evBound = true;
+    function toggle(name) { var s = hl[sel] = hl[sel] || {}; if (s[name]) delete s[name]; else s[name] = true; applyHL(node, sel); }
+    node.on("plotly_legendclick", function (e) {
+      var name = e.data[e.curveNumber].name;
+      if (e.event && e.event.shiftKey) { var d = e.data[e.curveNumber]; Plotly.restyle(node, { visible: d.visible === "legendonly" ? true : "legendonly" }, [e.curveNumber]); }
+      else toggle(name);
+      return false;
+    });
+    node.on("plotly_legenddoubleclick", function () { hl[sel] = {}; Plotly.restyle(node, { visible: true }); applyHL(node, sel); return false; });
+    node.on("plotly_click", function (e) { var p = e.points && e.points[0]; if (p && p.data.type === "scatter") toggle(p.data.name); });
+  }
   function draw(sel, data, layout) {
     var node = $(sel);
-    if (!data.length) { Plotly.purge(node); node.innerHTML = '<p class="ev-empty">보여 줄 데이터가 없어요. 필터를 바꿔 보세요.</p>'; return; }
-    if (node.querySelector(".ev-empty")) { Plotly.purge(node); node.innerHTML = ""; }   // 안내 문구만 있던 칸이면 비우고 새로 그림 (그려진 그래프의 DOM 은 건드리지 않음)
+    if (!data.length) { Plotly.purge(node); node._evBound = false; node.innerHTML = '<p class="ev-empty">보여 줄 데이터가 없어요. 필터를 바꿔 보세요.</p>'; return; }
+    if (node.querySelector(".ev-empty")) { Plotly.purge(node); node._evBound = false; node.innerHTML = ""; }   // 안내 문구만 있던 칸이면 비우고 새로 그림 (그려진 그래프의 DOM 은 건드리지 않음)
+    var names = {}; data.forEach(function (d) { names[d.name] = 1; });
+    if (hl[sel]) Object.keys(hl[sel]).forEach(function (k) { if (!names[k]) delete hl[sel][k]; });   // 사라진 항목의 강조는 버림
     try {
       var pr = Plotly.react(node, data, layout, { responsive: true, displaylogo: false });
+      if (pr && pr.then) pr.then(function () { bindHL(node, sel); applyHL(node, sel); });
       if (pr && pr.catch) pr.catch(function (e) { console.error("Plotly 오류", e); node.innerHTML = '<p class="ev-empty">그래프를 그리지 못했어요: ' + String((e && e.message) || e) + "</p>"; });
     } catch (e) { console.error("Plotly 오류", e); node.innerHTML = '<p class="ev-empty">그래프를 그리지 못했어요: ' + String((e && e.message) || e) + "</p>"; }
   }
@@ -72,6 +132,8 @@
   function current() {
     var list = rows;
     if (selected.length) { var s = {}; selected.forEach(function (b) { s[b] = 1; }); list = list.filter(function (r) { return s[r.brand]; }); }
+    var q = el.goodsQ.value.trim().toLowerCase();
+    if (q) list = list.filter(function (r) { return String(r.goods_no).indexOf(q) >= 0 || (r.goods_name || "").toLowerCase().indexOf(q) >= 0 || (trOn && (tn(r.goods_name) || "").toLowerCase().indexOf(q) >= 0); });
     return list;
   }
   function topN() { return el.topn.value === "전체" ? "전체" : +el.topn.value; }
@@ -86,25 +148,47 @@
     return ranked.concat(rest);
   }
 
+  function setSel(b, on) { var i = selected.indexOf(b); if (on && i < 0) selected.push(b); else if (!on && i >= 0) selected.splice(i, 1); }
   function renderBrandList() {
-    var q = el.brandQ.value.trim().toLowerCase(), order = brandOrder();
+    var q = el.brandQ.value.trim().toLowerCase(), order = brandOrder(), rk = {};
+    var last = rows.length ? rows[rows.length - 1].t : null;
+    rows.forEach(function (r) { if (r.t === last && r.brand) rk[r.brand] = Math.min(rk[r.brand] == null ? 1e9 : rk[r.brand], r.rank); });
+    var shown = order.filter(function (b) { return !q || b.toLowerCase().indexOf(q) >= 0; });
+    shown = shown.filter(function (b) { return selected.indexOf(b) >= 0; }).concat(shown.filter(function (b) { return selected.indexOf(b) < 0; }));   // 선택한 브랜드를 위로
     el.brandList.innerHTML = "";
-    order.filter(function (b) { return !q || b.toLowerCase().indexOf(q) >= 0; }).forEach(function (b) {
+    if (shown.length) {
+      var bar = h("div", "ev-brandtools");
+      var all = h("button", "ev-mini", "검색 결과 " + shown.length + "개 모두 선택"); all.type = "button";
+      all.addEventListener("click", function () { shown.forEach(function (b) { setSel(b, true); }); renderBrandList(); renderAll(); });
+      var none = h("button", "ev-mini", "모두 해제"); none.type = "button";
+      none.addEventListener("click", function () { shown.forEach(function (b) { setSel(b, false); }); renderBrandList(); renderAll(); });
+      bar.appendChild(all); bar.appendChild(none); el.brandList.appendChild(bar);
+    }
+    shown.forEach(function (b) {
       var lab = h("label", "ev-brandrow");
       var cb = h("input"); cb.type = "checkbox"; cb.checked = selected.indexOf(b) >= 0;
-      cb.addEventListener("change", function () {
-        if (cb.checked) { if (selected.indexOf(b) < 0) selected.push(b); } else selected = selected.filter(function (x) { return x !== b; });
-        renderBrandSum(); renderAll();
-      });
+      cb.addEventListener("change", function () { setSel(b, cb.checked); renderBrandList(); renderAll(); });
       lab.appendChild(cb);
       var dot = h("i", "ev-dot"); if (fav[b]) dot.style.background = fav[b]; lab.appendChild(dot);
       lab.appendChild(h("span", null, b));
+      if (rk[b] != null) lab.appendChild(h("em", "ev-rk", rk[b] + "위"));
       el.brandList.appendChild(lab);
     });
     if (!order.length) el.brandList.appendChild(h("p", "ev-empty", "브랜드가 없어요"));
+    else if (!shown.length) el.brandList.appendChild(h("p", "ev-empty", "검색 결과가 없어요"));
     renderBrandSum();
   }
-  function renderBrandSum() { el.brandSum.textContent = selected.length ? "브랜드: " + selected.length + "개 선택" : "브랜드: 전체"; }
+  function renderBrandSum() {
+    el.brandSum.textContent = selected.length ? "브랜드: " + selected.length + "개 선택" : "브랜드: 전체";
+    el.chips.innerHTML = ""; el.chips.hidden = !selected.length;
+    selected.forEach(function (b) {
+      var c = h("button", "ev-chip"); c.type = "button"; c.title = "선택 해제";
+      if (fav[b]) { var d = h("i", "ev-dot"); d.style.background = fav[b]; c.appendChild(d); }
+      c.appendChild(h("span", null, b)); c.appendChild(h("b", null, "×"));
+      c.addEventListener("click", function () { setSel(b, false); renderBrandList(); renderAll(); });
+      el.chips.appendChild(c);
+    });
+  }
 
   function renderFavs() {
     var brands = brandOrder();
@@ -153,7 +237,7 @@
     var order = brandOrderIn(bl), cm = colorMap(Object.keys(by));
     var xs = Object.keys(dates).sort();
     draw(".js-c-brand", order.filter(function (b) { return by[b]; }).map(function (b) {
-      return { type: "scatter", mode: "lines+markers", name: b, x: xs.filter(function (d) { return by[b][d] != null; }), y: xs.filter(function (d) { return by[b][d] != null; }).map(function (d) { return by[b][d]; }), line: { color: cm[b], width: 2 }, marker: { color: cm[b] } };
+      return { type: "scatter", mode: "lines+markers", name: b, hovertemplate: "%{x} · <b>%{y}위</b><extra>%{fullData.name}</extra>", x: xs.filter(function (d) { return by[b][d] != null; }), y: xs.filter(function (d) { return by[b][d] != null; }).map(function (d) { return by[b][d]; }), line: { color: cm[b], width: 2 }, marker: { color: cm[b] } };
     }), lay());
     // 상품: 날짜별 최고 순위 (같은 상품 이름은 마지막 이름으로)
     var gl = topFilter(list.filter(function (r) { return r.brand; }), "goods_no", n);
@@ -165,9 +249,9 @@
     var gorder = Object.keys(gb).sort(function (a, b) { return (lastBest[a] == null ? 1e9 : lastBest[a]) - (lastBest[b] == null ? 1e9 : lastBest[b]); });
     var bcm = colorMap(Object.keys(by).concat(Object.keys(gbrand).map(function (k) { return gbrand[k]; })));
     draw(".js-c-goods", gorder.map(function (g) {
-      var name = (lastName[g] || "").slice(0, 10) + ".. (#" + String(g).slice(-4) + ")";
+      var name = tn(lastName[g] || "").slice(0, 10) + ".. (#" + String(g).slice(-4) + ")";
       var xx = gx.filter(function (d) { return gb[g][d] != null; });
-      return { type: "scatter", mode: "lines+markers", name: name, text: xx.map(function () { return lastName[g]; }), hovertemplate: "%{text}<br>%{x} · %{y}위<extra></extra>", x: xx, y: xx.map(function (d) { return gb[g][d]; }), line: { color: bcm[gbrand[g]] || "#D3D3D3", width: 2 }, marker: { color: bcm[gbrand[g]] || "#D3D3D3" } };
+      return { type: "scatter", mode: "lines+markers", name: name, text: xx.map(function () { return wrap(tn(lastName[g]), 26); }), hovertemplate: "<b>%{text}</b><br>%{x} · <b>%{y}위</b><extra>" + (gbrand[g] || "") + "</extra>", x: xx, y: xx.map(function (d) { return gb[g][d]; }), line: { color: bcm[gbrand[g]] || "#D3D3D3", width: 2 }, marker: { color: bcm[gbrand[g]] || "#D3D3D3" } };
     }), lay());
   }
   function brandOrderIn(list) { // 마지막 시점 순위순
@@ -187,7 +271,7 @@
     draw(".js-c-scatter", Object.keys(byBrand).map(function (b) {
       var a = byBrand[b];
       return { type: "scatter", mode: "markers", name: b, x: a.map(function (r) { return r.sale_price; }), y: a.map(function (r) { return r.rank; }),
-        text: a.map(function (r) { return r.goods_name + "<br>리뷰 " + fmt(r.review_count || 0); }), hovertemplate: "%{text}<br>가격 %{x:,}엔 · %{y}위<extra>" + b + "</extra>",
+        text: a.map(function (r) { return wrap(tn(r.goods_name), 26) + "<br>리뷰 " + fmt(r.review_count || 0); }), hovertemplate: "<b>%{text}</b><br>가격 %{x:,}엔 · <b>%{y}위</b><extra>" + b + "</extra>",
         marker: { color: cm[b], size: a.map(function (r) { return 6 + 30 * Math.sqrt((r.review_count || 0) / maxRev); }), line: { width: 1, color: "rgba(0,0,0,.25)" } } };
     }), baseLayout({ xaxis: { title: "판매가(엔)", gridcolor: theme().grid }, yaxis: { autorange: "reversed", title: "순위", gridcolor: theme().grid } }));
     var byMed = {};
@@ -239,7 +323,7 @@
     el.rawCount.textContent = fmt(list.length) + "행" + (list.length > 500 ? " (500행만 표시, 전체는 CSV)" : "");
     list.slice(0, 500).forEach(function (r) {
       var tr = h("tr");
-      [dlabel(r.t), r.rank, r.brand || "", r.goods_name || "", fmt(r.sale_price || 0), fmt(r.review_count || 0)].forEach(function (v, i) {
+      [dlabel(r.t), r.rank, r.brand || "", tn(r.goods_name || ""), fmt(r.sale_price || 0), fmt(r.review_count || 0)].forEach(function (v, i) {
         var td = h("td", i === 1 || i >= 4 ? "is-num" : null, String(v)); tr.appendChild(td);
       });
       el.raw.appendChild(tr);
@@ -258,7 +342,9 @@
       rows = data || [];
       selected = selected.filter(function (b) { return rows.some(function (r) { return r.brand === b; }); });
       setStatus(rows.length ? "" : "선택한 조건에 데이터가 없어요.", rows.length ? "" : "info");
-      renderBrandList(); renderFavs(); renderAll();
+      renderBrandList(); renderFavs();
+      if (trOn) return translateNames(goodsNames(rows)).then(function () { setStatus("", ""); if (my === reqSeq) renderAll(); });
+      renderAll();
     }).catch(function (e) { if (my === reqSeq) setStatus(errText(e), "err"); });
   }
 
@@ -311,6 +397,20 @@
   el.topn.addEventListener("change", renderAll);
   el.reload.addEventListener("click", function () { init(true); });
   el.brandQ.addEventListener("input", renderBrandList);
+  var gqT = null;
+  el.goodsQ.addEventListener("input", function () { clearTimeout(gqT); gqT = setTimeout(function () { renderAll(); }, 200); });
+  el.hlClear.addEventListener("click", function () { hl = {}; renderAll(); });
+  document.addEventListener("click", function (e) { var d = $(".js-brands"); if (d && d.open && !d.contains(e.target)) d.open = false; });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { var d = $(".js-brands"); if (d && d.open) d.open = false; } });
+  if (!trSupported()) { el.tr.disabled = true; el.tr.title = "이 브라우저는 내장 번역을 지원하지 않아요 (Chrome 138 이상 필요)"; }
+  el.tr.addEventListener("click", function () {
+    if (trOn) { trOn = false; el.tr.setAttribute("aria-pressed", "false"); el.tr.textContent = "🌐 한국어로 보기"; renderAll(); return; }
+    el.tr.disabled = true; setStatus("상품명 번역 준비 중…", "load");
+    translateNames(goodsNames(rows)).then(function () {
+      trOn = true; el.tr.setAttribute("aria-pressed", "true"); el.tr.textContent = "🌐 원문으로 보기"; setStatus("", ""); renderAll();
+    }).catch(function (e) { setStatus("번역하지 못했어요: " + ((e && e.message) || e), "err"); })
+      .then(function () { el.tr.disabled = false; });
+  });
   el.brandClear.addEventListener("click", function () { selected = []; renderBrandList(); renderAll(); });
   el.favSelect.addEventListener("click", function () {
     var have = {}; rows.forEach(function (r) { have[r.brand] = 1; });

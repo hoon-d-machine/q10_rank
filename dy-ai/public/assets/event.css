@@ -23,6 +23,20 @@ html[data-theme="dark"] .ev-card { background: #17191f; box-shadow: inset 0 0 0 
 .ev-brandrow { display: flex; align-items: center; gap: 8px; padding: 5px 4px; font-size: 13.5px; cursor: pointer; }
 .ev-brandrow input[type="checkbox"] { flex: none; width: 16px; height: 16px; margin: 0; }
 .ev-brandrow span { min-width: 0; overflow-wrap: anywhere; }
+.ev-brandrow .ev-rk { margin-left: auto; flex: none; font-style: normal; font-size: 12px; color: var(--lg-muted, #666); }
+.ev-brandtools { display: flex; gap: 6px; padding-bottom: 6px; border-bottom: 1px solid var(--lg-line-2, rgba(0,0,0,.08)); margin-bottom: 4px; position: sticky; top: 0; background: var(--dt-cell, #fff); }
+.ev-mini { font: inherit; font-size: 12px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--lg-line, rgba(0,0,0,.2)); background: transparent; color: inherit; cursor: pointer; }
+.ev-mini:hover { border-color: var(--lg-accent, #333); }
+.ev-goodsq { font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--lg-line, rgba(0,0,0,.2)); background: transparent; color: inherit; min-width: 190px; }
+.ev-goodsq:focus, .ev-brandpanel input[type="search"]:focus { outline: 2px solid var(--lg-accent, #333); outline-offset: 1px; }
+.ev-tr[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--lg-accent, #333); font-weight: 600; }
+.ev-tr:disabled { opacity: .5; cursor: not-allowed; }
+.ev-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.ev-chip { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 12.5px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--lg-line, rgba(0,0,0,.2)); background: transparent; color: inherit; cursor: pointer; }
+.ev-chip b { font-weight: 400; opacity: .6; }
+.ev-chip:hover { border-color: var(--lg-accent, #333); }
+.ev-chip:hover b { opacity: 1; }
+.ev-chart .hoverlayer .hovertext path { filter: drop-shadow(0 4px 12px rgba(0,0,0,.22)); }
 .ev-brandrow:hover { background: var(--lg-line-2, rgba(0,0,0,.05)); }
 .ev-dot { width: 12px; height: 12px; border-radius: 3px; flex: none; background: transparent; box-shadow: inset 0 0 0 1px var(--lg-line, rgba(0,0,0,.2)); }
 .ev-favadd { display: flex; gap: 6px; align-items: center; }

@@ -15,7 +15,7 @@
   function isDark() { return document.documentElement.getAttribute("data-theme") === "dark"; }
   function pal() {
     var d = isDark();
-    return { ghost: d ? "rgba(255,255,255,.17)" : "rgba(70,50,30,.2)", text: window.dyColors ? window.dyColors.tick(false) : "#222", grid: window.dyColors ? window.dyColors.grid(false) : "rgba(128,128,128,.2)", muted: css("--lg-muted", "#666") };
+    return { ghost: d ? "rgba(255,255,255,.11)" : "rgba(70,60,40,.13)", text: window.dyColors ? window.dyColors.tick(false) : "#222", grid: window.dyColors ? window.dyColors.grid(false) : "rgba(128,128,128,.2)", muted: css("--lg-muted", "#666") };
   }
   function nn(v) { return v != null; }
   function clip(ctx, s, w) { if (ctx.measureText(s).width <= w) return s; while (s.length > 1 && ctx.measureText(s + "…").width > w) s = s.slice(0, -1); return s + "…"; }
@@ -105,10 +105,10 @@
     // ---- 그래프 ----
     function style(s) {
       var P = pal(), on = isOn(s.key), hv = hoverKey() === s.key;
-      return { color: on || hv ? s.color : P.ghost, width: on ? 3 : hv ? 3 : 1.2, pr: on ? 3.5 : hv ? 3 : 0, order: on ? 0 : hv ? 1 : 5 };
+      return { color: on || hv ? s.color : P.ghost, width: on ? 2.6 : hv ? 2.6 : 1, pr: 0, order: on ? 0 : hv ? 1 : 5 };
     }
     var datasets = S.map(function (s) {
-      return { key: s.key, label: s.label, data: s.vals.slice(), spanGaps: false, tension: 0, pointHitRadius: 9, pointHoverRadius: function () { return isOn(s.key) || hoverKey() === s.key ? 5 : 0; }, borderCapStyle: "round", borderJoinStyle: "round",
+      return { key: s.key, label: s.label, data: s.vals.slice(), spanGaps: false, tension: 0, pointHitRadius: 9, pointHoverRadius: function () { return isOn(s.key) || hoverKey() === s.key ? 5 : 0; }, tension: 0.18, borderCapStyle: "round", borderJoinStyle: "round",
         borderColor: function () { return style(s).color; }, backgroundColor: function () { return style(s).color; },
         borderWidth: function () { return style(s).width; }, pointRadius: function () { return style(s).pr; }, order: 5 };
     });
@@ -118,19 +118,22 @@
         var s = byKey[d.key]; if (!(isOn(s.key) || hk === s.key)) return;
         var idx = -1; for (var k = s.vals.length - 1; k >= 0; k--) if (s.vals[k] != null) { idx = k; break; }
         if (idx < 0) return; var el = c.getDatasetMeta(i).data[idx]; if (!el) return;
-        items.push({ x: el.x, y: el.y, s: s });
+        items.push({ x: el.x, y: el.y, y0: el.y, s: s });
       });
       items.sort(function (a, b) { return a.y - b.y; });
-      for (var q = 1; q < items.length; q++) if (items[q].y < items[q - 1].y + 14) items[q].y = items[q - 1].y + 14;
+      for (var q = 1; q < items.length; q++) if (items[q].y < items[q - 1].y + 16) items[q].y = items[q - 1].y + 16;
       ctx.save(); ctx.font = "600 12px " + FONT; ctx.textBaseline = "middle";
-      items.forEach(function (it) { ctx.fillStyle = it.s.color; ctx.fillText(clip(ctx, (it.s.sub ? it.s.sub + " · " : "") + it.s.label, c.width - it.x - 14), it.x + 9, it.y); });
+      items.forEach(function (it) {
+        ctx.fillStyle = it.s.color; ctx.beginPath(); ctx.arc(it.x, it.y0, 4, 0, 6.283); ctx.fill();
+        if (Math.abs(it.y - it.y0) > 2) { ctx.strokeStyle = it.s.color; ctx.globalAlpha = .5; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(it.x + 4, it.y0); ctx.lineTo(it.x + 8, it.y); ctx.stroke(); ctx.globalAlpha = 1; }
+        ctx.fillStyle = it.s.color; ctx.fillText(clip(ctx, (it.s.sub ? it.s.sub + " · " : "") + it.s.label, c.width - it.x - 14), it.x + 9, it.y); });
       ctx.restore();
     }, afterDraw: function (c) {
       var a = c.getActiveElements(); if (!a.length) return;
       var ctx = c.ctx, A = c.chartArea; ctx.save(); ctx.strokeStyle = pal().grid; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(a[0].element.x, A.top); ctx.lineTo(a[0].element.x, A.bottom); ctx.stroke(); ctx.restore();
     } };
     var P0 = pal();
-    var chart = new Chart(cv, { type: "line", data: { labels: xs.map(function (x) { return x.slice(3); }), datasets: datasets }, plugins: [endLabels],
+    var chart = new Chart(cv, { type: "line", data: { labels: xs.map(function (x) { return x === "~" ? "⋯" : x.slice(3); }), datasets: datasets }, plugins: [endLabels],
       options: { responsive: true, maintainAspectRatio: false, animation: false, layout: { padding: { right: 150, top: 8 } },
         interaction: { mode: "index", intersect: false },
         scales: { x: { grid: { color: P0.grid }, ticks: { color: P0.text, font: { family: FONT, size: 11.5 }, maxRotation: 0, autoSkipPadding: 12 }, border: { display: false } },
@@ -138,6 +141,7 @@
         plugins: { legend: { display: false }, tooltip: { enabled: false, external: function (ctx) {
           var tt = ctx.tooltip; if (!tt || tt.opacity === 0 || !tt.dataPoints || !tt.dataPoints.length) { tip.hidden = true; return; }
           var hk = hoverKey(), idx = tt.dataPoints[0].dataIndex, list = [];
+          if (xs[idx] === "~") { tip.hidden = true; return; }
           tt.dataPoints.forEach(function (p) { var s = byKey[p.dataset.key]; if (s.vals[idx] != null && (isOn(s.key) || hk === s.key)) list.push(s); });
           list.sort(function (a, b) { return a.vals[idx] - b.vals[idx]; });
           tip.innerHTML = "";

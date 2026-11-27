@@ -228,6 +228,15 @@
     else renderShare(list);
   }
 
+  // 날짜가 10일 넘게 끊기면(예: 3월 행사와 11월 행사) 사이에 빈 칸 하나를 넣어 선이 이어지지 않게 함
+  function withGaps(xs) {
+    var out = [];
+    xs.forEach(function (d, i) {
+      if (i) { var a = new Date("20" + xs[i - 1]), b = new Date("20" + d); if ((b - a) / 864e5 > 10) out.push("~"); }
+      out.push(d);
+    });
+    return out;
+  }
   var tstate = { brand: { focus: null, rowHover: null, lineHover: null }, goods: { focus: null, rowHover: null, lineHover: null } };
   function renderTrend(list, n) {
     // 브랜드: 날짜별 최고 순위
@@ -235,7 +244,7 @@
     var by = {}, dates = {};
     bl.forEach(function (r) { var d = dlabel(r.t); dates[d] = 1; var o = by[r.brand] = by[r.brand] || {}; o[d] = Math.min(o[d] == null ? 1e9 : o[d], r.rank); });
     var order = brandOrderIn(bl).filter(function (b) { return by[b]; }), cm = colorMap(order);
-    var xs = Object.keys(dates).sort();
+    var xs = withGaps(Object.keys(dates).sort());
     var bser = order.map(function (b) { return { key: b, label: tn(b), color: cm[b], vals: xs.map(function (d) { return by[b][d] != null ? by[b][d] : null; }) }; });
     var favB = order.filter(function (b) { return fav[b]; });
     window.dyEvTrend.mount($(".js-b-brand"), tstate.brand, { xs: xs, series: bser, defaults: favB.length ? favB : order.slice(0, 5), onChange: refreshHlBtn });
@@ -244,7 +253,7 @@
     var gl = topFilter(list.filter(function (r) { return r.brand; }), "goods_no", n);
     var lastName = {}, gb = {}, gbrand = {}, gd = {};
     gl.forEach(function (r) { lastName[r.goods_no] = r.goods_name; gbrand[r.goods_no] = r.brand; var d = dlabel(r.t); gd[d] = 1; var o = gb[r.goods_no] = gb[r.goods_no] || {}; o[d] = Math.min(o[d] == null ? 1e9 : o[d], r.rank); });
-    var gx = Object.keys(gd).sort(), gkeys = Object.keys(gb);
+    var gx = withGaps(Object.keys(gd).sort()), gkeys = Object.keys(gb);
     var gser = gkeys.map(function (g, i) {
       return { key: g, label: tn(lastName[g] || ""), sub: tn(gbrand[g] || ""), color: PALETTE[i % PALETTE.length], vals: gx.map(function (d) { return gb[g][d] != null ? gb[g][d] : null; }) };
     });

@@ -26,6 +26,10 @@
     var xs = spec.xs, S = spec.series.slice();
     if (!S.length || !xs.length) { box.appendChild(h("p", "ev-empty", "보여 줄 데이터가 없어요. 필터를 바꿔 보세요.")); return; }
     var last = xs.length - 1;
+    var pos = [], pp = 0;   // x 위치: 날짜 사이는 1칸, 기간 공백('~')은 앞뒤로 0.25칸씩(전체 0.5칸 + 간격)
+    xs.forEach(function (x, i) { if (i) pp += (x === "~" || xs[i - 1] === "~") ? 0.25 : 1; pos.push(pp); });
+    var tickAt = {}, real = xs.map(function (x, i) { return x === "~" ? -1 : i; }).filter(function (i) { return i >= 0; }), skip = Math.max(1, Math.ceil(real.length / 9));
+    real.forEach(function (i, n) { if (n % skip === 0 || n === real.length - 1) tickAt[pos[i]] = xs[i].slice(3); });
 
     // ---- 계산: 현재 순위 · 전일 대비 · 신규 진입 ----
     S.forEach(function (s) {
@@ -108,7 +112,7 @@
       return { color: on || hv ? s.color : P.ghost, width: on ? 2.6 : hv ? 2.6 : 1, pr: 0, order: on ? 0 : hv ? 1 : 5 };
     }
     var datasets = S.map(function (s) {
-      return { key: s.key, label: s.label, data: s.vals.slice(), spanGaps: false, tension: 0, pointHitRadius: 9, pointHoverRadius: function () { return isOn(s.key) || hoverKey() === s.key ? 5 : 0; }, tension: 0.18, borderCapStyle: "round", borderJoinStyle: "round",
+      return { key: s.key, label: s.label, data: s.vals.map(function (v, i) { return { x: pos[i], y: v }; }), spanGaps: false, pointHitRadius: 9, pointHoverRadius: function () { return isOn(s.key) || hoverKey() === s.key ? 5 : 0; }, tension: 0.18, borderCapStyle: "round", borderJoinStyle: "round",
         borderColor: function () { return style(s).color; }, backgroundColor: function () { return style(s).color; },
         borderWidth: function () { return style(s).width; }, pointRadius: function () { return style(s).pr; }, order: 5 };
     });
@@ -133,10 +137,10 @@
       var ctx = c.ctx, A = c.chartArea; ctx.save(); ctx.strokeStyle = pal().grid; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(a[0].element.x, A.top); ctx.lineTo(a[0].element.x, A.bottom); ctx.stroke(); ctx.restore();
     } };
     var P0 = pal();
-    var chart = new Chart(cv, { type: "line", data: { labels: xs.map(function (x) { return x === "~" ? "⋯" : x.slice(3); }), datasets: datasets }, plugins: [endLabels],
+    var chart = new Chart(cv, { type: "line", data: { datasets: datasets }, plugins: [endLabels],
       options: { responsive: true, maintainAspectRatio: false, animation: false, layout: { padding: { right: 150, top: 8 } },
         interaction: { mode: "index", intersect: false },
-        scales: { x: { grid: { color: P0.grid }, ticks: { color: P0.text, font: { family: FONT, size: 11.5 }, maxRotation: 0, autoSkipPadding: 12 }, border: { display: false } },
+        scales: { x: { type: "linear", min: -0.3, max: pos[pos.length - 1] + 0.3, grid: { color: P0.grid }, afterBuildTicks: function (ax) { ax.ticks = Object.keys(tickAt).map(function (k) { return { value: +k }; }); }, ticks: { color: P0.text, font: { family: FONT, size: 11.5 }, maxRotation: 0, callback: function (v) { return tickAt[v] || ""; } }, border: { display: false } },
           y: { reverse: true, min: minR, max: maxR, grid: { color: P0.grid }, border: { display: false }, ticks: { color: P0.text, font: { family: FONT, size: 11.5 }, precision: 0, callback: function (v) { return v === 1 || (v % 5 === 0 && v > 0) ? v + "위" : ""; } } } },
         plugins: { legend: { display: false }, tooltip: { enabled: false, external: function (ctx) {
           var tt = ctx.tooltip; if (!tt || tt.opacity === 0 || !tt.dataPoints || !tt.dataPoints.length) { tip.hidden = true; return; }

@@ -94,7 +94,7 @@
     if (lidx.length) Plotly.restyle(node, { "line.width": w }, lidx);
     refreshHlBtn();
   }
-  function refreshHlBtn() { el.hlClear.hidden = !Object.keys(hl).some(function (k) { return Object.keys(hl[k]).length; }); }
+  function refreshHlBtn() { el.hlClear.hidden = !(tstate.brand.focus || tstate.goods.focus || Object.keys(hl).some(function (k) { return Object.keys(hl[k]).length; })); }
   function bindHL(node, sel) {
     if (node._evBound) return; node._evBound = true;
     function toggle(name) { var s = hl[sel] = hl[sel] || {}; if (s[name]) delete s[name]; else s[name] = true; applyHL(node, sel); }
@@ -228,31 +228,32 @@
     else renderShare(list);
   }
 
+  var tstate = { brand: { focus: null, rowHover: null, lineHover: null }, goods: { focus: null, rowHover: null, lineHover: null } };
   function renderTrend(list, n) {
-    var lay = function (title) { return baseLayout({ yaxis: { autorange: "reversed", title: "순위", tickformat: "d", gridcolor: theme().grid }, xaxis: { type: "category", categoryorder: "category ascending", gridcolor: theme().grid } }); };
     // 브랜드: 날짜별 최고 순위
     var bl = topFilter(list.filter(function (r) { return r.brand; }), "brand", n);
     var by = {}, dates = {};
     bl.forEach(function (r) { var d = dlabel(r.t); dates[d] = 1; var o = by[r.brand] = by[r.brand] || {}; o[d] = Math.min(o[d] == null ? 1e9 : o[d], r.rank); });
-    var order = brandOrderIn(bl), cm = colorMap(Object.keys(by));
+    var order = brandOrderIn(bl).filter(function (b) { return by[b]; }), cm = colorMap(order);
     var xs = Object.keys(dates).sort();
-    draw(".js-c-brand", order.filter(function (b) { return by[b]; }).map(function (b) {
-      return { type: "scatter", mode: "lines+markers", name: tn(b), hovertemplate: "%{x} · <b>%{y}위</b><extra>%{fullData.name}</extra>", x: xs.filter(function (d) { return by[b][d] != null; }), y: xs.filter(function (d) { return by[b][d] != null; }).map(function (d) { return by[b][d]; }), line: { color: cm[b], width: 2 }, marker: { color: cm[b] } };
-    }), lay());
+    var bser = order.map(function (b) { return { key: b, label: tn(b), color: cm[b], vals: xs.map(function (d) { return by[b][d] != null ? by[b][d] : null; }) }; });
+    var favB = order.filter(function (b) { return fav[b]; });
+    window.dyEvTrend.mount($(".js-b-brand"), tstate.brand, { xs: xs, series: bser, defaults: favB.length ? favB : order.slice(0, 5), onChange: refreshHlBtn });
+
     // 상품: 날짜별 최고 순위 (같은 상품 이름은 마지막 이름으로)
     var gl = topFilter(list.filter(function (r) { return r.brand; }), "goods_no", n);
     var lastName = {}, gb = {}, gbrand = {}, gd = {};
     gl.forEach(function (r) { lastName[r.goods_no] = r.goods_name; gbrand[r.goods_no] = r.brand; var d = dlabel(r.t); gd[d] = 1; var o = gb[r.goods_no] = gb[r.goods_no] || {}; o[d] = Math.min(o[d] == null ? 1e9 : o[d], r.rank); });
-    var gx = Object.keys(gd).sort();
-    var lastT = gl.length ? gl[gl.length - 1].t : null, lastBest = {};
-    gl.forEach(function (r) { if (r.t === lastT) lastBest[r.goods_no] = Math.min(lastBest[r.goods_no] == null ? 1e9 : lastBest[r.goods_no], r.rank); });
-    var gorder = Object.keys(gb).sort(function (a, b) { return (lastBest[a] == null ? 1e9 : lastBest[a]) - (lastBest[b] == null ? 1e9 : lastBest[b]); });
-    var bcm = colorMap(Object.keys(by).concat(Object.keys(gbrand).map(function (k) { return gbrand[k]; })));
-    draw(".js-c-goods", gorder.map(function (g) {
-      var name = tn(lastName[g] || "").slice(0, 10) + ".. (#" + String(g).slice(-4) + ")";
-      var xx = gx.filter(function (d) { return gb[g][d] != null; });
-      return { type: "scatter", mode: "lines+markers", name: name, text: xx.map(function () { return wrap(tn(lastName[g]), 26); }), hovertemplate: "<b>%{text}</b><br>%{x} · <b>%{y}위</b><extra>" + tn(gbrand[g] || "") + "</extra>", x: xx, y: xx.map(function (d) { return gb[g][d]; }), line: { color: bcm[gbrand[g]] || "#9a9fa5", width: 2 }, marker: { color: bcm[gbrand[g]] || "#9a9fa5" } };
-    }), lay());
+    var gx = Object.keys(gd).sort(), gkeys = Object.keys(gb);
+    var gser = gkeys.map(function (g, i) {
+      return { key: g, label: tn(lastName[g] || ""), sub: tn(gbrand[g] || ""), color: PALETTE[i % PALETTE.length], vals: gx.map(function (d) { return gb[g][d] != null ? gb[g][d] : null; }) };
+    });
+    // 기본 강조: 즐겨찾기 브랜드의 상품(현재 순위 상위 10개), 없으면 상위 5개
+    var lastX = gx.length - 1, cur = function (s) { return s.vals[lastX] == null ? 1e9 : s.vals[lastX]; };
+    var gsorted = gser.slice().sort(function (a, b) { return cur(a) - cur(b); });
+    var gfav = gsorted.filter(function (s) { return fav[gbrand[s.key]]; }).slice(0, 10).map(function (s) { return s.key; });
+    window.dyEvTrend.mount($(".js-b-goods"), tstate.goods, { xs: gx, series: gser, defaults: gfav.length ? gfav : gsorted.slice(0, 5).map(function (s) { return s.key; }), onChange: refreshHlBtn });
+    refreshHlBtn();
   }
   function brandOrderIn(list) { // 마지막 시점 순위순
     if (!list.length) return [];
@@ -399,7 +400,7 @@
   el.brandQ.addEventListener("input", renderBrandList);
   var gqT = null;
   el.goodsQ.addEventListener("input", function () { clearTimeout(gqT); gqT = setTimeout(function () { renderAll(); }, 200); });
-  el.hlClear.addEventListener("click", function () { hl = {}; renderAll(); });
+  el.hlClear.addEventListener("click", function () { hl = {}; tstate.brand.focus = null; tstate.goods.focus = null; renderAll(); refreshHlBtn(); });
   document.addEventListener("click", function (e) { var d = $(".js-brands"); if (d && d.open && !d.contains(e.target)) d.open = false; });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") { var d = $(".js-brands"); if (d && d.open) d.open = false; } });
   if (!trSupported()) { el.tr.disabled = true; el.tr.title = "이 브라우저는 내장 번역을 지원하지 않아요 (Chrome 138 이상 필요)"; }

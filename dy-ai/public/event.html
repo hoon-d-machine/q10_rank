@@ -119,10 +119,10 @@
     </div>
 
     <section class="ev-pane" data-pane="trend">
-      <p class="ev-hint">범례나 선을 <b>클릭</b>하면 그 항목이 <b>강조</b>되고(여러 개 가능, 다시 누르면 해제), <b>Shift+클릭</b>하면 그래프에서 숨겨요. <b>더블 클릭</b>하면 모두 원래대로 돌아와요. 순위는 숫자가 작을수록 위(1위)예요.</p>
+      <p class="ev-hint">표의 행이나 그래프의 선을 <b>클릭</b>하면 그 항목이 <b>강조</b>돼요(여러 개 가능, 다시 누르면 해제). 처음엔 즐겨찾기 브랜드(없으면 상위 5개)가 강조돼 있고, 나머지는 옅은 회색 선으로 깔려 있어요. 순위는 숫자가 작을수록 위(1위)예요.</p>
       <div class="ev-one">
-        <div class="ev-card"><h3 class="js-t-brand">🏢 브랜드 순위</h3><div class="ev-chart js-c-brand"></div></div>
-        <div class="ev-card"><h3 class="js-t-goods">📦 상품 순위</h3><div class="ev-chart js-c-goods"></div></div>
+        <div class="ev-card"><h3 class="js-t-brand">🏢 브랜드 순위</h3><div class="ev-board js-b-brand"></div></div>
+        <div class="ev-card"><h3 class="js-t-goods">📦 상품 순위</h3><div class="ev-board js-b-goods"></div></div>
       </div>
     </section>
     <section class="ev-pane" data-pane="price" hidden>
@@ -156,6 +156,8 @@
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 <script src="/assets/dy-cal.js"></script>
 <script src="/assets/chart-colors.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/assets/event-trend.js"></script>
 <script src="/assets/event.js"></script>
 <script>
   document.getElementById("logout").addEventListener("click", function () {

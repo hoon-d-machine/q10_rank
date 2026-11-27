@@ -1,4 +1,4 @@
-/* DY-AI 행사 랭킹 화면: 예전 Streamlit 대시보드(dashboard.py)를 사이트로 옮긴 것
+﻿/* DY-AI 행사 랭킹 화면: 예전 Streamlit 대시보드(dashboard.py)를 사이트로 옮긴 것
  * 읽기는 Supabase RPC dy_event_meta / dy_event_rows, 즐겨찾기는 brand_favorites, 수집 설정은 dy_event_config_set (supabase/event_rank.sql)
  * 필요: auth.js(dyAuth), dy-cal.js(dyCal), Plotly
  */
@@ -34,17 +34,17 @@
   function dlabel(t) { return String(t).slice(2, 10); }  // yy-mm-dd
 
   // ---- 색 ----
-  var PALETTE = ["#FD3216", "#00FE35", "#6A76FC", "#FED4C4", "#FE00CE", "#0DF9FF", "#F6F926", "#FF9616", "#479B55", "#EEA6FB", "#DC587D", "#D626FF", "#6E899C", "#00B5F7", "#B68E00", "#C9FBE5", "#FF0092", "#22FFA7", "#E3EE9E", "#86CE00", "#BC7196", "#7E7DCD", "#FC6955", "#E48F72"];
-  function pastel(hex) { var n = parseInt(hex.slice(1), 16); return "rgba(" + (n >> 16) + "," + ((n >> 8) & 255) + "," + (n & 255) + ",.5)"; }
-  function colorMap(names) {
+  var SITE = ["#11af5d", "#2a8c9a", "#e5a63a", "#5b6c8f", "#e06c5a", "#0b7a40", "#9bc53d", "#8a6fb0"];
+  var PALETTE = SITE.concat(["#6fcf97", "#68b6c2", "#f0c46d", "#8f9cb8", "#ec9a8d", "#4a9f72", "#c3dd7f", "#b5a1d0"], ["#0a5c32", "#1e6b76", "#b57d1c", "#3f4d6c", "#b04a3a", "#07502a", "#6f9423", "#65508a"]);
+    function colorMap(names) {
     var m = {}, i = 0;
-    names.forEach(function (n) { m[n] = fav[n] || pastel(PALETTE[i++ % PALETTE.length]); });
+    names.forEach(function (n) { m[n] = fav[n] || PALETTE[i++ % PALETTE.length]; });
     return m;
   }
   function cssVar(n, d) { var v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || d; }
   function theme() {
     var dark = document.documentElement.getAttribute("data-theme") === "dark";
-    return { font: window.dyColors ? window.dyColors.tick(false) : "#222", grid: "rgba(128,128,128,.25)",
+    return { font: window.dyColors ? window.dyColors.tick(false) : "#222", grid: window.dyColors ? window.dyColors.grid(false) : "rgba(128,128,128,.25)",
       tipBg: dark ? "#17191f" : cssVar("--lg-card", "#fff"), tipLine: cssVar("--lg-line", "rgba(0,0,0,.2)"), tipText: dark ? "#f1f1f1" : cssVar("--lg-text", "#222") };
   }
   function baseLayout(extra) {
@@ -63,7 +63,7 @@
   function tn(s) { s = s || ""; return trOn && trCache[s] ? trCache[s] : s; }
   function trSupported() { return typeof window.Translator !== "undefined" && typeof window.Translator.create === "function"; }
   function translateNames(names) {
-    var todo = names.filter(function (n) { return n && trCache[n] == null; });
+    var todo = names.filter(function (n) { return n && trCache[n] == null && /[\u3040-\u30ff\u3400-\u9fff]/.test(n); });   // 일본어(가나·한자)가 든 이름만
     if (!todo.length) return Promise.resolve();
     var done = 0;
     var getT = trObj ? Promise.resolve(trObj) : window.Translator.create({ sourceLanguage: "ja", targetLanguage: "ko", monitor: function (m) {
@@ -77,7 +77,7 @@
       return chain;
     });
   }
-  function goodsNames(list) { var s = {}; list.forEach(function (r) { if (r.goods_name) s[r.goods_name] = 1; }); return Object.keys(s); }
+  function goodsNames(list) { var s = {}; list.forEach(function (r) { ["goods_name", "brand", "large", "medium", "small"].forEach(function (k) { if (r[k]) s[r[k]] = 1; }); }); return Object.keys(s); }
 
   // ---- 범례/선 클릭 강조 ----
   var hl = {};   // 그래프 선택자 → { 이름: true }
@@ -153,7 +153,7 @@
     var q = el.brandQ.value.trim().toLowerCase(), order = brandOrder(), rk = {};
     var last = rows.length ? rows[rows.length - 1].t : null;
     rows.forEach(function (r) { if (r.t === last && r.brand) rk[r.brand] = Math.min(rk[r.brand] == null ? 1e9 : rk[r.brand], r.rank); });
-    var shown = order.filter(function (b) { return !q || b.toLowerCase().indexOf(q) >= 0; });
+    var shown = order.filter(function (b) { return !q || b.toLowerCase().indexOf(q) >= 0 || tn(b).toLowerCase().indexOf(q) >= 0; });
     shown = shown.filter(function (b) { return selected.indexOf(b) >= 0; }).concat(shown.filter(function (b) { return selected.indexOf(b) < 0; }));   // 선택한 브랜드를 위로
     el.brandList.innerHTML = "";
     if (shown.length) {
@@ -170,7 +170,7 @@
       cb.addEventListener("change", function () { setSel(b, cb.checked); renderBrandList(); renderAll(); });
       lab.appendChild(cb);
       var dot = h("i", "ev-dot"); if (fav[b]) dot.style.background = fav[b]; lab.appendChild(dot);
-      lab.appendChild(h("span", null, b));
+      lab.appendChild(h("span", null, tn(b)));
       if (rk[b] != null) lab.appendChild(h("em", "ev-rk", rk[b] + "위"));
       el.brandList.appendChild(lab);
     });
@@ -184,7 +184,7 @@
     selected.forEach(function (b) {
       var c = h("button", "ev-chip"); c.type = "button"; c.title = "선택 해제";
       if (fav[b]) { var d = h("i", "ev-dot"); d.style.background = fav[b]; c.appendChild(d); }
-      c.appendChild(h("span", null, b)); c.appendChild(h("b", null, "×"));
+      c.appendChild(h("span", null, tn(b))); c.appendChild(h("b", null, "×"));
       c.addEventListener("click", function () { setSel(b, false); renderBrandList(); renderAll(); });
       el.chips.appendChild(c);
     });
@@ -193,7 +193,7 @@
   function renderFavs() {
     var brands = brandOrder();
     el.favBrand.innerHTML = "";
-    brands.forEach(function (b) { var o = h("option", null, b); o.value = b; el.favBrand.appendChild(o); });
+    brands.forEach(function (b) { var o = h("option", null, tn(b)); o.value = b; el.favBrand.appendChild(o); });
     el.favList.innerHTML = "";
     var names = Object.keys(fav);
     if (!names.length) el.favList.appendChild(h("li", "ev-note", "저장된 즐겨찾기가 없어요"));
@@ -206,7 +206,7 @@
           delete fav[b]; renderFavs(); renderBrandList(); renderAll();
         });
       });
-      li.appendChild(dot); li.appendChild(h("span", null, b)); li.appendChild(del); el.favList.appendChild(li);
+      li.appendChild(dot); li.appendChild(h("span", null, tn(b))); li.appendChild(del); el.favList.appendChild(li);
     });
   }
 
@@ -237,7 +237,7 @@
     var order = brandOrderIn(bl), cm = colorMap(Object.keys(by));
     var xs = Object.keys(dates).sort();
     draw(".js-c-brand", order.filter(function (b) { return by[b]; }).map(function (b) {
-      return { type: "scatter", mode: "lines+markers", name: b, hovertemplate: "%{x} · <b>%{y}위</b><extra>%{fullData.name}</extra>", x: xs.filter(function (d) { return by[b][d] != null; }), y: xs.filter(function (d) { return by[b][d] != null; }).map(function (d) { return by[b][d]; }), line: { color: cm[b], width: 2 }, marker: { color: cm[b] } };
+      return { type: "scatter", mode: "lines+markers", name: tn(b), hovertemplate: "%{x} · <b>%{y}위</b><extra>%{fullData.name}</extra>", x: xs.filter(function (d) { return by[b][d] != null; }), y: xs.filter(function (d) { return by[b][d] != null; }).map(function (d) { return by[b][d]; }), line: { color: cm[b], width: 2 }, marker: { color: cm[b] } };
     }), lay());
     // 상품: 날짜별 최고 순위 (같은 상품 이름은 마지막 이름으로)
     var gl = topFilter(list.filter(function (r) { return r.brand; }), "goods_no", n);
@@ -251,7 +251,7 @@
     draw(".js-c-goods", gorder.map(function (g) {
       var name = tn(lastName[g] || "").slice(0, 10) + ".. (#" + String(g).slice(-4) + ")";
       var xx = gx.filter(function (d) { return gb[g][d] != null; });
-      return { type: "scatter", mode: "lines+markers", name: name, text: xx.map(function () { return wrap(tn(lastName[g]), 26); }), hovertemplate: "<b>%{text}</b><br>%{x} · <b>%{y}위</b><extra>" + (gbrand[g] || "") + "</extra>", x: xx, y: xx.map(function (d) { return gb[g][d]; }), line: { color: bcm[gbrand[g]] || "#D3D3D3", width: 2 }, marker: { color: bcm[gbrand[g]] || "#D3D3D3" } };
+      return { type: "scatter", mode: "lines+markers", name: name, text: xx.map(function () { return wrap(tn(lastName[g]), 26); }), hovertemplate: "<b>%{text}</b><br>%{x} · <b>%{y}위</b><extra>" + tn(gbrand[g] || "") + "</extra>", x: xx, y: xx.map(function (d) { return gb[g][d]; }), line: { color: bcm[gbrand[g]] || "#9a9fa5", width: 2 }, marker: { color: bcm[gbrand[g]] || "#9a9fa5" } };
     }), lay());
   }
   function brandOrderIn(list) { // 마지막 시점 순위순
@@ -270,15 +270,15 @@
     var maxRev = Math.max.apply(null, items.map(function (r) { return r.review_count || 0; }).concat([1]));
     draw(".js-c-scatter", Object.keys(byBrand).map(function (b) {
       var a = byBrand[b];
-      return { type: "scatter", mode: "markers", name: b, x: a.map(function (r) { return r.sale_price; }), y: a.map(function (r) { return r.rank; }),
-        text: a.map(function (r) { return wrap(tn(r.goods_name), 26) + "<br>리뷰 " + fmt(r.review_count || 0); }), hovertemplate: "<b>%{text}</b><br>가격 %{x:,}엔 · <b>%{y}위</b><extra>" + b + "</extra>",
-        marker: { color: cm[b], size: a.map(function (r) { return 6 + 30 * Math.sqrt((r.review_count || 0) / maxRev); }), line: { width: 1, color: "rgba(0,0,0,.25)" } } };
+      return { type: "scatter", mode: "markers", name: tn(b), x: a.map(function (r) { return r.sale_price; }), y: a.map(function (r) { return r.rank; }),
+        text: a.map(function (r) { return wrap(tn(r.goods_name), 26) + "<br>리뷰 " + fmt(r.review_count || 0); }), hovertemplate: "<b>%{text}</b><br>가격 %{x:,}엔 · <b>%{y}위</b><extra>" + tn(b) + "</extra>",
+        marker: { color: cm[b], size: a.map(function (r) { return 6 + 30 * Math.sqrt((r.review_count || 0) / maxRev); }), line: { width: 1, color: "rgba(255,255,255,.7)" }, opacity: .85 } };
     }), baseLayout({ xaxis: { title: "판매가(엔)", gridcolor: theme().grid }, yaxis: { autorange: "reversed", title: "순위", gridcolor: theme().grid } }));
     var byMed = {};
     list.forEach(function (r) { var m = r.medium || "(없음)"; (byMed[m] = byMed[m] || []).push(r.sale_price); });
     var meds = Object.keys(byMed).sort();
     draw(".js-c-box", meds.map(function (m, i) {
-      return { type: "box", name: m, y: byMed[m], boxpoints: "all", jitter: .4, pointpos: 0, marker: { color: PALETTE[i % PALETTE.length], size: 4 }, line: { width: 1.5 } };
+      return { type: "box", name: tn(m), y: byMed[m], boxpoints: "all", jitter: .4, pointpos: 0, marker: { color: PALETTE[i % PALETTE.length], size: 4 }, line: { width: 1.5 } };
     }), baseLayout({ yaxis: { title: "판매가(엔)", gridcolor: theme().grid }, showlegend: false, margin: { t: 16, l: 56, r: 12, b: 96 } }));
   }
 
@@ -300,7 +300,7 @@
   }
   function renderShare(list) {
     var meds = {}; list.forEach(function (r) { meds[r.medium || "(없음)"] = 1; });
-    var medNames = Object.keys(meds).sort(), pastels = ["#66C5CC", "#F6CF71", "#F89C74", "#DCB0F2", "#87C55F", "#9EB9F3", "#FE88B1", "#C9DB74", "#8BE0A4", "#B497E7", "#D3B484", "#B3B3B3"];
+    var medNames = Object.keys(meds).sort(), pastels = PALETTE;
     var mcol = {}; medNames.forEach(function (m, i) { mcol[m] = pastels[i % pastels.length]; });
     var t = hierarchy(list, ["large", "medium", "brand"], "전체");
     var tcol = t.ids.map(function (id, i) {
@@ -308,13 +308,13 @@
       if (fav[lab]) return fav[lab];
       if (mcol[lab]) return mcol[lab];
       var par = (t.parents[i] || "").split("/").pop();
-      return mcol[par] || "#E5ECF6";
+      return mcol[par] || "#c9ccd0";
     });
-    draw(".js-c-tree", list.length ? [{ type: "treemap", ids: t.ids, labels: t.labels, parents: t.parents, values: t.values, branchvalues: "total", textinfo: "label+value", marker: { colors: tcol, line: { width: 1 } } }] : [],
+    draw(".js-c-tree", list.length ? [{ type: "treemap", ids: t.ids, labels: t.labels.map(tn), parents: t.parents, values: t.values, branchvalues: "total", textinfo: "label+value", marker: { colors: tcol, line: { width: 1 } } }] : [],
       baseLayout({ margin: { t: 8, l: 4, r: 4, b: 4 } }));
     var s = hierarchy(list, ["large", "medium", "small"], null);
-    var scol = s.ids.map(function (id) { var seg = id.split("/"); return mcol[seg[1] || seg[0]] || "#B3B3B3"; });
-    draw(".js-c-sun", list.length ? [{ type: "sunburst", ids: s.ids, labels: s.labels, parents: s.parents, values: s.values, branchvalues: "total", marker: { colors: scol, line: { width: 1 } } }] : [],
+    var scol = s.ids.map(function (id) { var seg = id.split("/"); return mcol[seg[1] || seg[0]] || "#c9ccd0"; });
+    draw(".js-c-sun", list.length ? [{ type: "sunburst", ids: s.ids, labels: s.labels.map(tn), parents: s.parents, values: s.values, branchvalues: "total", marker: { colors: scol, line: { width: 1 } } }] : [],
       baseLayout({ margin: { t: 8, l: 4, r: 4, b: 4 } }));
   }
 
@@ -323,7 +323,7 @@
     el.rawCount.textContent = fmt(list.length) + "행" + (list.length > 500 ? " (500행만 표시, 전체는 CSV)" : "");
     list.slice(0, 500).forEach(function (r) {
       var tr = h("tr");
-      [dlabel(r.t), r.rank, r.brand || "", tn(r.goods_name || ""), fmt(r.sale_price || 0), fmt(r.review_count || 0)].forEach(function (v, i) {
+      [dlabel(r.t), r.rank, tn(r.brand || ""), tn(r.goods_name || ""), fmt(r.sale_price || 0), fmt(r.review_count || 0)].forEach(function (v, i) {
         var td = h("td", i === 1 || i >= 4 ? "is-num" : null, String(v)); tr.appendChild(td);
       });
       el.raw.appendChild(tr);
@@ -343,7 +343,7 @@
       selected = selected.filter(function (b) { return rows.some(function (r) { return r.brand === b; }); });
       setStatus(rows.length ? "" : "선택한 조건에 데이터가 없어요.", rows.length ? "" : "info");
       renderBrandList(); renderFavs();
-      if (trOn) return translateNames(goodsNames(rows)).then(function () { setStatus("", ""); if (my === reqSeq) renderAll(); });
+      if (trOn) return translateNames(goodsNames(rows)).then(function () { setStatus("", ""); if (my === reqSeq) { renderBrandList(); renderFavs(); renderAll(); } });
       renderAll();
     }).catch(function (e) { if (my === reqSeq) setStatus(errText(e), "err"); });
   }
@@ -404,10 +404,10 @@
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") { var d = $(".js-brands"); if (d && d.open) d.open = false; } });
   if (!trSupported()) { el.tr.disabled = true; el.tr.title = "이 브라우저는 내장 번역을 지원하지 않아요 (Chrome 138 이상 필요)"; }
   el.tr.addEventListener("click", function () {
-    if (trOn) { trOn = false; el.tr.setAttribute("aria-pressed", "false"); el.tr.textContent = "🌐 한국어로 보기"; renderAll(); return; }
+    if (trOn) { trOn = false; el.tr.setAttribute("aria-pressed", "false"); el.tr.textContent = "🌐 한국어로 보기"; hl = {}; renderBrandList(); renderFavs(); renderAll(); return; }
     el.tr.disabled = true; setStatus("상품명 번역 준비 중…", "load");
     translateNames(goodsNames(rows)).then(function () {
-      trOn = true; el.tr.setAttribute("aria-pressed", "true"); el.tr.textContent = "🌐 원문으로 보기"; setStatus("", ""); renderAll();
+      trOn = true; el.tr.setAttribute("aria-pressed", "true"); el.tr.textContent = "🌐 원문으로 보기"; setStatus("", ""); hl = {}; renderBrandList(); renderFavs(); renderAll();
     }).catch(function (e) { setStatus("번역하지 못했어요: " + ((e && e.message) || e), "err"); })
       .then(function () { el.tr.disabled = false; });
   });

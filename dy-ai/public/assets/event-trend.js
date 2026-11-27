@@ -112,7 +112,7 @@
       return { color: on || hv ? s.color : P.ghost, width: on ? 2.6 : hv ? 2.6 : 1, pr: 0, order: on ? 0 : hv ? 1 : 5 };
     }
     var datasets = S.map(function (s) {
-      return { key: s.key, label: s.label, data: s.vals.map(function (v, i) { return { x: pos[i], y: v }; }), spanGaps: false, pointHitRadius: 9, pointHoverRadius: function () { return isOn(s.key) || hoverKey() === s.key ? 5 : 0; }, tension: 0.18, borderCapStyle: "round", borderJoinStyle: "round",
+      return { key: s.key, label: s.label, data: s.vals.map(function (v, i) { return { x: pos[i], y: v }; }), spanGaps: false, borderDash: s.dash || [], pointHitRadius: 9, pointHoverRadius: function () { return isOn(s.key) || hoverKey() === s.key ? 5 : 0; }, tension: 0.18, borderCapStyle: "round", borderJoinStyle: "round",
         borderColor: function () { return style(s).color; }, backgroundColor: function () { return style(s).color; },
         borderWidth: function () { return style(s).width; }, pointRadius: function () { return style(s).pr; }, order: 5 };
     });

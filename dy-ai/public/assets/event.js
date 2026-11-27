@@ -254,8 +254,11 @@
     var lastName = {}, gb = {}, gbrand = {}, gd = {};
     gl.forEach(function (r) { lastName[r.goods_no] = r.goods_name; gbrand[r.goods_no] = r.brand; var d = dlabel(r.t); gd[d] = 1; var o = gb[r.goods_no] = gb[r.goods_no] || {}; o[d] = Math.min(o[d] == null ? 1e9 : o[d], r.rank); });
     var gx = withGaps(Object.keys(gd).sort()), gkeys = Object.keys(gb);
+    // 상품 색 = 그 브랜드 색(즐겨찾기 브랜드는 즐겨찾기 색). 같은 브랜드 상품끼리는 선 모양(실선·점선…)으로 구별
+    var DASH = [[], [7, 4], [2, 3], [10, 3, 2, 3]], nth = {}, extra = colorMap(Object.keys(gbrand).map(function (k) { return gbrand[k]; }));
     var gser = gkeys.map(function (g, i) {
-      return { key: g, label: tn(lastName[g] || ""), sub: tn(gbrand[g] || ""), color: PALETTE[i % PALETTE.length], vals: gx.map(function (d) { return gb[g][d] != null ? gb[g][d] : null; }) };
+      var br = gbrand[g], k = nth[br] = (nth[br] == null ? 0 : nth[br] + 1);
+      return { key: g, label: tn(lastName[g] || ""), sub: tn(br || ""), color: cm[br] || extra[br] || PALETTE[i % PALETTE.length], dash: DASH[k % DASH.length], vals: gx.map(function (d) { return gb[g][d] != null ? gb[g][d] : null; }) };
     });
     // 기본 강조: 즐겨찾기 브랜드의 상품(현재 순위 상위 10개), 없으면 상위 5개
     var lastX = gx.length - 1, cur = function (s) { return s.vals[lastX] == null ? 1e9 : s.vals[lastX]; };

@@ -299,24 +299,54 @@
     var ids = Object.keys(sums);
     return { ids: ids, labels: ids.map(function (i) { return label[i]; }), parents: ids.map(function (i) { return parent[i]; }), values: ids.map(function (i) { return sums[i]; }) };
   }
-  function renderShare(list) {
-    var meds = {}; list.forEach(function (r) { meds[r.medium || "(없음)"] = 1; });
-    var medNames = Object.keys(meds).sort(), pastels = PALETTE;
-    var mcol = {}; medNames.forEach(function (m, i) { mcol[m] = pastels[i % pastels.length]; });
-    var t = hierarchy(list, ["large", "medium", "brand"], "전체");
-    var tcol = t.ids.map(function (id, i) {
-      var lab = t.labels[i];
-      if (fav[lab]) return fav[lab];
-      if (mcol[lab]) return mcol[lab];
-      var par = (t.parents[i] || "").split("/").pop();
-      return mcol[par] || "#c9ccd0";
+  // 점유율 색: 중분류마다 사이트 팔레트 색 하나, 그 아래(브랜드·소분류)는 같은 색의 농도로 점유율 크기를 표현 (진할수록 점유율 큼)
+  function hexRgb(x) { var n = parseInt(x.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+  function mixHex(a, b, t) { var A = hexRgb(a), B = hexRgb(b); return "#" + [0, 1, 2].map(function (i) { return ("0" + Math.round(A[i] * t + B[i] * (1 - t)).toString(16)).slice(-2); }).join(""); }
+  function lumOf(x) { var c = hexRgb(x); return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
+  function shareColors(ids, parents, values, depthMed, mcolOf, neutral, bg, favOf) {
+    // depthMed: id → 중분류 이름(없으면 null=중립), 같은 중분류 안의 최대 값으로 농도 정규화
+    var maxIn = {};
+    ids.forEach(function (id, i) { var m = depthMed(id); if (m && id.split("/").length - 1 > depthMed.level) maxIn[m] = Math.max(maxIn[m] || 0, values[i]); });
+    return ids.map(function (id, i) {
+      var m = depthMed(id), lvl = id.split("/").length - 1;
+      if (!m) return neutral[Math.min(lvl, neutral.length - 1)];
+      var base = mcolOf(m);
+      if (lvl === depthMed.level) return base;
+      var f = favOf(id); if (f) return f;
+      return mixHex(base, bg, 0.32 + 0.6 * Math.sqrt(values[i] / (maxIn[m] || 1)));
     });
-    draw(".js-c-tree", list.length ? [{ type: "treemap", ids: t.ids, labels: t.labels.map(tn), parents: t.parents, values: t.values, branchvalues: "total", textinfo: "label+value", marker: { colors: tcol, line: { width: 1 } } }] : [],
-      baseLayout({ margin: { t: 8, l: 4, r: 4, b: 4 } }));
+  }
+  function renderShare(list) {
+    var dark = document.documentElement.getAttribute("data-theme") === "dark", T = theme();
+    var bg = dark ? "#17191f" : "#fffef7", neutral = dark ? ["#262a33", "#2f343e"] : ["#ece6d6", "#e2dbc8"], ink = dark ? "#f1f1f1" : "#2b2b2b";
+    var tot = {}; list.forEach(function (r) { var m = r.medium || "(없음)"; tot[m] = (tot[m] || 0) + Math.max(101 - r.rank, 0); });
+    var medNames = Object.keys(tot).sort(function (a, b) { return tot[b] - tot[a]; }), mcol = {};
+    medNames.forEach(function (m, i) { mcol[m] = SITE[i % SITE.length]; });
+    var mcolOf = function (m) { return mcol[m] || "#9a9fa5"; };
+    var common = { branchvalues: "total", marker: null };
+    // 트리맵: 전체 > 대분류 > 중분류 > 브랜드
+    var t = hierarchy(list, ["large", "medium", "brand"], "전체");
+    var medT = function (id) { var seg = id.split("/"); return seg.length >= 3 ? seg[2] : null; }; medT.level = 2;
+    var tcol = shareColors(t.ids, t.parents, t.values, medT, mcolOf, neutral, bg, function (id) { var b = id.split("/").pop(); return fav[b] || null; });
+    var total = t.values[t.ids.indexOf("전체")] || 1;
+    var tline = t.ids.map(function (id) { var b = id.split("/"); return b.length === 4 && fav[b[3]] ? 3 : 1.5; });
+    var tfont = tcol.map(function (c) { return lumOf(c) > 0.62 ? "#222" : "#fff"; });
+    tfont = tfont.map(function (c, i) { var lvl = t.ids[i].split("/").length - 1; return lvl < 2 ? ink : c; });
+    draw(".js-c-tree", list.length ? [{ type: "treemap", ids: t.ids, labels: t.labels.map(tn), parents: t.parents, values: t.values, branchvalues: "total",
+      customdata: t.values.map(function (v) { return (v / total * 100).toFixed(1); }), texttemplate: "<b>%{label}</b><br>%{customdata}%", hovertemplate: "<b>%{label}</b><br>점유율 %{customdata}%<extra></extra>",
+      textfont: { color: tfont, family: "Pretendard Variable, Pretendard, sans-serif", size: 13 }, hoverlabel: { bgcolor: T.tipBg, bordercolor: T.tipLine, font: { color: T.tipText, size: 13 }, align: "left" }, pathbar: { visible: false }, tiling: { pad: 3 },
+      marker: { colors: tcol, cornerradius: 6, line: { width: tline, color: bg } } }] : [],
+      baseLayout({ margin: { t: 4, l: 0, r: 0, b: 0 } }));
+    // 선버스트: 대분류 > 중분류 > 소분류
     var s = hierarchy(list, ["large", "medium", "small"], null);
-    var scol = s.ids.map(function (id) { var seg = id.split("/"); return mcol[seg[1] || seg[0]] || "#c9ccd0"; });
-    draw(".js-c-sun", list.length ? [{ type: "sunburst", ids: s.ids, labels: s.labels.map(tn), parents: s.parents, values: s.values, branchvalues: "total", marker: { colors: scol, line: { width: 1 } } }] : [],
-      baseLayout({ margin: { t: 8, l: 4, r: 4, b: 4 } }));
+    var medS = function (id) { var seg = id.split("/"); return seg.length >= 2 ? seg[1] : null; }; medS.level = 1;
+    var scol = shareColors(s.ids, s.parents, s.values, medS, mcolOf, neutral, bg, function () { return null; });
+    var stot = 0; s.ids.forEach(function (id, i) { if (id.indexOf("/") < 0) stot += s.values[i]; }); stot = stot || 1;
+    draw(".js-c-sun", list.length ? [{ type: "sunburst", ids: s.ids, labels: s.labels.map(tn), parents: s.parents, values: s.values, branchvalues: "total",
+      customdata: s.values.map(function (v) { return (v / stot * 100).toFixed(1); }), hovertemplate: "<b>%{label}</b><br>점유율 %{customdata}%<extra></extra>",
+      hoverlabel: { bgcolor: T.tipBg, bordercolor: T.tipLine, font: { color: T.tipText, size: 13 }, align: "left" }, insidetextorientation: "radial", textfont: { color: ink, family: "Pretendard Variable, Pretendard, sans-serif", size: 12 },
+      marker: { colors: scol, line: { width: 1.5, color: bg } } }] : [],
+      baseLayout({ margin: { t: 4, l: 4, r: 4, b: 4 } }));
   }
 
   function renderRaw(list) {
